@@ -1,0 +1,17 @@
+This week's progress:
+    - Chose a team name and created a git repository.
+    - Reviewed Conflerge, a smart merge tool similar to what we will be working
+      on.
+    - Discussed our approach for the project proposal due Thursday.
+    - Had some trouble creating a github repository because we didn't know that
+      github doesn't store empty folders.
+    - We are stuck knowing what exactly needs to be done next, since there
+      isn't a ton of information on the class website and not much has been
+      said in class yet about next steps.
+
+Next week's goals:
+    - Finish reviewing Conflerge. (everyone)
+    - Set up weekly meeting times. (everyone)
+    - Establish our week-by-week project schedule. (everyone)
+    - Work on project proposal. Look at the pitches from the group members who
+      pitched smart merge and compile them. Expand on vague points. (everyone)
