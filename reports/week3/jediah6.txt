@@ -1,0 +1,26 @@
+Jediah Conachan (jediah6)
+4/9/18
+CSE 403
+Individual Status Report #1 (Week 3)
+
+==================
+Last Week's Goals:
+==================
+
+N/A
+
+================
+Weekly Progress:
+================
+
+- Reviewed last year's project Conflerge
+- Completed the first version of our project proposal with my team members
+- Began looking into ways to scrape merge conflicts from an open source repository, for testing
+
+===========
+Next Steps:
+===========
+
+- Design and plan project's architecture and implementation with team members
+- Begin creating or modifying existing scripts to build a testing environment
+- Begin project implementation with team
