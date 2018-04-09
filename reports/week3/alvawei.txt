@@ -1,0 +1,12 @@
+Alva Wei
+alvawei
+
+This week's progress:
+    - Met with team, set up git repository.
+    - Wrote project proposal.
+    - Reviewed Conflerge.
+
+Next week's goals:
+    - Hard to know what our exact goals should be when the next assignment
+      hasn't been posted yet.
+    - Determine architecture and implementation plan, begin implementation.
