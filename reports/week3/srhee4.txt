@@ -1,0 +1,19 @@
+Sungmin Rhee
+srhee4@uw.edu
+CSE403 Software Engineering
+Individual Status Report Week#3
+09 APR 2018
+
+1. Previous week's plan
+   - None. This is the first individual status report
+
+2. This week's progress
+   - Finished drafting the initial project proposal with the team
+   - Read Conflerge project report
+   - Started reading "Precise Version Control of Trees with Line-based Version Control Systems"
+
+3. Next week's plan
+   - Finish the readings, and research for more resources
+   - Read Conflerge and Git source code
+   - Group meeting; solidify our thoughts on how we should approach the problem
+   - Work on this week's team assignment and individual assignment
