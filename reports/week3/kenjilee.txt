@@ -1,0 +1,23 @@
+Kenji Nicholson
+kenjilee
+CSE 403 Week 3 Individual Report
+4/8/2018
+
+1.) Since this is the first individual report, I had made no individual goals last week.
+
+2.) This week, I helped the team with the project proposal pdf. Specifically, I helped cover
+the Current approaches section by adding examples of approaches that don't require much user
+input to help illuminate their pitfalls. I also helped draft up the assessment and experiments
+section by creating a general procedure and a graph that we could possibly record our results
+in. Additionally, I helped out with general formatting so the paper looked organized. I also
+made sure all of our references were cited.
+
+3.) For the following week, I plan to gain a better grasp as to how to approach our program.
+This will be vital in completing the architecture and implementation plan. That said, I will
+be conducting even more research on current approaches that solve git merging issues. Currently,
+I strongly believe that our approach to the issue must find the 'sweet spot' between automation
+and user input. Having user input will allow the tool to generate the correct merges more often,
+and if we can find a way to streamline the user input (via a GUI or something), then it will make
+programmers' lives much easier. That said, I am still not entirely sure what algorithms we should
+use for automating git merges, or how to define a 'successful merge', so I will research more on
+that.
