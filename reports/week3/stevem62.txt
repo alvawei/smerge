@@ -1,0 +1,24 @@
+Steven Miller
+stevem62
+CSE 403 Week 3 Individual Report
+4/9/18
+
+1) N/A
+
+2) This week, I helped the team write the project proposal. My portion of
+the work was focusing on writing up the "Approach" section. Since three out
+of four of our group members had done their project 1 proposal on a git
+merge tool, I gathered material from both tools and combined it into one.
+
+I looked over the Conflerge project that professor Ernst pointed us to,
+and ended up speaking to one of the contributors via email. I asked him
+general questions about the project, and other questions such as asking
+him what he would add next if he had 9 weeks to do so. He suggested the idea
+of a GUI which could provide users with more of an interface for this merge
+process, instead of succeeding silently or failing completely. We liked
+this idea and I included the description of it in the project proposal.
+
+3) This week, I will have to discuss the architecture and implementation
+plans with my team members, and talk more about the GUI. If this is
+something we plan to take on, I will need to look more about creating GUI's
+in Java, and then start implementing.
