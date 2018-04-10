@@ -1,0 +1,21 @@
+Last week’s goals:
+    - Finish reviewing Conflerge. (everyone)
+    - Set up weekly meeting times. (everyone)
+    - Establish our week-by-week project schedule. (everyone)
+    - Work on project proposal. Look at the pitches from the group members who
+      pitched smart merge and compile them. Expand on vague points. (everyone)
+
+This week’s progress:
+    - Completed project proposal.
+    - Established week-by-week schedule.
+    - Contacted the Conflerge team about improvements, their experience, etc.
+    - Don’t know how to proceed with project 3, since it’s due in 2 days and
+      nothing has been posted yet. Couldn’t find anything on past quarters’ course
+      websites either.
+
+
+Next week’s goals:
+    - Finalize our approach, per TA’s feedback on our proposal. (everyone)
+    - Complete architecture and implementation plan when it’s posted. (everyone)
+    - Draft several mock-up GUIs and pick one that fits user’s needs best.
+      (everyone)
