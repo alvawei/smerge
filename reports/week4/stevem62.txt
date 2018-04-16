@@ -1,0 +1,22 @@
+Steven Miller
+stevem62@uw.edu
+CSE 403 Week 3 Individual Report
+4/16/18
+
+1) This week, I will have to discuss the architecture and implementation
+plans with my team members, and talk more about the GUI. If this is
+something we plan to take on, I will need to look more about creating GUI's
+in Java, and then start implementing.
+
+2) This week, I helped work on the architecture and implementation part
+of the project with my team. We had discussions about the role the GUI
+would play in our project - finding a good balance between automation
+and (simplified) user imput. In our report, I wrote about Javaparser and
+discussed how it will help us by parsing code and turning it into ASTs so
+that we can work with the files. I'm having trouble knowing where to start,
+since this is a pretty big task and there isn't as much structure as any
+of my previous classes.
+
+3) For this week, I will prepare to present on Wednesday, and revise our
+proposal. We will have to look at conflerge's implementation in more detail
+so that we can use that as a starting point to start writing code.
