@@ -1,0 +1,34 @@
+Kenji Nicholson
+kenjilee
+CSE 403 Week 4 Individual Report
+4/15/18
+
+1.) For the following week, I plan to gain a better grasp as to how to approach our program.
+This will be vital in completing the architecture and implementation plan. That said, I will
+be conducting even more research on current approaches that solve git merging issues. Currently,
+I strongly believe that our approach to the issue must find the 'sweet spot' between automation
+and user input. Having user input will allow the tool to generate the correct merges more often,
+and if we can find a way to streamline the user input (via a GUI or something), then it will make
+programmers' lives much easier. That said, I am still not entirely sure what algorithms we should
+use for automating git merges, or how to define a 'successful merge', so I will research more on
+that.
+
+2.) Up to now, we have completed the Architecture and Implementation addition to the report. We
+did not do as well as we had hoped, however. Regardless, I think I have a better grasp on how
+we can include something new to the program: a GUI. Similarly to what I said last week, the 
+'sweet spot' is something that can find balance between automation and user input. After discussing
+as a group, we decided on going down the GUI route because this will help make user input on
+merges easier as it will give them more tools to decide how they want the merge to result. In
+addition to deciding this, I contributed a mockup GUI to our group report and also briefly talked
+about the existing systems relevant to our project (that being conflerge.) I am currently stuck
+on where to go from here and how to begin implementation. As for algorithms, we will use
+similar algorithms to those used in Conflerge. Also, our definition of a successful merge
+will be a merge that aligns with the programmer's intent.
+
+3.) For this week, my goal is to help prepare the presentation by basically outlining our report
+and deciding which details to add and which details to leave out. On top of that, we have to
+revise our proposal again, so I will help contribute to that as well. Then, we have to start
+the "user manual," but the link on the website is currently broken, so I'm not sure how to contribute
+to that-- I will figure that out. On top of all of this, I am going to take an indepth look at
+Conflerge's implementation to see how they organized their infrastructure so we can get a starting
+point on the project's implementation. 
