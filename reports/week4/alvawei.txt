@@ -1,0 +1,16 @@
+Alva Wei
+alvawei
+
+Last week's goals:
+    - Hard to know what our exact goals should be when the next assignment
+      hasn't been posted yet.
+    - Determine architecture and implementation plan, begin implementation.
+
+This week's progress:
+    - Finished architecture and implementation plan.
+    - Determined basic architecture of our solution.
+    - Refined the scope of our approach and solution.
+
+Next week's goals:
+    - Begin implementation.
+    - Lay out class structure based on architecture. 
