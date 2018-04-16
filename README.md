@@ -1,14 +1,13 @@
 # User Manual
+Smerge is a tool used for automating and minimizing user input in merge conflict resolutions.
 ## Installation
 * Clone the Smerge repository to ~/.
+* Update your `.gitconfig` to include: 
 ```bash
-    [mergetool "conflerge-tree"]
-                cmd = java -jar ~/Conflerge/ConflergeTree.jar \$BASE \$LOCAL \$REMOTE \$MERGED
-    [mergetool "conflerge-token"]
-        cmd = java -jar ~/Conflerge/ConflergeToken.jar \$BASE \$LOCAL \$REMOTE \$MERGED
+    [mergetool "smerge"]
+                cmd = java -jar ~/smerge/Merger.jar \$BASE \$LOCAL \$REMOTE \$MERGED
     [merge]
-        tool = conflerge-tree
-        tool = conflerge-token
+        tool = smerge
 ```
 
 ## Usage
