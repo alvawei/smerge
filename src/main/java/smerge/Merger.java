@@ -2,15 +2,11 @@ package smerge;
 
 import java.io.FileNotFoundException;
 
-
 /**
  * Runs Smerge
  */
 public class Merger {
 	
-	public static final int BASE = 0;
-	public static final int LOCAL = 1;
-	public static final int REMOTE = 2;
     
     /**
      * @param args [BASE, LOCAL, REMOTE, MERGED] files
@@ -22,24 +18,8 @@ public class Merger {
         
         try {
             Conflict conflict = new Conflict(args[0], args[1], args[2]);
-            ASTreeMerger treeMerger = new ASTreeMerger(conflict);
-            Resolution res = treeMerger.merge();
+            Resolution res = ASTreeMerger.merge(conflict);
             res.writeFile(args[3]);
-        
-            /*
-
-            Copied from Conflerge
-    
-            TreeMerger merger = new TreeMerger(args[0], args[1], args[2]);
-            Node mergedTree = merger.merge();         
-            if (mergedTree == null) {
-                fail("Conflict encountered");
-                return;
-            }
-            writeFile(mergedTree.toString(), args[3]);
-
-
-            */
         } catch (FileNotFoundException e) {
             // fail("Files not found");
         } catch (Exception e) {
