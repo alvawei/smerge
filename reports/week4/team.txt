@@ -14,7 +14,11 @@ This week’s progress:
       implementation plan.
 
 Goals for next week:
-    - Complete first version of the user manual (README.md) (everyone)
+    - Complete first version of the user manual
+        - GUI usage (Kenji)
+        - Examples (Steven)
+        - Introduction (Alva)
+        - Installation and Usage (Jediah and Bryan)
     - Add implementation plans to project report (everyone)
     - Further implementation, begin getting up to par with Conflerge’s
       implementation (everyone)
