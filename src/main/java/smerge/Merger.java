@@ -22,22 +22,14 @@ public class Merger {
         
         try {
             Conflict conflict = new Conflict(args[0], args[1], args[2]);
-            
-            ASTree base = conflict.getTree(BASE);
-            ASTree local = conflict.getTree(LOCAL);
-            ASTree remote = conflict.getTree(REMOTE);
-            
-            ASTreeMerger treeMerger = new ASTreeMerger(base, local, remote);
+            ASTreeMerger treeMerger = new ASTreeMerger(conflict);
             Resolution res = treeMerger.merge();
+            res.writeFile(args[3]);
         
-            
-
-
             /*
 
             Copied from Conflerge
     
-            
             TreeMerger merger = new TreeMerger(args[0], args[1], args[2]);
             Node mergedTree = merger.merge();         
             if (mergedTree == null) {

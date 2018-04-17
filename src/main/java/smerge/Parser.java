@@ -11,7 +11,18 @@ import com.github.javaparser.utils.Pair;
 
 public class Parser {
 	
-	public static Node parse(String file) throws FileNotFoundException {
-		return JavaParser.parse(new File(file));
+	public static ASTree parse(File file) throws FileNotFoundException {
+		Node root = JavaParser.parse(file);
+		return new ASTree(root);
+	}
+
+	public static ASTree[] parseFiles(Conflict conflict) throws FileNotFoundException {
+		ASTree[] trees = new ASTree[3];
+		
+		trees[Conflict.BASE] = parse(conflict.getFile(Conflict.BASE));
+		trees[Conflict.LOCAL] = parse(conflict.getFile(Conflict.LOCAL));
+		trees[Conflict.REMOTE] = parse(conflict.getFile(Conflict.REMOTE));
+
+		return trees;
 	}
 }
