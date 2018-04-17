@@ -1,0 +1,20 @@
+Last week’s goals:
+    - Finalize our approach, per TA’s feedback on our proposal. (everyone)
+    - Complete architecture and implementation plan when it’s posted. (everyone)
+    - Draft several mock-up GUIs and pick one that fits user’s needs best.
+      (everyone)
+
+This week’s progress:
+    - We’ve decided on making a GUI to help make giving user input easier.
+      We’ve also decided on using git merge for getting the input files.
+    - Prepared a presentation on our project and presented it to the class.
+    - We also completed the architecture and implementation plan, but we need
+      to revise it a little bit.
+    - We also drafted a mockup GUI that was a part of the architecture and
+      implementation plan.
+
+Goals for next week:
+    - Complete first version of the user manual (README.md) (everyone)
+    - Add implementation plans to project report (everyone)
+    - Further implementation, begin getting up to par with Conflerge’s
+      implementation (everyone)
