@@ -1,0 +1,20 @@
+Sungmin Rhee
+srhee4@uw.edu
+CSE403 Software Engineering
+Individual Status Report Week#4
+16 APR 2018
+
+1. Previous week's plan
+   - Finish the readings, and research for more resources
+   - Read Conflerge and Git source code
+   - Group meeting; solidify our thoughts on how we should approach the problem
+   - Work on this week's team assignment and individual assignment
+
+2. This week's progress
+   - Group meeting and discussion; Developed the general architecture plan
+   - Worked on project presentation
+   - Working on readings
+
+3. Next week's plan
+   - Group meeting; discuss project4
+   - Build user manual and begin implementation
