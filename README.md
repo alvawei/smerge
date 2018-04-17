@@ -40,6 +40,7 @@ public static ArrayList doSomething(length) {
 
   return arr;
 }
+```
 
 Note the white space on different line:
 ```
