@@ -19,7 +19,7 @@ public class Merger {
         try {
             Conflict conflict = new Conflict(args[0], args[1], args[2]);
             Resolution res = ASTreeMerger.merge(conflict);
-            res.writeFile(args[3]);
+            // res.writeFile(args[3]);
         } catch (FileNotFoundException e) {
             // fail("Files not found");
         } catch (Exception e) {

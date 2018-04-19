@@ -15,8 +15,7 @@ You may run *smerge* as a [git mergetool](https://git-scm.com/docs/git-mergetool
 
 `git mergetool --tool=smerge <conflicting file>`
 
-
-## Options
+If the merge conflict cannot be automatically resolved, a GUI will open for manually resolving the conflict.
 
 ## GUI Usage
 

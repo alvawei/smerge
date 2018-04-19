@@ -13,6 +13,8 @@ public class ASTreeMerger {
 		ASTree base = Parser.parse(conflict.getBaseFile());
 		ASTree local = Parser.parse(conflict.getLocalFile());
 		ASTree remote = Parser.parse(conflict.getRemoteFile());
+		
+		
 		return null;
 	}
 	

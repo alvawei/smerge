@@ -10,7 +10,6 @@ import com.github.javaparser.ast.Node;
 import com.github.javaparser.utils.Pair;
 
 public class Parser {
-	
 	public static ASTree parse(File file) throws FileNotFoundException {
 		Node root = JavaParser.parse(file);
 		return new ASTree(root);
