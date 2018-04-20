@@ -22,7 +22,7 @@ This is what the GUI will look like after running our tool in the command line.
 
 ![alt text](SmergeGUI.png)
 
-To disable the GUI from automatically launching, users can add the option `-g`. This will tell the tool to try to completely automatically merge the two files. If it runs into any non-trivial errors, however, it will fail silently.
+To disable the GUI from automatically launching, users can add the option `-g` to the command. This will tell the tool to try to completely automatically merge the two files. If it runs into any non-trivial errors, however, it will fail silently.
 
 **GUI Functions:**
 * Options Tab: Opens the Auto-Solve Selection menu
@@ -37,7 +37,7 @@ To disable the GUI from automatically launching, users can add the option `-g`. 
 
 ## Example
 ```
-// Common ancestor:
+// Common ancestor (Base):
 public static ArrayList doSomething(length) {
   ArrayList arr = new ArrayList();
   for (int i = 0; i < length; i++) {
@@ -49,7 +49,7 @@ public static ArrayList doSomething(length) {
 
 Note the white space:
 ```
-// Yours:
+// Yours (Local):
 public static ArrayList doSomething(length) {
   ArrayList arr = new ArrayList();
   for (int i = 0; i < length; i++) {
@@ -62,7 +62,7 @@ public static ArrayList doSomething(length) {
 
 Note the white space on different line:
 ```
-// Theirs
+// Theirs (Remote)
 public static ArrayList doSomething(length) {
   ArrayList arr = new ArrayList();
   
@@ -75,7 +75,7 @@ public static ArrayList doSomething(length) {
 
 Conflict resolution after using Smerge
 ```
-// Final
+// Final (AST Merged)
 public static ArrayList doSomething(length) {
   ArrayList arr = new ArrayList();
   
@@ -86,3 +86,4 @@ public static ArrayList doSomething(length) {
   return arr;
 }
 ```
+Following this, the GUI will display the final resolution on the main window and prompt the user to accept the changes made unless if the `-g` option was declared in the initial command.
