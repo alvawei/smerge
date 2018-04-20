@@ -30,6 +30,8 @@ This is what the GUI will look like after running our tool in the command line.
 
 To disable the GUI from automatically launching, users can add the option `-g` to the command. This will tell the tool to try to completely automatically merge the two files. If it runs into any non-trivial errors, however, it will fail silently.
 
+When ran, the GUI serves as a platform to communicate with the user. The main window will display the input code that is currently selected. If the tool is able to fully automate the merge, then the user will be prompted to confirm any changes made. Otherwise, the tool will have run into a non-trivial conflict. In that case, the user will be prompted to edit the code base and manually resolve the conflict. After all conflicts are resolved and confirmed, the GUI will close and provide the user with the merged file.
+
 **GUI Functions:**
 * **Options Tab:** Opens the Auto-Solve Selection menu
 * **Help Tab:** Opens the User Manual within the tool
