@@ -79,7 +79,7 @@ public static ArrayList doSomething(length) {
 }
 ```
 
-Conflict resolution after using Smerge
+Conflict resolution after using Smerge:
 ```
 // Final (AST Merged)
 public static ArrayList doSomething(length) {
