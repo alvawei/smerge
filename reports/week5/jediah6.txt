@@ -1,0 +1,36 @@
+Jediah Conachan (jediah6)
+4/23/18
+CSE 403
+Individual Status Report #3 (Week 5)
+
+==================
+Last Week's Goals:
+==================
+
+- Begin project implementation with team
+- Create a user manual for using our tool
+- Begin creating or modifying existing scripts to build a testing environment
+
+================
+Weekly Progress:
+================
+
+- Redesigned architecture plan
+- Worked on first version of the user manual (installation)
+- Looked into existing tools (JavaParser, GumTreeDiff) that may help
+- Initialized a simple testing environment
+- Attempted to use Conflerge within our project
+- Messed around and created a simple Python to AST parser
+
+===========
+Next Steps:
+===========
+
+- Get Conflerge working
+- Find more conflict examples
+- Further implementation
+- Add junit tests
+
+
+
+
