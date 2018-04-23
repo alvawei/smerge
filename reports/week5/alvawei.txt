@@ -1,0 +1,17 @@
+Alva Wei
+alvawei
+
+Last week's goals:
+    - Begin implementation.
+    - Lay out class structure based on architecture. 
+
+This week's progress:
+    - Presented project on Wednesday.
+    - We are having some issues with different expectations of our project from
+      the TAs, Professor Ernst, and ourselves. Hopefully this is resolved in
+      tomorrow's meeting.
+
+Next week's goals:
+    - We are struggling knowing how we are expected to proceed. Once this is
+      resolved, move forward with implementation in earnest (since we are now)
+      a little behind.
