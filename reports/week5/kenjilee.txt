@@ -1,0 +1,24 @@
+Kenji Nicholson
+CSE 403 Spring 2018
+Week 5 Individual Status Report
+4/22/18
+
+1.) For this week, my goal is to help prepare the presentation by basically outlining our report
+and deciding which details to add and which details to leave out. On top of that, we have to
+revise our proposal again, so I will help contribute to that as well. Then, we have to start
+the "user manual," but the link on the website is currently broken, so I'm not sure how to contribute
+to that-- I will figure that out. On top of all of this, I am going to take an indepth look at
+Conflerge's implementation to see how they organized their infrastructure so we can get a starting
+point on the project's implementation. 
+
+2.) As for this week's progress, I followed through with the user manual by formalizing the GUI
+usage that a user may go through to use Smerge. I also refined it so that the features included
+in it were less vague. This included listing what each of the buttons/functions do. However, I
+feel like we may scrap this idea since there might be not enough time to complete it and there
+are several existing tools similar to it. Another thing I helped with was addressing the TA
+feedback. 
+
+3.) For next week, I plan on working with my group to revamp our project to address Prof. Ernst's
+feedback. His feedback was very insightful and will require very in depth changes to address.
+Namely, I want to contribute by refining our evaluation plans to be more specific. I also will
+contribute to our implementation, but I am not sure on which parts yet.
