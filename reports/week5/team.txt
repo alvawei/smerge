@@ -1,0 +1,30 @@
+Last week’s goals:
+    - Complete first version of the user manual
+        - GUI usage (Kenji)
+        - Examples (Steven)
+        - Introduction (Alva)
+        - Installation and Usage (Jediah and Bryan)
+    - Add implementation plans to project report (everyone)
+    - Further implementation, begin getting up to par with Conflerge’s
+      implementation (everyone)
+
+This week’s progress:
+    - This week, we completed the user manual by each contributing our own
+      parts.
+    - We also addressed the TA feedback by adding an implementation plans
+      section to our report. We also color coded our diagram for clarity
+      purposes on how each component works together.
+    - We’ve also worked on the github repository by getting basic parts done
+      (deciding on which modules we need, setting up other tools, etc.).
+    - Currently, we are stuck on trying to create an algorithm that handles
+      merges better than Conflerge already does. We feel that Conflerge already
+      exhausts what ASTs can do when it comes to merging, but we may be
+      overlooking some things.
+
+Goals for next week:
+    - Continue on working towards getting results similar to Conflerge’s
+      project without completely using their implementation. (everyone)
+    - Begin adding/innovating a new algorithm that can handle merges better
+      than Conflerge and other competing tools already do through full
+      automation. (everyone)
+    - Address both TA and Prof Ernst’s feedback. (everyone)
