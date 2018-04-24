@@ -28,3 +28,7 @@ Goals for next week:
       than Conflerge and other competing tools already do through full
       automation. (everyone)
     - Address both TA and Prof Ernst’s feedback. (everyone)
+
+TA meeting agenda:
+    - Go over Rashmi's and Ernst's feedback from the presentation.
+    - Present our new plan.
