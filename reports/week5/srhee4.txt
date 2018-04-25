@@ -1,0 +1,20 @@
+Sungmin Rhee
+srhee4@uw.edu
+CSE403 Software Engineering
+Individual Status Report Week#5
+
+1. Previous week's plan
+   - Group meeting; discuss project4
+   - Build user manual and begin implementation
+
+2. This week's progress
+   - Group meeting and discussion
+   - Created user manual and updated project proposal
+   - Review of conflerge code and other possible approach
+   
+3. Next week's plan
+   - Rewrite project proposal 
+     > Risks and Challenges & Preliminary results
+   - Discuss and decide on a new approach
+   - Implement project
+   - Build and test project
