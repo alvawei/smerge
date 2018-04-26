@@ -3,6 +3,7 @@ package smerge;
 import java.io.IOException;
 import java.util.List;
 
+import com.github.gumtreediff.*;
 import com.github.gumtreediff.actions.ActionGenerator;
 import com.github.gumtreediff.actions.model.Action;
 import com.github.gumtreediff.client.Run;
@@ -12,6 +13,14 @@ import com.github.gumtreediff.matchers.Matchers;
 import com.github.gumtreediff.tree.ITree;
 
 public class GumTree {
+	
+	public static void main(String[] args) throws UnsupportedOperationException, IOException {
+		String base = "conflicts/test/Simple_Base.java";
+		String local = "conflicts/test/Simple_Local.java";
+		String remote = "conflicts/test/Simple_Remote.java";
+		
+		gumtree(base, local, remote);
+	}
 	
 	public static void gumtree(String base, String local, String remote) throws UnsupportedOperationException, IOException {
 		Run.initGenerators();
