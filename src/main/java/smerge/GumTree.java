@@ -3,7 +3,6 @@ package smerge;
 import java.io.IOException;
 import java.util.List;
 
-import com.github.gumtreediff.*;
 import com.github.gumtreediff.actions.ActionGenerator;
 import com.github.gumtreediff.actions.model.Action;
 import com.github.gumtreediff.client.Run;
@@ -43,6 +42,14 @@ public class GumTree {
 		
 		List<Action> actions1 = g1.getActions(); // return the actions
 		List<Action> actions2 = g2.getActions(); // return the actions
+		
+		
+		System.out.println(baseTree.toTreeString());
+		System.out.println(localTree.toTreeString());
+		System.out.println(remoteTree.toTreeString());
+		
+		System.out.println(actions1);
+		System.out.println(actions2);
 
 	}
 
