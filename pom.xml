@@ -18,5 +18,20 @@
     	<artifactId>javaparser-core</artifactId>
     	<version>3.1.0</version>
     </dependency>
+    <dependency>
+    	<groupId>com.github.gumtreediff</groupId>
+    	<artifactId>core</artifactId>
+    	<version>2.1.0</version>
+    </dependency>
+    <dependency>
+    	<groupId>com.github.gumtreediff</groupId>
+    	<artifactId>client</artifactId>
+    	<version>2.1.0</version>
+    </dependency>
+    <dependency>
+    	<groupId>com.github.gumtreediff</groupId>
+    	<artifactId>gen.jdt</artifactId>
+    	<version>2.1.0</version>
+    </dependency>
   </dependencies>
 </project>
