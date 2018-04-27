@@ -17,6 +17,13 @@ If the differences occur in the same subtree, then the conflict involves overlap
 [merge]
         tool = smerge
 ```
+Files to provide are described as follows:
+
+* $BASE: The original file modified into two conflicting versions, $LOCAL and $REMOTE
+* $LOCAL: The conflicting file version the user has modified.
+* $REMOTE: The conflicting file version of the branch the user is attempting to merge with.
+* $MERGED: The output destination where the final merge is written.
+
 
 ## Usage
 You may run *smerge* as a [git mergetool](https://git-scm.com/docs/git-mergetool) through the following command:
@@ -52,17 +59,17 @@ public static ArrayList doSomething(length) {
 
 Note the white space on different line:
 ```
-// Theirs (Remote)
-public static ArrayList doSomething(length) {
-  ArrayList arr = new ArrayList();
-  
-  for (int i = 0; i < length; i++) {
-  
-  for (int i = 0; i < length; i++) {
-    arr.add(i);
-  }
-  return arr;
-}
+1 // Theirs (Remote)
+2 public static ArrayList doSomething(length) {
+3   ArrayList arr = new ArrayList();
+4   
+5   for (int i = 0; i < length; i++) {
+6  
+7   for (int i = 0; i < length; i++) {
+8     arr.add(i);
+9   }
+10  return arr;
+11}
 ```
 
 Conflict resolution after using Smerge:
