@@ -1,5 +1,4 @@
-[![Build Status(https://travis-ci.org/alvawei/smerge.svg?branch=master)](https://travis-ci.org/alvawei/smerge)]
-`
+[![Build Status](https://travis-ci.org/alvawei/smerge.svg?branch=master)](https://travis-ci.org/alvawei/smerge)
 # User Manual
 Smerge is a merge tool that resolves merge conflicts with abstract syntax trees (ASTs). By parsing the source code into ASTs, Smerge is able to automatically resolve false conflicts (conflicts where the differences are purely cosmetic; e.g. variable names or whitespace), as well as provide an intuitive tree-based candidate resolution for conflicts with structural differences in the source code.
 
@@ -75,6 +74,8 @@ public static ArrayList doSomething(length) {
   ArrayList arr = new ArrayList();
   
   for (int i = 0; i < length; i++) {
+  
+  for (int i = 0; i < length; i++) {
     arr.add(i);
   }
   return arr;
@@ -93,5 +94,3 @@ public static ArrayList doSomething(length) {
   
   return arr;
 }
-```
-Following this, the GUI will display the final resolution on the main window and prompt the user to accept the changes made.
