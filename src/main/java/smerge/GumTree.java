@@ -5,11 +5,18 @@ import java.util.List;
 
 import com.github.gumtreediff.actions.ActionGenerator;
 import com.github.gumtreediff.actions.model.Action;
+import com.github.gumtreediff.actions.model.Insert;
+import com.github.gumtreediff.actions.model.Delete;
+import com.github.gumtreediff.actions.model.Update;
+import com.github.gumtreediff.actions.model.Move;
+import com.github.gumtreediff.actions.ActionUtil;
+
 import com.github.gumtreediff.client.Run;
 import com.github.gumtreediff.gen.Generators;
 import com.github.gumtreediff.matchers.Matcher;
 import com.github.gumtreediff.matchers.Matchers;
 import com.github.gumtreediff.tree.ITree;
+import com.github.gumtreediff.tree.TreeContext;
 
 public class GumTree {
 	
@@ -50,7 +57,47 @@ public class GumTree {
 		
 		System.out.println(actions1);
 		System.out.println(actions2);
-
+		
+		/*
+		for (Action a : actions1) {
+			if (a instanceof Insert) {
+				Insert ins = (Insert) a;
+				
+			} else if (a instanceof Delete) {
+				Delete del = (Delete) a;
+				
+			} else if (a instanceof Update) {
+				Update upd = (Update) a;
+				
+			} else if (a instanceof Move) {
+				Move mov = (Move) a;
+				
+			} else {
+				throw new RuntimeException("Unsupported action: " + a.getClass());
+			}
+		} */
+		
+		actions1.addAll(actions2);
+		
+		// apply actions to base tree?
+		for (Action a: actions1) {
+            if (a instanceof Insert) {
+                Insert action = ((Insert) a);
+                action.getParent().insertChild(action.getNode(), action.getPosition());
+            } else if (a instanceof Update) {
+                Update action = ((Update) a);
+                action.getNode().setLabel(action.getValue());
+            } else if (a instanceof Move) {
+                Move action = ((Move) a);
+                action.getNode().getParent().getChildren().remove(action.getNode());
+                action.getParent().insertChild(action.getNode(), action.getPosition());
+            } else if (a instanceof Delete) {
+                Delete action = ((Delete) a);
+                action.getNode().getParent().getChildren().remove(action.getNode());
+            } else throw new RuntimeException("No such action: " + a );
+		}
+		
+		System.out.println(baseTree.toTreeString());
 	}
 
 }
