@@ -1,12 +1,8 @@
 [![Build Status](https://travis-ci.org/alvawei/smerge.svg?branch=master)](https://travis-ci.org/alvawei/smerge)
 
 # User Manual
-Smerge is a merge tool that resolves merge conflicts with abstract syntax trees (ASTs). By parsing the source code into ASTs, Smerge is able to automatically resolve false conflicts (conflicts where the differences are purely cosmetic; e.g. variable names or whitespace), as well as provide an intuitive tree-based candidate resolution for conflicts with structural differences in the source code.
+Smerge is a merge tool that resolves merge conflicts with abstract syntax trees (ASTs) (see below for details.) By parsing the source code into ASTs, Smerge is able to automatically resolve false conflicts (conflicts where the differences are purely cosmetic; e.g. variable names or whitespace), as well as provide an intuitive tree-based candidate resolution for conflicts with structural differences in the source code. This in turn allows developers to hopefully spend less time fixing trivial merge conflicts as Smerge will resolve them automatically.
 
-## Abstract Syntax Tree Merging
-Once Smerge generates the ASTs, it checks where the conflict is located in the tree. If the trees are identical, then the differences are cosmetic and the conflict is a false conflict. False conflicts are resolved by choosing the changes from the newer branch. If the differences are in separate subtrees, the conflict can be resolved by performing a tree merge on the ASTs.
-
-If the differences occur in the same subtree, then the conflict involves overlapping structural differences. In this case, Smerge uses several heuristics to produce a candidate merge, but the final resolution is left up to the developer.
 
 ## Installation
 * Clone the *smerge* repository to ~/.
@@ -70,3 +66,9 @@ Conflict resolution after using Smerge:
 6  }
 ```
 Git's standard merge tool will flag a conflict like this as unmergable. After running Smerge, the tool catches this and captures the intent of both programmers. This is seen in line 4 of the conflict resolution as the local `this.x = 3` statement is captured as well as the remote `if` condition.
+
+
+## Abstract Syntax Tree Merging
+Once Smerge generates the ASTs, it checks where the conflict is located in the tree. If the trees are identical, then the differences are cosmetic and the conflict is a false conflict. False conflicts are resolved by choosing the changes from the newer branch. If the differences are in separate subtrees, the conflict can be resolved by performing a tree merge on the ASTs.
+
+If the differences occur in the same subtree, then the conflict involves overlapping structural differences. In this case, Smerge uses several heuristics to produce a candidate merge, but the final resolution is left up to the developer.
