@@ -2,10 +2,6 @@ package smerge;
 
 import java.io.FileNotFoundException;
 
-import com.github.javaparser.ast.Node;
-
-import conflerge.tree.TreeMerger;
-
 /**
  * Runs Smerge
  */
@@ -25,17 +21,5 @@ public class Merger {
         
         
 
-        
-       String resolution = conflerge(base, local, remote);
-       System.out.println(resolution);
-    }
-    
-    public static String conflerge(String base, String local, String remote) throws FileNotFoundException {        
-        TreeMerger merger = new TreeMerger(base, local, remote);
-        Node mergedTree = merger.merge();         
-        if (mergedTree == null) {
-        	return null;
-        }
-        return mergedTree.toString();
     }
 }
