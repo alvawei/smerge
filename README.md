@@ -33,54 +33,40 @@ You may run *smerge* as a [git mergetool](https://git-scm.com/docs/git-mergetool
 Note that if no file is given, the mergetool will be ran on every conflicting file.
 
 ## Example
+
+Here is a simple example of how Smerge can be applied to handle a trivial merge conflict
 ```
-// Common ancestor (Base):
-public static ArrayList doSomething(length) {
-  ArrayList arr = new ArrayList();
-  for (int i = 0; i < length; i++) {
-    arr.add(i);
-  }
-  return arr;
-}
+1  // Common ancestor (Base):
+2  public static void doSomething(boolean modify) {
+3    this.x = 2;
+4  }
 ```
 
 Note the white space:
 ```
-// Yours (Local):
-public static ArrayList doSomething(length) {
-  ArrayList arr = new ArrayList();
-  for (int i = 0; i < length; i++) {
-    arr.add(i);
-  }
-
-  return arr;
-}
+1  // Yours (Local):
+2  public static void doSomething(boolean modify) {
+3    this.x = 3;
+4  }
 ```
 
 Note the white space on different line:
 ```
-1 // Theirs (Remote)
-2 public static ArrayList doSomething(length) {
-3   ArrayList arr = new ArrayList();
-4   
-5   for (int i = 0; i < length; i++) {
-6  
-7   for (int i = 0; i < length; i++) {
-8     arr.add(i);
-9   }
-10  return arr;
-11}
+1  // Theirs (Remote)
+2  public static void doSomething(boolean modify) {
+3    if (modify) {
+4        this.x = 2;
+5    }
+6  }
 ```
 
 Conflict resolution after using Smerge:
 ```
-// Final (AST Merged)
-public static ArrayList doSomething(length) {
-  ArrayList arr = new ArrayList();
-  
-  for (int i = 0; i < length; i++) {
-    arr.add(i);
-  }
-  
-  return arr;
-}
+1  // Final (AST Merged)
+2  public static ArrayList doSomething(length) {
+3    if (modify) {
+4          this.x = 3;
+5    }
+6  }
+```
+Git's standard merge tool will flag a conflict like this as unmergable. After running Smerge, the tool catches this and captures the intent of both programmers. This is seen in line 4 of the conflict resolution as the local `this.x = 3` statement is captured as well as the remote `if` condition.
