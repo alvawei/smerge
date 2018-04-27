@@ -2,6 +2,8 @@ package smerge;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import com.github.gumtreediff.actions.ActionGenerator;
 import com.github.gumtreediff.actions.model.Action;
@@ -55,31 +57,16 @@ public class GumTree {
 		System.out.println(localTree.toTreeString());
 		System.out.println(remoteTree.toTreeString());
 		
+		System.out.println(baseTree.toTreeString());
+		
 		System.out.println(actions1);
 		System.out.println(actions2);
 		
-		/*
-		for (Action a : actions1) {
-			if (a instanceof Insert) {
-				Insert ins = (Insert) a;
-				
-			} else if (a instanceof Delete) {
-				Delete del = (Delete) a;
-				
-			} else if (a instanceof Update) {
-				Update upd = (Update) a;
-				
-			} else if (a instanceof Move) {
-				Move mov = (Move) a;
-				
-			} else {
-				throw new RuntimeException("Unsupported action: " + a.getClass());
-			}
-		} */
 		
 		actions1.addAll(actions2);
 		
-		// apply actions to base tree?
+		/*
+		// applies actions
 		for (Action a: actions1) {
             if (a instanceof Insert) {
                 Insert action = ((Insert) a);
@@ -96,6 +83,42 @@ public class GumTree {
                 action.getNode().getParent().getChildren().remove(action.getNode());
             } else throw new RuntimeException("No such action: " + a );
 		}
+		*/
+		
+		// traverse base tree, applying actions
+		List<ITree> nodes = new ArrayList<>();
+		for (ITree node : baseTree.breadthFirst()) nodes.add(node);
+		System.out.println(nodes);
+
+		
+		
+		for (ITree node : nodes) {
+			for (Action a : actions1) {
+				if (a.getNode().getId() == node.getId()) {
+					if (a instanceof Insert) {
+		                Insert action = ((Insert) a);
+		                if (action.getPosition() < node.getChildren().size())
+		                	node.insertChild(action.getNode(), action.getPosition());
+		                
+		            } else if (a instanceof Update) {
+		                Update action = ((Update) a);
+		                node.setLabel(action.getValue());
+		                
+		            } else if (a instanceof Move) {
+		                Move action = ((Move) a);
+		                node.getParent().getChildren().remove(action.getNode());
+		                node.getParent().insertChild(action.getNode(), action.getPosition());
+		                
+		            } else if (a instanceof Delete) {
+		                Delete action = ((Delete) a);
+		                node.getParent().getChildren().remove(action.getNode());
+		                
+		            } else throw new RuntimeException("No such action: " + a );
+				}
+			}
+		}
+		
+		
 		
 		System.out.println(baseTree.toTreeString());
 	}
