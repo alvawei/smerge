@@ -42,7 +42,7 @@ Here is a simple example of how Smerge can be applied to handle a trivial merge 
 4  }
 ```
 
-Note the white space:
+Note the change in x assignment on line 3 below.
 ```
 1  // Yours (Local):
 2  public static void doSomething(boolean modify) {
@@ -50,7 +50,7 @@ Note the white space:
 4  }
 ```
 
-Note the white space on different line:
+Note the other user's addition of an if statement spanning from lines 3-5.
 ```
 1  // Theirs (Remote)
 2  public static void doSomething(boolean modify) {
