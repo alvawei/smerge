@@ -85,12 +85,12 @@ public class GumTree {
 		}
 		*/
 		
-		// traverse base tree, applying actions
+		// traverse base tree, applying actions (this isn't even close to correct)
 		List<ITree> nodes = new ArrayList<>();
 		for (ITree node : baseTree.breadthFirst()) nodes.add(node);
 		System.out.println(nodes);
 
-		
+		// might have to match nodes beyond id
 		
 		for (ITree node : nodes) {
 			for (Action a : actions1) {
