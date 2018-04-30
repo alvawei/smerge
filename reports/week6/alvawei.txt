@@ -1,0 +1,15 @@
+Alva Wei
+alvawei
+
+Last week's goals:
+    - We are struggling knowing how we are expected to proceed. Once this is
+      resolved, move forward with implementation in earnest (since we are now)
+      a little behind.
+
+This week's progress:
+    - Met with Ernst on Tuesday, which clarified a lot of things.
+    - Rewrote project proposal and user manual.
+
+Next week's goals:
+    - Really get into implementation. I wasn't able to spend a lot of time on
+      the project last week, will try to make up for it this week.
