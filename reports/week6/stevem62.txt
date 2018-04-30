@@ -1,0 +1,26 @@
+Steven Miller
+stevem62@uw.edu
+CSE 403 Week 6 Individual Report
+4/30/18
+
+1) This week, I help with the status report and discuss our requirements
+with our team so we can complete project 5. One of our team members was
+messing around with a tool called Gumtree, so I will look into that and
+explore potential work we could do with that. He also tried putting
+conflerge into our project to test it, and it didn't work, so if our team
+wants to try to figure that out, I can help tackle the issue.
+
+2) This last week we decided to go with some pretty big structural changes
+to our project and change its direction. We're not focusing on the GUI as
+a primary goal anymore, but rather just building a tool from scratch that
+handles automatic merge conflicts better than Conflerge. Since so much
+of the report revolved around the GUI, and taking user input for merges
+that failed to be resolved automatically, we needed to basically rewrite
+the report. I helped out with that by rewriting the motivation section,
+and contributing to the implementation plan.
+
+3) This week I will:
+- Contribute to team status report
+- Contribute to Project 6
+- Discuss implementation plan with teammates - we have a new game plan,
+  we've decided the tools, so what is next?
