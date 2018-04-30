@@ -1,0 +1,23 @@
+Kenji Nicholson
+kenjilee
+CSE 403 Week 4 Individual Report
+4/29/18
+
+1.) For next week, I plan on working with my group to revamp our project to address Prof. Ernst's
+feedback. His feedback was very insightful and will require very in depth changes to address.
+Namely, I want to contribute by refining our evaluation plans to be more specific. I also will
+contribute to our implementation, but I am not sure on which parts yet.
+
+2.) So far, we've managed to hit most of the points we've wanted to on our revision. I helped
+addressed the feedback given to us regarding the user manual. I also edited our evaluation plan
+to match more closely to Conflerge's so we can compare our results with more ease. In doing so,
+it helped our experiment count false and true positives and negatives. We've also made a big
+step in deciding our implementation, as we will be using gumtree to take care of parsing
+and diffing for us.
+
+3.) For next week, I plan on revising the report to address TA feedback. I also plan on looking
+at potential ways that we can gather repositories for our evaluation phase. This may include
+writing scripts to get conflicting merges from the repos we listed. Additionally, I will research
+how to classify a merge as a false positive or a true positive, since that is a grey area in our
+report. For implementation, I will look at the output of gumtree and think of ways we can use it
+to merge into a final tree that we give to the customer.
