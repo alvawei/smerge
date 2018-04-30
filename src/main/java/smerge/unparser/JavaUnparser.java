@@ -56,7 +56,7 @@ public class JavaUnparser {
 				result += "}\n";
 				break;
 						
-			case 31: // method
+			case 31: // method declaration
 				boolean firstParameter = true;
 				result += indent(indentation);
 				for (ITree node : children) {
@@ -73,20 +73,34 @@ public class JavaUnparser {
 							result += ", ";
 						}
 						result = unparse(node, result, indentation);
-
-					} else if (node.getType() == 8) { // close method header
-						result += ") {\n";
 					}
-					unparse(node, result, indentation + 1);
+				}
+				result += ") ";
+				result = unparse(children.get(children.size() - 1), result, indentation);
+				break;
+				
+			case 8: // method body
+				result += "{\n";
+				for (ITree node : children) {
+					result = unparse(node, result, indentation + 1);
 				}
 				result += indent(indentation) + "}\n";
-				break;
+				
 				
 			case 44: // method parameters?
-				result += children.get(0) + " " + children.get(1);
+				result += children.get(0).getLabel() + " " + children.get(1).getLabel();
 				break;
 				
-			case 59: // variable declaration/assignment?
+			case 60: // variable declaration?
+				result += indent(indentation);
+				for (ITree node : children) {
+					result = unparse(node, result, indentation);
+				}
+				result += ";\n";
+				break;
+			
+			case 59: // variable assignment?
+				result += children.get(0).getLabel() + " = " + children.get(1).getLabel();
 				break;
 				
 			default: 
