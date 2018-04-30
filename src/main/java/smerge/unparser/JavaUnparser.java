@@ -34,80 +34,79 @@ public class JavaUnparser {
 		// 55 = class
 		// 31 = method?
 		
-		String result = "";
+		StringBuilder sb = new StringBuilder();
 		
 		for (ITree node : root.getChildren()) {
-			result = unparse(node, result, 0);
+			unparse(node, sb, 0);
 		}
 		
-		return result;
+		return sb.toString();
 	}
 	
-	public static String unparse(ITree next, String result, int indentation) {
+	public static void unparse(ITree next, StringBuilder sb, int indentation) {
 		List<ITree> children = next.getChildren();
 		switch (next.getType()) {
 			case 55: // class
 				String access = children.remove(0).getLabel();
 				String name = children.remove(0).getLabel();
-				result += access + " class " + name + " {\n";
+				sb.append(access + " class " + name + " {\n");
 				for (ITree node : children) {
-					result = unparse(node, result, indentation + 1);
+					unparse(node, sb, indentation + 1);
 				}
-				result += "}\n";
+				sb.append("}\n");
 				break;
 						
 			case 31: // method declaration
 				boolean firstParameter = true;
-				result += indent(indentation);
+				sb.append(indent(indentation));
 				for (ITree node : children) {
 					
 					if (node.getType() == 83) { // public/static options
-						result += node.getLabel() + " ";
+						sb.append(node.getLabel() + " ");
 					} else if (node.getType() == 42) { // method name
-						result += node.getLabel() + "(";
+						sb.append(node.getLabel() + "(");
 					} else if (node.getType() == 44) { // parameter
 						// check if comma is needed
 						if (firstParameter) {
 							firstParameter = false;
 						} else {
-							result += ", ";
+							sb.append(", ");
 						}
-						result = unparse(node, result, indentation);
+						unparse(node, sb, indentation);
 					}
 				}
-				result += ") ";
-				result = unparse(children.get(children.size() - 1), result, indentation);
+				sb.append(") ");
+				unparse(children.get(children.size() - 1), sb, indentation);
 				break;
 				
 			case 8: // method body
-				result += "{\n";
+				sb.append("{\n");
 				for (ITree node : children) {
-					result = unparse(node, result, indentation + 1);
+					unparse(node, sb, indentation + 1);
 				}
-				result += indent(indentation) + "}\n";
+				sb.append(indent(indentation) + "}\n");
 				
 				
 			case 44: // method parameters?
-				result += children.get(0).getLabel() + " " + children.get(1).getLabel();
+				sb.append(children.get(0).getLabel() + " " + children.get(1).getLabel());
 				break;
 				
 			case 60: // variable declaration?
-				result += indent(indentation);
+				sb.append(indent(indentation));
 				for (ITree node : children) {
-					result = unparse(node, result, indentation);
+					unparse(node, sb, indentation);
 				}
-				result += ";\n";
+				sb.append(";\n");
 				break;
 			
 			case 59: // variable assignment?
-				result += children.get(0).getLabel() + " = " + children.get(1).getLabel();
+				sb.append(children.get(0).getLabel() + " = " + children.get(1).getLabel());
 				break;
 				
 			default: 
-				result += next.getLabel() + " ";
+				sb.append(next.getLabel() + " ");
 				break;
 		}
-		return result;
 	}
 	
 	private static String indent(int indentation) {
