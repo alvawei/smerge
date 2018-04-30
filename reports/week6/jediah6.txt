@@ -1,0 +1,35 @@
+Jediah Conachan (jediah6)
+4/30/18
+CSE 403
+Individual Status Report #4 (Week 6)
+
+==================
+Last Week's Goals:
+==================
+
+- Get Conflerge working
+- Find more conflict examples
+- Further implementation
+- Add junit tests
+
+================
+Weekly Progress:
+================
+
+- Couldn't get Conflerge to work on simple merge conflicts
+- Rewrote most of the architecture and implementation plan in revised report
+- Fixed installation instructions in the user manual
+- Migrated the project to gradle and got Travis CI working with it
+- Started working with GumTreeDiff
+  - Succesfully obtained two tree diffs (a list of actions) between base->local and base->remote
+  - Attempted to merge these diffs onto the base tree (seems to be a difficult task, but doable)
+  - Began creating an unparser that converts GumTree's ASTs back into java source code (working on very simple files so far)
+
+===========
+Next Steps:
+===========
+
+- Continue working with GumTreeDiff
+
+
+
