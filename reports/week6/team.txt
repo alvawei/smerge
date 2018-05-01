@@ -1,0 +1,39 @@
+Last Week’s Goals:
+    - Continue on working towards getting results similar to Conflerge’s
+    project without completely using their implementation. (everyone)
+    - Begin adding/innovating a new algorithm that can handle merges better
+    than Conflerge and other competing tools already do through full
+    automation. (everyone)
+    - Address both TA and Prof Ernst’s feedback. (everyone)
+
+This Week’s Progress:
+    - We’ve decided to not use any of Conflerge’s implementation since it is
+    very inflexible in that its dependency on the JavaParser makes it hard to
+    extend to different environments.
+    - To supplement this, we’ve decided on writing our own parser and unparser
+    - We also addressed both Prof Ernst and the TA feedback by basically
+    rewriting our report. This included a whole new architecture plan, a new 
+    evaluation plan (similar to Conflerge’s for comparison purposes), and the
+    other sections are more specific.
+    - We also made changes to the user manual to explain how to see build
+    history and address feedback on it (including a more advanced example and
+    removing the GUI portion.)
+    - Set up Travis CI and produced a failing and passing build
+
+Next week’s goals:
+    - As always, address feedback given by TA (everyone)
+    - Finish basic implementation (parsing, diffing, merging, and unparsing two
+    competing commits) so we can begin getting initial results.
+    - Write a simple Python parser (Jediah)
+    - Write a merger (Steven/Alva)
+    - Begin writing scripts to gather results and instructions on how to
+    reproduce our results. These will follow a similar procedure to Conflerge
+    as we found their assessment technique useful.
+    - Evaluation of parser and merger (Kenji/Bryan)
+
+TA Meeting Agenda:
+    - Talk about our choice of making our own parser
+    - Ask for specifics on gathering results. Namely, how many data points do
+    we need? Etc.
+    - Go over feedback given by Ernst and TA to further discuss things we can
+    improve upon.
