@@ -34,10 +34,10 @@ public class PythonParser {
 		
 		// holds onto current parents
 		// maps indentation -> last node/line read with this indentation
-		Map<Integer, PythonNode> parents = new HashMap<>();
+		Map<Integer, PythonTree> parents = new HashMap<>();
 		
 		// initialize root of tree
-		PythonNode root = new PythonNode();
+		PythonTree root = new PythonTree();
 		parents.put(-1, root);
 	    
 		// build AST
@@ -46,21 +46,21 @@ public class PythonParser {
 		while (line != null) {
 			if (!line.isEmpty()) {
 				int indentation = countIndents(line);
-				PythonNode node = new PythonNode(lineNum, indentation, line.trim());
+				PythonTree node = new PythonTree(lineNum, indentation, line.trim());
 
 				// set as last seen node with this indentation
 				parents.put(indentation, node);
 				
 				// add node into tree
-				PythonNode parent = parents.get(indentation - 1);
-				parent.getChildren().add(node);
+				PythonTree parent = parents.get(indentation - 1);
+				parent.children().add(node);
 				node.setParent(parent);
 			}
 			
 			line = br.readLine();
 			lineNum++;
 		}
-		return new PythonTree(root);
+		return root;
 	}
 	
 	// counts indentation of the given line

@@ -2,20 +2,19 @@ package smerge.ast;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class AST {
 	
-	private ASTNode root;
 	private int id;
 	
-	public AST() {
-		this(null);
-	}
+	protected AST parent;
+	protected List<AST> children;
 	
-	public AST(ASTNode root) {
-		this.root = root;
+	public AST() {
+		this.children = new ArrayList<>();
 	}
 	
 	public int getID() {
@@ -26,23 +25,24 @@ public class AST {
 		this.id = id;
 	}
 	
-	// create an encoding of the tree
-	public Map<Integer, ArrayList<Integer>> encode() {
-		Map<Integer, ArrayList<Integer>> encoding = new HashMap<>();
-		encode(root, encoding);
-		return encoding;
+	public List<AST> children() {
+		return children;
 	}
 	
-	// recursively encode the tree
-	private void encode(ASTNode current, Map<Integer, ArrayList<Integer>> encoding) {
-		if (!current.getChildren().isEmpty()) {
+	public void setParent(AST parent) {
+		this.parent = parent;
+	}
+	
+	/* ignore this
+	private void encode(Map<Integer, ArrayList<Integer>> encoding) {
+		if (!children.isEmpty()) {
 			ArrayList<Integer> childrenIDList = new ArrayList<>();
-			for (ASTNode child : current.getChildren()) {
+			for (ASTNode child : children) {
 				childrenIDList.add(child.getID());
 				encode(child, encoding);
 			}
 			encoding.put(current.getID(), childrenIDList);
 		}
-	}
+	} */
 	
 }

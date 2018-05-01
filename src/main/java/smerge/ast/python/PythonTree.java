@@ -1,31 +1,49 @@
 package smerge.ast.python;
 
+import java.util.ArrayList;
+
 import smerge.ast.AST;
-import smerge.ast.ASTNode;
 
 
 // A PythonTree just holds onto the root PythonNode
 // Primarily acts as an "unparser" through the toString() method
 public class PythonTree extends AST {
 	
-	private PythonNode root;
+	public static final String INDENT = "    ";
 	
-	public PythonTree(PythonNode root) {
-		this.root = root;
-	}
-	
-	public String toString() {
-		return toString(root);
-	}
-	
-	public String toString(PythonNode node) {
-		String res = "";
-		for (ASTNode n : node.getChildren()) {
-			res += n.toString();
-			res += toString((PythonNode) n);
-		}
+	private int lineNum;
+	private int indentation;
+	private String text;
 		
-		return res;
+	public PythonTree() {
+		this(-1, -1, "@root");
+	}
+	
+	public PythonTree (int lineNum, int indentation, String text) {
+		super();
+		this.lineNum = lineNum;
+		this.indentation = indentation;
+		this.text = text;
+	}
+	
+	// unparses this (sub)tree back to source code
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		if (indentation != -1) {
+			indent(indentation, sb);
+			sb.append(text + "\n");
+		}
+		for (AST child : children) {
+			sb.append(child.toString());
+		}
+		return sb.toString();
+	}
+	
+	// appends indentation to the given string builder
+	private void indent(int indentation, StringBuilder sb) {
+		for (int i = 0; i < indentation; i++) {
+			sb.append(INDENT);
+		}
 	}
 
 }
