@@ -20,7 +20,7 @@ public class ASTDiffer {
 		Map<Integer, ArrayList<Integer>> oldEncoding = oldTree.encode();
 		Map<Integer, ArrayList<Integer>> newEncoding = newTree.encode();
 		
-		Set<Change> changes = new HashSet<>();
+		Set<Action> changes = new HashSet<>();
 		
 		// find deletions
 		for (Integer id : oldEncoding.keySet()) {

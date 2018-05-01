@@ -1,4 +1,4 @@
-package smerge;
+package smerge.gumtree;
 
 import java.io.IOException;
 import java.util.List;

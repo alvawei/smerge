@@ -1,4 +1,4 @@
-package smerge.unparser;
+package smerge.gumtree;
 
 import java.io.IOException;
 

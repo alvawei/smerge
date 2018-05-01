@@ -1,7 +1,9 @@
-package smerge.unparser;
+package smerge.gumtree;
 
 import java.io.IOException;
 import java.util.List;
+
+import org.eclipse.jdt.core.dom.CompilationUnit;
 
 import com.github.gumtreediff.client.Run;
 import com.github.gumtreediff.gen.Generators;
@@ -30,7 +32,7 @@ public class JavaUnparser {
 	}
 	
 	public static String unparse(ITree root) {
-		// TYPES
+		// TYPES  
 		// 55 = class
 		// 31 = method?
 		
