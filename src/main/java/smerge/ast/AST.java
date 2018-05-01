@@ -8,6 +8,7 @@ import java.util.Set;
 public class AST {
 	
 	private ASTNode root;
+	private int id;
 	
 	public AST() {
 		this(null);
@@ -15,6 +16,14 @@ public class AST {
 	
 	public AST(ASTNode root) {
 		this.root = root;
+	}
+	
+	public int getID() {
+		return id;
+	}
+	
+	public void setID(int id) {
+		this.id = id;
 	}
 	
 	// create an encoding of the tree
