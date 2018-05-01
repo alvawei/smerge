@@ -36,29 +36,40 @@ public class PythonParser {
 		// maps indentation -> last node/line read with this indentation
 		Map<Integer, PythonTree> parents = new HashMap<>();
 		
+		// keeps track of current whitespace
+		String whitespace = "";
+		
 		// initialize root of tree
 		PythonTree root = new PythonTree();
 		parents.put(-1, root);
 	    
 		// build AST
-	    int lineNum = 0;
 		String line = br.readLine();
 		while (line != null) {
-			if (!line.isEmpty()) {
+			if (line.isEmpty()) {
+				// keep track of whitespace
+				whitespace += "\n";
+			} else {
 				int indentation = countIndents(line);
-				PythonTree node = new PythonTree(lineNum, indentation, line.trim());
+				PythonTree node = new PythonTree(indentation, line.trim());
 
 				// set as last seen node with this indentation
 				parents.put(indentation, node);
 				
-				// add node into tree
+				// find parent of this node
 				PythonTree parent = parents.get(indentation - 1);
+				if (!whitespace.isEmpty()) {
+					// preappend whitespace node
+					PythonTree whitespaceNode = new PythonTree(0, whitespace);
+					parent.children().add(whitespaceNode);
+					whitespaceNode.setParent(parent);	
+					whitespace = "";
+				}
 				parent.children().add(node);
-				node.setParent(parent);
+				node.setParent(parent);	
 			}
 			
 			line = br.readLine();
-			lineNum++;
 		}
 		return root;
 	}

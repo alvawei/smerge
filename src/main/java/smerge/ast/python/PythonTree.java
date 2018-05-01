@@ -1,7 +1,5 @@
 package smerge.ast.python;
 
-import java.util.ArrayList;
-
 import smerge.ast.AST;
 
 
@@ -11,17 +9,15 @@ public class PythonTree extends AST {
 	
 	public static final String INDENT = "    ";
 	
-	private int lineNum;
 	private int indentation;
 	private String text;
 		
 	public PythonTree() {
-		this(-1, -1, "@root");
+		this(-1, "@root");
 	}
 	
-	public PythonTree (int lineNum, int indentation, String text) {
+	public PythonTree (int indentation, String text) {
 		super();
-		this.lineNum = lineNum;
 		this.indentation = indentation;
 		this.text = text;
 	}

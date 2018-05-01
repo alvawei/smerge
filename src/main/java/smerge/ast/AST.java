@@ -1,10 +1,7 @@
 package smerge.ast;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class AST {
 	
@@ -17,10 +14,12 @@ public class AST {
 		this.children = new ArrayList<>();
 	}
 	
+	// used for matching
 	public int getID() {
 		return id;
 	}
 	
+	// used for matching
 	public void setID(int id) {
 		this.id = id;
 	}
