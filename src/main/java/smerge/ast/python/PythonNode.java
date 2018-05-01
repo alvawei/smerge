@@ -33,11 +33,7 @@ public class PythonNode extends ASTNode {
 	}
 	
 	public void setParent(PythonNode node) {
-		if (parent != null) 
-			parent.children.remove(this);
-		
-		parent = node;
-		parent.children.add(this);
+		this.parent = node;
 		
 	}
 	
@@ -46,6 +42,7 @@ public class PythonNode extends ASTNode {
 	}
 	
 	public String toString() {
+		if (indentation == -1) return "root";
 		String line = "";
 		for (int i = 0; i < indentation; i++) 
 			line += INDENT;

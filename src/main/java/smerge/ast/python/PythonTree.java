@@ -3,6 +3,9 @@ package smerge.ast.python;
 import smerge.ast.AST;
 import smerge.ast.ASTNode;
 
+
+// A PythonTree just holds onto the root PythonNode
+// Primarily acts as an "unparser" through the toString() method
 public class PythonTree extends AST {
 	
 	private PythonNode root;
