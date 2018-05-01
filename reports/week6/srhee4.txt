@@ -1,0 +1,19 @@
+Sungmin Rhee
+srhee4@uw.edu
+CSE403 Software Engineering
+Individual Status Report Week#6
+
+1. Previous week's plan
+   - Rewrite project proposal
+     > Risks and Challenges & Preliminary results
+   - Discuss and decide on a new approach
+   - Implement project
+   - Build and test project
+
+2. This week's progress
+   - Meeting with Professor Ernst
+   - Rewriting project proposal
+   - Experimenting with GumTreeDiff
+
+3. Next week's goal
+   - Further implementation
