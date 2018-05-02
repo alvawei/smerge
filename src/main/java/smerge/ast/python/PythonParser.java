@@ -52,7 +52,7 @@ public class PythonParser {
 		// build AST
 		String line = br.readLine();
 		while (line != null) {
-			if (line.startsWith("import")) {
+			if (line.startsWith("import") || line.startsWith("from")) {
 				tree.imports().add(line.trim());
 			} else if (line.isEmpty()) {
 				whitespace += "\n";

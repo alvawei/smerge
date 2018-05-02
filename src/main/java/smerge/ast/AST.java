@@ -6,11 +6,17 @@ import java.util.ArrayList;
 public class AST {
 	
 	private ASTNode root;
+	
+	// stored in a list just for purpose of retaining order
 	protected List<String> imports;
 	
 	public AST(ASTNode root) {
 		this.root = root;
 		this.imports = new ArrayList<>();
+	}
+	
+	public ASTNode getRoot() {
+		return root;
 	}
 	
 	public List<String> imports() {
