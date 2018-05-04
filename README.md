@@ -43,38 +43,39 @@ Note that if no file is given, the mergetool will be ran on every conflicting fi
 Here is a simple example of how Smerge can be applied to handle a trivial merge conflict
 ```
 1  # Common ancestor (Base):
-   x = 0
-2  def doSomething(modify)
-3    self.x = 2;
-4  
+2  x = 0
+3  def doSomething(modify)
+4    self.x = 2;
+5  
 ```
 
-Note the change in x assignment on line 3 below.
+Note the change in x assignment on line 4 below.
 ```
 1  # Yours (Local):
-   x = 0
-2  def doSomething(modify)
-3    self.x = 3
-4  
+2  x = 0
+3  def doSomething(modify)
+4    self.x = 3
+5  
 ```
 
-Note the other user's addition of an if statement spanning from lines 3-5.
+Note the other user's addition of an if statement spanning from lines 4-5.
 ```
 1  # Theirs (Remote)
-   x = 0
-2  def doSomething(modify)
-3    if modify
-4        self.x = 2;
-5    
+2  x = 0
+3  def doSomething(modify)
+4    if modify
+5        self.x = 2;
+6    
 ```
 
 Conflict resolution after using Smerge:
 ```
 1  # Final (AST Merged)
-2  def doSomething(modify)
-3    if modify
-4          this.x = 3;
-5    
+2  x = 0
+3  def doSomething(modify)
+4    if modify
+5        self.x = 3;
+6    
 ```
 Git's standard merge tool will flag a conflict like this as unmergable. After running Smerge, the tool catches this and captures the intent of both programmers. This is seen in line 4 of the conflict resolution as the local `this.x = 3` statement is captured as well as the remote `if` condition.
 
