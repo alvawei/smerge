@@ -36,44 +36,45 @@ You may run *smerge* as a [git mergetool](https://git-scm.com/docs/git-mergetool
 
 `git mergetool --tool=smerge <conflicting file>`
 
-Note that if no file is given, the mergetool will be ran on every conflicting file.
+Note that if no file is given, the mergetool will be ran on every conflicting file. Currently, smerge can be applied to conflicting python files. We plan to add more languages in the future.
 
 ## Example
 
 Here is a simple example of how Smerge can be applied to handle a trivial merge conflict
 ```
-1  // Common ancestor (Base):
-2  public static void doSomething(boolean modify) {
-3    this.x = 2;
-4  }
+1  # Common ancestor (Base):
+   x = 0
+2  def doSomething(modify)
+3    self.x = 2;
+4  
 ```
 
 Note the change in x assignment on line 3 below.
 ```
-1  // Yours (Local):
-2  public static void doSomething(boolean modify) {
-3    this.x = 3;
-4  }
+1  # Yours (Local):
+   x = 0
+2  def doSomething(modify)
+3    self.x = 3
+4  
 ```
 
 Note the other user's addition of an if statement spanning from lines 3-5.
 ```
-1  // Theirs (Remote)
-2  public static void doSomething(boolean modify) {
-3    if (modify) {
-4        this.x = 2;
-5    }
-6  }
+1  # Theirs (Remote)
+   x = 0
+2  def doSomething(modify)
+3    if modify
+4        self.x = 2;
+5    
 ```
 
 Conflict resolution after using Smerge:
 ```
-1  // Final (AST Merged)
-2  public static ArrayList doSomething(length) {
-3    if (modify) {
+1  # Final (AST Merged)
+2  def doSomething(modify)
+3    if modify
 4          this.x = 3;
-5    }
-6  }
+5    
 ```
 Git's standard merge tool will flag a conflict like this as unmergable. After running Smerge, the tool catches this and captures the intent of both programmers. This is seen in line 4 of the conflict resolution as the local `this.x = 3` statement is captured as well as the remote `if` condition.
 
