@@ -1,0 +1,23 @@
+Kenji Nicholson
+kenjilee
+CSE 403 Week 7 Individual Report
+5/6/18
+
+1.) For next week, I plan on revising the report to address TA feedback. I also plan on looking
+at potential ways that we can gather repositories for our evaluation phase. This may include
+writing scripts to get conflicting merges from the repos we listed. Additionally, I will research
+how to classify a merge as a false positive or a true positive, since that is a grey area in our
+report. For implementation, I will look at the output of gumtree and think of ways we can use it
+to merge into a final tree that we give to the customer.
+
+2.) So far, I have helped with addressing the feedback, but it was not up to the course standards
+even though it felt like it was. Specifically, I added a section discussing explicitly what the
+true and false positive and negatives are in our report. I also have been looking at Conflerge's
+scripts for gathering repositories. We plan to use a very similar approach. I've also discarded
+the idea of using Gumtree. Right now, I am just worried about making the deadline on Thursday.
+
+3.) For next week, I plan on revising the report by adding several subsections that make our implementation
+clearer. This includes having a running example to show how our parser will parse a given code file,
+how the diff algorithm produces a diff, and how the merging algorithm will merge two diffs. In
+addition to this, I will continue working on writing scripts for repository gathering/analyzing. I will
+also be sure to write instructions on how to reproduce our results.
