@@ -1,0 +1,35 @@
+Jediah Conachan (jediah6)
+5/7/18
+CSE 403
+Individual Status Report #5 (Week 7)
+
+==================
+Last Week's Goals:
+==================
+
+- Continue working with GumTreeDiff
+
+================
+Weekly Progress:
+================
+
+- Determined that it will be too difficult to work around GumTreeDiff
+- Finished "foundational" implementation of our python parser and generic AST
+  - added basic junit test for ensuring the AST retains source code
+- Rewrote parts of the architecture and implementation section in the report
+- Started implementing actions (edit scripts) between trees for tree diffing
+
+
+===========
+Next Steps:
+===========
+
+ - Finish implementing actions (need to be able to apply them to the base tree)
+   - possibly try merging two sets of actions as well
+ - Improve python parser functionality (parse python method parameters as their own nodes)
+ - Help other teammates with tree diffing algorithm as needed
+   - can't test actions without this
+   - will probably have to make changes to generic AST
+ - Begin working on second parser (may attempt java, time permitting)
+
+
