@@ -2,6 +2,7 @@ package smerge.ast;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class AST {
 	
@@ -30,5 +31,9 @@ public class AST {
 		}
 		sb.append(root.toString());
 		return sb.toString();
+	}
+	
+	public Iterator<ASTNode> preOrder() {
+		return root.preOrder();
 	}
 }

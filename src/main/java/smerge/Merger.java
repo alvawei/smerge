@@ -2,17 +2,16 @@ package smerge;
 
 import smerge.ast.AST;
 import smerge.ast.ASTDiffer;
-import smerge.ast.Action;
+import smerge.ast.actions.Action;
 import smerge.ast.python.PythonParser;
-
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-
 
 
 /**
@@ -34,7 +33,6 @@ public class Merger {
         
         // have to figure out which parser to use somehow
         // may be able to take it in as an additional git mergetool input
-        
         AST baseTree = PythonParser.parse(new File(base));
         AST localTree = PythonParser.parse(new File(local));
         AST remoteTree = PythonParser.parse(new File(remote));
@@ -42,6 +40,7 @@ public class Merger {
         ASTDiffer diff = new ASTDiffer(baseTree, localTree, remoteTree);
         
         List<Action> actions = diff.mergedDiff();
+        
         // baseTree.apply(actionns);
         
         // merge imports
@@ -51,8 +50,11 @@ public class Merger {
         
         // write baseTree to merged
         String result = baseTree.toString();
+        System.out.println(result);
+        
         // write result -> merged
-
+        PrintWriter out = new PrintWriter(merged);
+        out.println(result);
     }
     
     // combines imports from all three files
