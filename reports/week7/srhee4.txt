@@ -1,0 +1,17 @@
+Sungmin Rhee
+srhee4@uw.edu
+CSE403 Software Engineering
+Individual Status Report Week#7
+
+1. Previous week's plan
+   - Further implementation
+
+2. This week's progress
+   - Revised project proposal to reflect the changes in our plan
+   > from using GumTreeDiff to implementing our own parser
+   - Working on making evaluator for our program
+
+3. Next week's goal
+   - Write scripts to analyze and evaluate our project
+   - Make any needed changes to proposal
+   - Work on presentation slides
