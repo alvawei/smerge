@@ -1,0 +1,20 @@
+Steven Miller
+stevem62@uw.edu
+CSE 403 Week 7 Individual Report
+5/7/18
+
+1) This week I will:
+- Contribute to team status report
+- Contribute to Project 6
+- Discuss implementation plan with teammates - we have a new game plan,
+  we've decided the tools, so what is next?
+
+2) This week, I've looked at the python parser script written by Jediah,
+and figuring out how it works and what it will output so that I can handle
+the tree merging implementation correctly and make it modular enough to support
+multiple languages. There are a lot of design decisions, and I haven't gotten the
+chance to start implementing, but I will do so this week.
+
+3) The coming week:
+  - Start to work on implementing the tree merger
+  - Make any report revisions
