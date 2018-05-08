@@ -13,13 +13,15 @@ public class PythonNode extends ASTNode {
 	private String text;
 		
 	public PythonNode() {
-		this(-1, "@root");
+		this(-1, "@root", -1);
 	}
 	
-	public PythonNode (int indentation, String text) {
+	public PythonNode (int indentation, String text, int type) {
 		super();
 		this.indentation = indentation;
 		this.text = text;
+		this.label = this.text;
+		this.type = type;
 	}
 	
 	// unparses this (sub)tree back to source code

@@ -58,7 +58,10 @@ public class PythonParser {
 				whitespace += "\n";
 			} else {
 				int indentation = countIndents(line);
-				PythonNode node = new PythonNode(indentation, line.trim() + "\n");
+				String lineContent = line.trim();
+				int type = getType(lineContent);				
+				PythonNode node = new PythonNode(indentation, lineContent + "\n", type);
+
 
 				// set as last seen node with this indentation
 				parents.put(indentation, node);
@@ -68,7 +71,7 @@ public class PythonParser {
 				
 				if (!whitespace.isEmpty()) {
 					// preappend whitespace node
-					PythonNode whitespaceNode = new PythonNode(0, whitespace);
+					PythonNode whitespaceNode = new PythonNode(0, whitespace, PythonNode.WHITESPACE);
 					parent.children().add(whitespaceNode);
 					whitespaceNode.setParent(parent);	
 					whitespace = "";
@@ -81,6 +84,21 @@ public class PythonParser {
 			line = br.readLine();
 		}
 		return tree;
+	}
+	
+	private static int getType(String lineContent) {
+		if (lineContent.startsWith("def")) {
+			return PythonNode.METHOD;
+		} else if (lineContent.startsWith("if")) {
+		    return PythonNode.IF_STATEMENT;
+		} else if (lineContent.startsWith("while")) {
+			return PythonNode.WHILE_LOOP;
+		} else if (lineContent.startsWith("for")) {
+			return PythonNode.FOR_LOOP;
+		} else if (lineContent.startsWith("return")) {
+			return PythonNode.RETURN;
+		}
+		return -1;
 	}
 	
 	// counts indentation of the given line

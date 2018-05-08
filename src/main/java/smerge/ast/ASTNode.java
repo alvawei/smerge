@@ -7,8 +7,19 @@ import java.util.Iterator;
 
 public class ASTNode {
 	
+	public static final int CLASS = 1;
+	public static final int METHOD = 2;
+	public static final int ASSIGNMENT = 3;
+	public static final int RETURN = 4;
+	public static final int IF_STATEMENT = 5;
+	public static final int WHILE_LOOP = 6;
+	public static final int FOR_LOOP = 7;
+	public static final int WHITESPACE = 8;
+	
 	private int id;
 	
+	protected int type;
+	protected String label;
 	protected ASTNode parent;
 	protected List<ASTNode> children;
 	
@@ -37,6 +48,14 @@ public class ASTNode {
 	
 	public void setParent(ASTNode parent) {
 		this.parent = parent;
+	}
+	
+	public String getLabel() {
+		return label;
+	}
+	
+	public int getType() {
+		return type;
 	}
 	
 	public Iterator<ASTNode> preOrder() {
