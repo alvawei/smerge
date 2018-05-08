@@ -4,8 +4,8 @@ import java.util.Iterator;
 
 public class ASTMatcher {
 	
-	private static final double SIM_THRESHOLD = 0.8;
-	private static final double LEAF_THRESHOLD = 0.8;
+	//private static final double SIM_THRESHOLD = 0.8;
+	//private static final double LEAF_THRESHOLD = 0.8;
 	
 	// traverse all the trees, match the nodes between the same trees with a unique id
 	public ASTMatcher(ASTNode base, ASTNode local, ASTNode remote) {
@@ -56,11 +56,12 @@ public class ASTMatcher {
 	}
 	
 	private boolean compareLeaf(ASTNode n1, ASTNode n2) {
-		return false;
+		return n1.getType() == n2.getType() && n1.getLabel().equals(n1.getLabel());
 	}
 	
+	// in the future change to comparing nodes?
 	private boolean compareInner(ASTNode n1, ASTNode n2) {
-		return false;
+		return n1.getType() == n2.getType() && n1.getLabel().equals(n1.getLabel());
 	}
 
 }
