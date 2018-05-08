@@ -4,7 +4,7 @@ if [ $# -ne 1 ]; then
     echo "Usage: ./test_repo.sh <Repository name>"
 else
     REPO_NAME=$1
-    REPO_DIR=repos/${REPO_NAME}
+    REPO_DIR=/tmp/${REPO_NAME}
     RESULTS_DIR=test_results/${REPO_NAME}_test_results
     
     # create a directory to store this repo's data
