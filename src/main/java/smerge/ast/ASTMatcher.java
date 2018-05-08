@@ -1,12 +1,66 @@
 package smerge.ast;
 
+import java.util.Iterator;
+
 public class ASTMatcher {
+	
+	private static final double SIM_THRESHOLD = 0.8;
+	private static final double LEAF_THRESHOLD = 0.8;
 	
 	// traverse all the trees, match the nodes between the same trees with a unique id
 	public ASTMatcher(ASTNode base, ASTNode local, ASTNode remote) {
 		
-		// idea is you go through each tree matching nodes by using node.setID()
+		// label base
+		int id = 0;
+		Iterator<ASTNode> it = base.preOrder();
+		while (it.hasNext()) {
+			it.next().setID(id++);
+		}
+		// compare and label local
+		id = match(local, base, id);
+		id = match(remote, base, id);
 		
+	}
+	
+	// match t1 to t2
+	// precondition: t2 is labeled
+	// return the max id used + 1
+	private int match(ASTNode t1, ASTNode t2, int id) {
+		Iterator<ASTNode> it1 = t1.preOrder();
+		it1.next().setID(0);
+		while (it1.hasNext()) {
+			ASTNode next1 = it1.next();
+			boolean isLeaf1 = next1.children().isEmpty();
+			Iterator<ASTNode> it2 = t2.preOrder();
+			it2.next();
+			while (it2.hasNext()) {
+				ASTNode next2 = it2.next();
+				boolean isLeaf2 = next2.children().isEmpty();
+				if (isLeaf1 && isLeaf2) {
+					if (compareLeaf(next1, next2)) {
+						next1.setID(next2.getID());
+						break;
+					}
+				} else if (!isLeaf1 && !isLeaf2) {
+					if (compareInner(next1, next2)) {
+						next1.setID(next2.getID());
+						break;
+					}
+				}
+			}
+			if (next1.getID() == 0) {
+				next1.setID(id++);
+			}
+		}
+		return id;
+	}
+	
+	private boolean compareLeaf(ASTNode n1, ASTNode n2) {
+		return false;
+	}
+	
+	private boolean compareInner(ASTNode n1, ASTNode n2) {
+		return false;
 	}
 
 }
