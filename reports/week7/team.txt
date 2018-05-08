@@ -1,24 +1,31 @@
 Last week’s goals:
--As always, address feedback given by TA (everyone)
--Finish basic implementation (parsing, diffing, merging, and unparsing two competing commits) so we can begin getting initial results.
-  -Write a simple Python parser (Jediah)
-  -Write a merger (Steven/Alva)
--Begin writing scripts to gather results and instructions on how to reproduce our results. These will follow a similar procedure to Conflerge as we found their assessment technique useful.
-  -Evaluation of parser and merger (Kenji/Bryan)
+- As always, address feedback given by TA (everyone)
+- Finish basic implementation (parsing, diffing, merging, and unparsing two competing commits) 
+so we can begin getting initial results.
+  - Write a simple Python parser (Jediah)
+  - Write a merger (Steven/Alva)
+- Begin writing scripts to gather results and instructions on how to reproduce our results. 
+These will follow a similar procedure to Conflerge as we found their assessment technique useful.
+  - Evaluation of parser and merger (Kenji/Bryan)
 
 This week’s progress:
--We addressed the feedback given, but it wasn’t up to standards, so we will fix that this week.
--Continued making progress on the implementation, getting the parsing and action scripts done
--Ran Conflerge’s scripts to analyze how they work and began writing basic code to emulate their experiments and appropriate them for our needs.
+- We addressed the feedback given, but it wasn’t up to standards, so we will fix that this week.
+- Continued making progress on the implementation, getting the parsing and action scripts done
+- Ran Conflerge’s scripts to analyze how they work and began writing basic code to emulate their 
+experiments and appropriate them for our needs.
 
 Next week’s goals:
--Get a working version of the tool up. It doesn’t have to have all of the desired features yet, just the main ones so we can get initial results in.
-  -Finish basic implementation (parsing, diffing, merging, and unparsing two competing commits) so we can begin getting initial results.
+-Get a working version of the tool up. It doesn’t have to have all of the desired features yet, 
+just the main ones so we can get initial results in.
+  -Finish basic implementation (parsing, diffing, merging, and unparsing two competing commits) 
+  so we can begin getting initial results.
     -Write a simple Python parser (Jediah)
     -Write a merger (Steven/Alva)
 -Continue writing scripts to gather results and instructions on how to reproduce our results. 
   -Evaluation of parser and merger (Kenji/Bryan)
--Address feedback on the report by detailing the implementation plan. We will do this by giving a running example and using diagrams to show how the diffing and merging algorithms work on that example.
+-Address feedback on the report by detailing the implementation plan. We will do this by giving 
+a running example and using diagrams to show how the diffing and merging algorithms work on that example.
 
 TA Meeting Agenda:
--Discuss what parts of Professor Ernst’s feedback we missed. We felt like we addressed most of it (we went through it paragraph by paragraph fixing the parts he talked about)
+-Discuss what parts of Professor Ernst’s feedback we missed. We felt like we addressed most of 
+it (we went through it paragraph by paragraph fixing the parts he talked about)
