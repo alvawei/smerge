@@ -62,6 +62,13 @@ public class ASTNode {
 		return new NodeIterator(this);
 	}
 	
+	public void idTree(StringBuilder sb, String indent) {
+		sb.append(indent + id);
+		for (ASTNode child : children) {
+			idTree(sb, indent + " ");
+		}
+	}
+	
 	// pre-order iterator starting with the given root
 	private class NodeIterator implements Iterator<ASTNode> {
 		

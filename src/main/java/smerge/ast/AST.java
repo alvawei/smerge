@@ -34,6 +34,12 @@ public class AST {
 		return sb.toString();
 	}
 	
+	public String idTree() {
+		StringBuilder sb = new StringBuilder();
+		root.idTree(sb, "");
+		return sb.toString();
+	}
+	
 	public Iterator<ASTNode> preOrder() {
 		return root.preOrder();
 	}
