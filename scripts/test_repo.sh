@@ -13,8 +13,17 @@ else
     fi
     
     # Find all merge conflicts for the given repo
-    ./find_conflicts.sh ${REPO_DIR} ${RESULTS_DIR}
+    if [ ! -f merge_conflicts/${REPO_NAME}_merge_conflicts.txt ]; then
+	./find_conflicts.sh ${REPO_DIR} ${RESULTS_DIR}
+	cp ${RESULTS_DIR}/merge_conflicts.txt merge_conflicts
+	mv merge_conflicts/merge_conflicts.txt merge_conflicts/${REPO_NAME}_merge_conflicts.txt 
+    else
+	cp merge_conflicts/${REPO_NAME}_merge_conflicts.txt ${RESULTS_DIR}
+	mv  ${RESULTS_DIR}/${REPO_NAME}_merge_conflicts.txt ${RESULTS_DIR}/merge_conflicts.txt 
+    fi
     
+    ./merge_conflicts.sh ${REPO_DIR} ${RESULTS_DIR}
+
     # Run Conflerge w/ trees on found conflicts in the repo
 #    if [ ! -f ${RESULTS_DIR}/res.txt ]; then
 #	./merge_conflicts.sh ${REPO_DIR} ${RESULTS_DIR} $3 > ${RESULTS_DIR}/res.txt
