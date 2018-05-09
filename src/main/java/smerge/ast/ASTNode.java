@@ -2,8 +2,10 @@ package smerge.ast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Stack;
 import java.util.Iterator;
+import java.util.LinkedList;
 
 public class ASTNode {
 	
@@ -79,23 +81,23 @@ public class ASTNode {
 	// pre-order iterator starting with the given root
 	private class NodeIterator implements Iterator<ASTNode> {
 		
-		private Stack<ASTNode> stack;
+		private Queue<ASTNode> queue;
 		
 		public NodeIterator(ASTNode node) {
-	        stack = new Stack<>();
-			stack.push(node);
+	        queue = new LinkedList<>();
+			queue.add(node);
 		}
 
 		@Override
 		public boolean hasNext() {
-			return !stack.isEmpty();
+			return !queue.isEmpty();
 		}
 
 		@Override
 		public ASTNode next() {
-			ASTNode node = stack.pop();
+			ASTNode node = queue.remove();
 			for (ASTNode child : node.children()) {
-				stack.push(child);
+				queue.add(child);
 			}
 			return node;
 
