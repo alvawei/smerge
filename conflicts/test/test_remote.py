@@ -1,4 +1,4 @@
 import B
-if True:
 
+if True:
     x = 1

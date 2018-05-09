@@ -13,7 +13,7 @@ public class PythonNode extends ASTNode {
 	private String text;
 		
 	public PythonNode() {
-		this(-1, "@root", -1);
+		this(-1, "@root\n", -1);
 	}
 	
 	public PythonNode (int indentation, String text, int type) {

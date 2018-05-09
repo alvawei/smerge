@@ -2,8 +2,11 @@ package smerge.ast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.Stack;
 import java.util.Iterator;
+import java.util.LinkedList;
 
 public class ASTNode {
 	
@@ -62,33 +65,40 @@ public class ASTNode {
 		return new NodeIterator(this);
 	}
 	
-	public void idTree(StringBuilder sb, String indent) {
-		sb.append(indent + id);
+	public void debugTree(StringBuilder sb, String indent) {
+		sb.append(indent + "(" +  id + ") " + label);
 		for (ASTNode child : children) {
-			idTree(sb, indent + " ");
+			child.debugTree(sb, indent + "    ");
+		}
+	}
+	
+	public void idTree(StringBuilder sb, String indent) {
+		sb.append(indent + id + "\n");
+		for (ASTNode child : children) {
+			child.idTree(sb, indent + " ");
 		}
 	}
 	
 	// pre-order iterator starting with the given root
 	private class NodeIterator implements Iterator<ASTNode> {
 		
-		private Stack<ASTNode> stack;
+		private Queue<ASTNode> queue;
 		
 		public NodeIterator(ASTNode node) {
-	        stack = new Stack<>();
-			stack.push(node);
+	        queue = new LinkedList<>();
+			queue.add(node);
 		}
 
 		@Override
 		public boolean hasNext() {
-			return !stack.isEmpty();
+			return !queue.isEmpty();
 		}
 
 		@Override
 		public ASTNode next() {
-			ASTNode node = stack.pop();
+			ASTNode node = queue.remove();
 			for (ASTNode child : node.children()) {
-				stack.push(child);
+				queue.add(child);
 			}
 			return node;
 
@@ -96,16 +106,15 @@ public class ASTNode {
 		
 	}
 	
-	/* ignore this
-	private void encode(Map<Integer, ArrayList<Integer>> encoding) {
+	public void encode(Map<Integer, ArrayList<Integer>> encoding) {
 		if (!children.isEmpty()) {
 			ArrayList<Integer> childrenIDList = new ArrayList<>();
 			for (ASTNode child : children) {
 				childrenIDList.add(child.getID());
-				encode(child, encoding);
+				child.encode(encoding);
 			}
-			encoding.put(current.getID(), childrenIDList);
+			encoding.put(id, childrenIDList);
 		}
-	} */
+	}
 	
 }

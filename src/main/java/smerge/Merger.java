@@ -2,6 +2,7 @@ package smerge;
 
 import smerge.ast.AST;
 import smerge.ast.ASTDiffer;
+import smerge.ast.ASTMatcher;
 import smerge.ast.actions.Action;
 import smerge.ast.python.PythonParser;
 
@@ -13,6 +14,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.github.difflib.algorithm.DiffException;
+
 
 /**
  * Runs Smerge
@@ -23,8 +26,9 @@ public class Merger {
     /**
      * @param args [BASE, LOCAL, REMOTE, MERGED] files
      * @throws IOException 
+     * @throws DiffException 
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, DiffException {
 
         String base = "conflicts/test/test_base.py"; // args[0];
         String local = "conflicts/test/test_local.py"; // args[1];
@@ -36,6 +40,27 @@ public class Merger {
         AST baseTree = PythonParser.parse(new File(base));
         AST localTree = PythonParser.parse(new File(local));
         AST remoteTree = PythonParser.parse(new File(remote));
+        
+        ASTMatcher matcher = new ASTMatcher(baseTree.getRoot(), localTree.getRoot(), remoteTree.getRoot());
+        System.out.println(baseTree);
+        System.out.println(baseTree.idTree());
+        System.out.println(baseTree.debugTree());
+        
+        System.out.println();
+        
+        System.out.println(localTree);
+        System.out.println(localTree.idTree());
+        System.out.println(localTree.debugTree());
+        
+        System.out.println();
+        
+        System.out.println(remoteTree);
+        System.out.println(remoteTree.idTree());
+        System.out.println(remoteTree.debugTree());
+        
+        ASTDiffer.lineBasedDiff(baseTree, remoteTree);
+        
+        
         
         ASTDiffer diff = new ASTDiffer(baseTree, localTree, remoteTree);
         
@@ -50,7 +75,7 @@ public class Merger {
         
         // write baseTree to merged
         String result = baseTree.toString();
-        System.out.println(result);
+        // System.out.println(result);
         
         // write result -> merged
         PrintWriter out = new PrintWriter(merged);

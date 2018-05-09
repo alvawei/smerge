@@ -6,7 +6,9 @@ public class ASTMatcher {
 	
 	//private static final double SIM_THRESHOLD = 0.8;
 	//private static final double LEAF_THRESHOLD = 0.8;
-	
+	private int localMatchId = 0;
+	private int remoteMatchId = 0;
+	private int baseId = 0;	
 	// traverse all the trees, match the nodes between the same trees with a unique id
 	public ASTMatcher(ASTNode base, ASTNode local, ASTNode remote) {
 		
@@ -17,8 +19,9 @@ public class ASTMatcher {
 			it.next().setID(id++);
 		}
 		// compare and label local
-		id = match(local, base, id);
-		id = match(remote, base, id);
+		baseId = id;
+		localMatchId = match(local, base, id);
+		remoteMatchId = match(remote, base, id);
 		
 	}
 	
@@ -64,4 +67,15 @@ public class ASTMatcher {
 		return n1.getType() == n2.getType() && n1.getLabel().equals(n1.getLabel());
 	}
 
+	public int getBaseId() {
+		return baseId;
+	}
+
+	public int getLocalId() {
+		return localMatchId;
+	}
+
+	public int getRemoteId() {
+		return remoteMatchId;
+	}
 }
