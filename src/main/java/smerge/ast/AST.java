@@ -34,6 +34,12 @@ public class AST {
 		return sb.toString();
 	}
 	
+	public String debugTree() {
+		StringBuilder sb = new StringBuilder();
+		root.debugTree(sb, "");
+		return sb.toString();
+	}
+	
 	public String idTree() {
 		StringBuilder sb = new StringBuilder();
 		root.idTree(sb, "");

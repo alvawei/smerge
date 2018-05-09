@@ -41,8 +41,8 @@ public class PythonParser {
 		// maps indentation -> last node/line read with this indentation
 		Map<Integer, PythonNode> parents = new HashMap<>();
 		
-		// keeps track of current whitespace
-		String whitespace = "";
+		// keeps track of current number of empty lines
+		int emptyLines = 0;
 		
 		// initialize tree
 		PythonNode root = new PythonNode();
@@ -55,12 +55,12 @@ public class PythonParser {
 			if (line.startsWith("import") || line.startsWith("from")) {
 				tree.imports().add(line.trim());
 			} else if (line.isEmpty()) {
-				whitespace += "\n";
+				emptyLines++;
 			} else {
 				int indentation = countIndents(line);
 				String lineContent = line.trim();
 				int type = getType(lineContent);				
-				PythonNode node = new PythonNode(indentation, lineContent + "\n", type);
+				PythonNode node = new PythonNode(indentation, lineContent, type);
 
 
 				// set as last seen node with this indentation
@@ -69,12 +69,14 @@ public class PythonParser {
 				// find parent of this node
 				PythonNode parent = parents.get(indentation - 1);
 				
-				if (!whitespace.isEmpty()) {
-					// preappend whitespace node
-					PythonNode whitespaceNode = new PythonNode(0, whitespace, PythonNode.WHITESPACE);
+				if (emptyLines > 0) {
+					// preappend empty lines
+					String newLines = "";
+					for (int i = 0; i < emptyLines; i++) newLines += "\n";
+					PythonNode whitespaceNode = new PythonNode(0, newLines, PythonNode.WHITESPACE);
 					parent.children().add(whitespaceNode);
 					whitespaceNode.setParent(parent);	
-					whitespace = "";
+					emptyLines = 0;
 				}
 				
 				// insert node into tree

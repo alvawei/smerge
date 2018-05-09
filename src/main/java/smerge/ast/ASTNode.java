@@ -62,10 +62,17 @@ public class ASTNode {
 		return new NodeIterator(this);
 	}
 	
+	public void debugTree(StringBuilder sb, String indent) {
+		sb.append(indent + label + " (id: " + id + ")");
+		for (ASTNode child : children) {
+			child.debugTree(sb, indent + "    ");
+		}
+	}
+	
 	public void idTree(StringBuilder sb, String indent) {
 		sb.append(indent + id);
 		for (ASTNode child : children) {
-			idTree(sb, indent + " ");
+			child.idTree(sb, indent + " ");
 		}
 	}
 	

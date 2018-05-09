@@ -2,6 +2,7 @@ package smerge;
 
 import smerge.ast.AST;
 import smerge.ast.ASTDiffer;
+import smerge.ast.ASTMatcher;
 import smerge.ast.actions.Action;
 import smerge.ast.python.PythonParser;
 
@@ -37,6 +38,11 @@ public class Merger {
         AST localTree = PythonParser.parse(new File(local));
         AST remoteTree = PythonParser.parse(new File(remote));
         
+        ASTMatcher matcher = new ASTMatcher(baseTree.getRoot(), localTree.getRoot(), remoteTree.getRoot());
+        System.out.println(baseTree);
+        System.out.println(baseTree.debugTree());
+        
+        
         ASTDiffer diff = new ASTDiffer(baseTree, localTree, remoteTree);
         
         List<Action> actions = diff.mergedDiff();
@@ -50,7 +56,7 @@ public class Merger {
         
         // write baseTree to merged
         String result = baseTree.toString();
-        System.out.println(result);
+        // System.out.println(result);
         
         // write result -> merged
         PrintWriter out = new PrintWriter(merged);
