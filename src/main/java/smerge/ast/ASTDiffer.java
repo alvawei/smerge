@@ -12,7 +12,9 @@ import com.github.difflib.algorithm.DiffException;
 import com.github.difflib.patch.Delta;
 import com.github.difflib.patch.Patch;
 
+import smerge.ast.ASTMatcher.Match;
 import smerge.ast.actions.Action;
+import smerge.ast.actions.ActionSet;
 
 // given two matched trees, produce a list of actions
 // actions are things like move, add, remove nodes (lines) 
@@ -34,6 +36,33 @@ public class ASTDiffer {
 		int baseId = matcher.getBaseId();
 		int localId = matcher.getLocalId();
 		int remoteId = matcher.getRemoteId();
+	}
+	
+	public void iterateMatches() {
+		ActionSet actions = new ActionSet();
+		for (Match m : matcher.matches()) {
+			if (m.base() == null){
+				if (m.local() != null)
+					actions.addInsert();
+				if (m.remote() != null)
+					actions.addInsert();
+			} else {
+				if (m.local() == null) {
+					actions.addDelete();
+				} else {
+					if (!m.base().label.equals(m.local().label)) {
+						actions.addUpdate();
+					}
+				}
+				if (m.remote() == null) {
+					actions.addDelete();
+				} else {
+					if (!m.base().label.equals(m.remote().label)) {
+						actions.addUpdate();
+					}
+				}
+			}
+		}
 	}
 
 	// merges the base->local and base->remote diffs

@@ -20,6 +20,18 @@ public class ASTMatcher {
 	    public void addNode(ASTNode node, int version) {
 	    	nodes[version] = node;
 	    }
+	    
+	    public ASTNode base() {
+	    	return nodes[BASE];
+	    }
+	    
+	    public ASTNode local() {
+	    	return nodes[LOCAL];
+	    }
+	    
+	    public ASTNode remote() {
+	    	return nodes[REMOTE];
+	    }
 	}
 	
 	private List<Match> matches;
