@@ -60,7 +60,7 @@ public class PythonParser {
 				int indentation = countIndents(line);
 				String lineContent = line.trim();
 				int type = getType(lineContent);				
-				PythonNode node = new PythonNode(indentation, lineContent, type);
+				PythonNode node = new PythonNode(indentation, lineContent + "\n", type);
 
 
 				// set as last seen node with this indentation

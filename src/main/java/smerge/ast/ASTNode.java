@@ -65,14 +65,14 @@ public class ASTNode {
 	}
 	
 	public void debugTree(StringBuilder sb, String indent) {
-		sb.append(indent + label + " (id: " + id + ")");
+		sb.append(indent + "(" +  id + ") " + label);
 		for (ASTNode child : children) {
 			child.debugTree(sb, indent + "    ");
 		}
 	}
 	
 	public void idTree(StringBuilder sb, String indent) {
-		sb.append(indent + id);
+		sb.append(indent + id + "\n");
 		for (ASTNode child : children) {
 			child.idTree(sb, indent + " ");
 		}
