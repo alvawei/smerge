@@ -2,6 +2,7 @@ package smerge.ast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Stack;
 import java.util.Iterator;
@@ -105,16 +106,15 @@ public class ASTNode {
 		
 	}
 	
-	/* ignore this
-	private void encode(Map<Integer, ArrayList<Integer>> encoding) {
+	public void encode(Map<Integer, ArrayList<Integer>> encoding) {
 		if (!children.isEmpty()) {
 			ArrayList<Integer> childrenIDList = new ArrayList<>();
 			for (ASTNode child : children) {
 				childrenIDList.add(child.getID());
-				encode(child, encoding);
+				child.encode(encoding);
 			}
-			encoding.put(current.getID(), childrenIDList);
+			encoding.put(id, childrenIDList);
 		}
-	} */
+	}
 	
 }

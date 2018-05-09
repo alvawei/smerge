@@ -1,10 +1,16 @@
 package smerge.ast;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.github.difflib.DiffUtils;
+import com.github.difflib.algorithm.DiffException;
+import com.github.difflib.patch.Delta;
+import com.github.difflib.patch.Patch;
 
 import smerge.ast.actions.Action;
 
@@ -35,6 +41,25 @@ public class ASTDiffer {
 	public List<Action> mergedDiff() {
 		List<Action> actions = new ArrayList<Action>();
 
+		return null;
+	}
+	
+	public static List<Action> lineBasedDiff(AST src, AST dest) throws DiffException {
+		Map<Integer, ArrayList<Integer>> srcEncoding= new HashMap<>();
+		src.getRoot().encode(srcEncoding);
+		Map<Integer, ArrayList<Integer>> destEncoding = new HashMap<>();
+		dest.getRoot().encode(destEncoding);
+
+		
+		List<Integer> original = srcEncoding.get(0);
+		List<Integer> revised = destEncoding.get(0);
+
+		Patch<Integer> patch = DiffUtils.diff(original, revised);
+		        
+		for (Delta delta : patch.getDeltas()) {
+		    System.out.println(delta);
+		}
+		
 		return null;
 	}
 	

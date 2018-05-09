@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.github.difflib.algorithm.DiffException;
+
 
 /**
  * Runs Smerge
@@ -24,8 +26,9 @@ public class Merger {
     /**
      * @param args [BASE, LOCAL, REMOTE, MERGED] files
      * @throws IOException 
+     * @throws DiffException 
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, DiffException {
 
         String base = "conflicts/test/test_base.py"; // args[0];
         String local = "conflicts/test/test_local.py"; // args[1];
@@ -55,6 +58,7 @@ public class Merger {
         System.out.println(remoteTree.idTree());
         System.out.println(remoteTree.debugTree());
         
+        ASTDiffer.lineBasedDiff(baseTree, remoteTree);
         
         
         
