@@ -18,6 +18,7 @@ public class ASTNode {
 	public static final int WHILE_LOOP = 6;
 	public static final int FOR_LOOP = 7;
 	public static final int WHITESPACE = 8;
+	public static final int IMPORT = 9;
 	
 	private int id;
 	

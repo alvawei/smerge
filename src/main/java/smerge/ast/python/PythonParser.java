@@ -42,6 +42,7 @@ public class PythonParser {
 		Map<Integer, PythonNode> parents = new HashMap<>();
 		
 		// keeps track of current number of empty lines
+		PythonNode importsNode = new PythonNode();
 		int emptyLines = 0;
 		
 		// initialize tree
@@ -53,6 +54,7 @@ public class PythonParser {
 		String line = br.readLine();
 		while (line != null) {
 			if (line.startsWith("import") || line.startsWith("from")) {
+				importsNode.text
 				tree.imports().add(line.trim());
 			} else if (line.isEmpty()) {
 				emptyLines++;
