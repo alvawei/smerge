@@ -55,6 +55,7 @@ public class ASTDiffer {
 		List<Integer> revised = destEncoding.get(0);
 
 		Patch<Integer> patch = DiffUtils.diff(original, revised);
+		
 		        
 		for (Delta delta : patch.getDeltas()) {
 		    System.out.println(delta);
