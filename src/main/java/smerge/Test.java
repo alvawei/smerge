@@ -29,7 +29,7 @@ public class Test {
         AST remoteTree = PythonParser.parse(new File(remote));
         
         ASTDiffer diff = new ASTDiffer(baseTree, localTree, remoteTree);
-
+        
         System.out.println(baseTree);
         System.out.println(baseTree.debugTree());
         

@@ -125,4 +125,9 @@ public class ASTNode {
 		}
 	}
 	
+	/*@Override
+	public boolean equals(Object o) {
+		return o == this;
+	}*/
+	
 }
