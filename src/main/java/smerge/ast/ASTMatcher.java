@@ -58,8 +58,8 @@ public class ASTMatcher {
 		
 		// compare and label local
 		baseId = id;
-		localMatchId = match(local, base, id, LOCAL);
-		remoteMatchId = match(remote, base, id, REMOTE);
+		localMatchId = match(local, base, baseId, LOCAL);
+		remoteMatchId = match(remote, base, localMatchId, REMOTE);
 		
 	}
 	
