@@ -20,7 +20,7 @@ public class Insert implements Action {
 	}
 	
 	public String toString() {
-		return "Insert " + child.getID() + " under " + parent.getID();
+		return "Insert " + child.getID() + " under " + parent.getID() + "[" + position + "]";
 	}
 
 }

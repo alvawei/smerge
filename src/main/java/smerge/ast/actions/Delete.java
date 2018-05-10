@@ -20,7 +20,7 @@ public class Delete implements Action {
 	}
 	
 	public String toString() {
-		return "Delete " + child.getID() + " from " + parent.getID();
+		return "Delete " + child.getID() + " from " + parent.getID() + "[" + position + "]";
 	}
 
 	
