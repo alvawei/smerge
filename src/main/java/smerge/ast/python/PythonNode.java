@@ -40,7 +40,7 @@ public class PythonNode extends ASTNode {
 	// appends indentation to the given string builder
 	private void indent(int indentation, StringBuilder sb) {
 		for (int i = 0; i < indentation; i++) {
-			sb.append(INDENT);
+			sb.append(" ");
 		}
 	}
 

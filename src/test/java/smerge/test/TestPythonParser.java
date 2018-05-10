@@ -21,6 +21,9 @@ public class TestPythonParser {
 		String fileContent = readFile(f);
 		AST tree = PythonParser.parse(f);
 		
+		System.out.println(fileContent);
+		System.out.println(tree);
+		
 		assertEquals(fileContent, tree.toString());
 		
 	}

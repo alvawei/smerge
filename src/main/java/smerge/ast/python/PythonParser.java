@@ -8,6 +8,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Stack;
 
 
 public class PythonParser {
@@ -49,16 +50,46 @@ public class PythonParser {
 		PythonNode root = new PythonNode();
 		parents.put(-1, root);
 		AST tree = new AST(root);
+		
+		Stack<PythonNode> parentStack = new Stack<>();
 	    
 		// build AST
 		String line = br.readLine();
 		while (line != null) {
-			int indentation = countIndents(line);
+			if (line.endsWith("\\")) {
+				line += "\n" + br.readLine();
+				continue;
+			}
+			
+			// read entire block comment
+			if (line.contains("\"\"\"")) {
+				int firstIndex = line.indexOf("\"\"\"");
+				String s = line.substring(firstIndex + 3);
+				while (!s.contains("\"\"\"")) {
+					s += "\n" + br.readLine();
+				}
+				line = line.substring(0, firstIndex + 3) + s;
+			}
+			
+			int indentation = getIndentation(line);
 			String lineContent = line.trim();
 			int type = getType(lineContent);
-			switch (type) {
 			
-				
+			
+			
+			
+			PythonNode node = new PythonNode(indentation, lineContent + "\n", type);
+
+			// set as last seen node with this indentation
+			parents.put(indentation, node);
+			
+			// find parent of this node and add it as a child
+			PythonNode parent = indentation > 0 ? parents.get(indentation - 4) : root;
+			parent.addChild(node);
+			
+			/*
+			
+			switch (type) {
 					
 				case PythonNode.IMPORT:
 					if (importsNode.getParent() == null) {
@@ -108,6 +139,7 @@ public class PythonParser {
 					break;
 					
 			} 
+			*/
 			line = br.readLine();
 		}
 		return tree;
@@ -128,19 +160,21 @@ public class PythonParser {
 			return PythonNode.IMPORT;
 		} else if (lineContent.startsWith("#")) {
 			return PythonNode.COMMENT;
-		} else if (lineContent.startsWith("\"\"\"")) {
+		} else if (lineContent.startsWith("\"\"\"") && lineContent.endsWith("\"\"\"")) {
 			return PythonNode.BLOCK_COMMENT;
+		} else if (lineContent.isEmpty()) {
+			return PythonNode.WHITESPACE;
 		}
 		return -1;
 	}
 	
-	// counts indentation of the given line
-	// currently only uses four spaces as an indentation
-	private static int countIndents(String line) {
+	// returns the number of spaces at the beginning of line (tabs = 4 spaces)
+	private static int getIndentation(String line) {
 		int indentation = 0;
-		while (line.startsWith("    ", indentation * 4) ||
-			   line.startsWith("\t", indentation)) {
-			indentation += 1;
+		boolean tab = false;
+		while (line.startsWith(" ", indentation) ||
+			   (tab = line.startsWith("\t", indentation))) {
+			indentation += tab ? 4 : 1;
 		}
 		return indentation;
 	}
