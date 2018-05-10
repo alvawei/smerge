@@ -9,7 +9,6 @@ public class PythonNode extends ASTNode {
 	
 	public static final String INDENT = "    ";
 	
-	private int indentation;
 	public String text;
 		
 	public PythonNode() {
@@ -42,6 +41,14 @@ public class PythonNode extends ASTNode {
 		for (int i = 0; i < indentation; i++) {
 			sb.append(" ");
 		}
+	}
+	
+	@Override
+	public void update(ASTNode o) {
+		PythonNode other = (PythonNode) o;
+		System.out.println(this.indentation + " -> "  + other.indentation);
+		this.indentation = other.indentation;
+		this.label = other.label;
 	}
 
 }

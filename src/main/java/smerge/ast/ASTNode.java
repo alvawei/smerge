@@ -23,6 +23,7 @@ public class ASTNode {
 	public static final int BLOCK_COMMENT = 11;
 	
 	private int id;
+	public int indentation;
 	
 	protected int type;
 	public String label;
@@ -71,6 +72,11 @@ public class ASTNode {
 	
 	public Iterator<ASTNode> preOrder() {
 		return new NodeIterator(this);
+	}
+	
+	// used for update action
+	public void update(ASTNode other) {
+		// handeled in PythonNode
 	}
 	
 	public void debugTree(StringBuilder sb, String indent) {

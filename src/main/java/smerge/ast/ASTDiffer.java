@@ -82,6 +82,7 @@ public class ASTDiffer {
 			if (baseParentID != nodeParentID) {
 				// node must have been moved
 				// need to also see if node changed position
+				base.indentation = node.indentation;
 				ASTNode srcParent = matches.get(baseParentID).base();
 				int srcPos = srcParent.children().indexOf(base);
 				Delete del = new Delete(srcParent, base, srcPos);
@@ -96,7 +97,6 @@ public class ASTDiffer {
 				
 				m.addMove(ins, del);
 			}
-			
 			if (!base.label.equals(node.label)) {
 				// node updated
 				m.addUpdate(base, node);
