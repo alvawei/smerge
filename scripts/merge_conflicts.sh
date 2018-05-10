@@ -50,8 +50,18 @@ else
 			cp $FILEPATH $RESULTS_DIR/
 			mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_base.py
 		    else
-			# TODO
 			# try to resolve conflict using our mergetool
+			RESULT="$(yes | git -C ${REPO_DIR} mergetool --tool=smerge $FILEPATH)"
+			
+			if [[ $RESULT =~ *SUCCESS* ]]; then
+			    echo "SUCCESS"
+
+			    cp $FILEPATH $RESULTS_DIR/
+			    mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_actual.py
+			 
+			else
+			    echo "FAILURE"
+			fi
 		    fi
 
 		    # get the human merged file
