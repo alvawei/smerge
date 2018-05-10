@@ -8,6 +8,7 @@ import java.util.TreeSet;
 import smerge.ast.ASTNode;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 
 // basically a tree diff
@@ -22,6 +23,18 @@ public class ActionSet {
 	
 	// returns true iff actions are merged into base tree
 	public boolean apply() {
+		// unwrap moves into single insert and delete
+		for (int i = 0; i < actions.size(); i++) {
+			if (actions.get(i) instanceof Move) {
+				Move m = (Move) actions.get(i);
+				actions.remove(i);
+				actions.add(m.ins);
+				actions.add(m.del);
+			}
+		}
+		// sort actions to be applied in specifc order
+		Collections.sort(actions, new ActionSort());
+		
 		for (Action a : actions) {
 			a.apply();
 		}
