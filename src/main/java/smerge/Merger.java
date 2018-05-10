@@ -4,6 +4,7 @@ import smerge.ast.AST;
 import smerge.ast.ASTDiffer;
 import smerge.ast.ASTMatcher;
 import smerge.ast.actions.Action;
+import smerge.ast.actions.ActionSet;
 import smerge.ast.python.PythonParser;
 
 import java.io.File;
@@ -29,66 +30,44 @@ public class Merger {
      * @throws DiffException 
      */
     public static void main(String[] args) throws IOException, DiffException {
+    	if (args.length != 4) {
+    		throw new RuntimeException("Expected arguments: $BASE, $LOCAL, $REMOTE, $MERGED");
+    	}
 
-        String base = "conflicts/test/test_base.py"; // args[0];
-        String local = "conflicts/test/test_local.py"; // args[1];
-        String remote = "conflicts/test/test_remote.py"; // args[2];
-        String merged = "conflicts/test/test_merged.py"; // args[3];
+        String base = args[0];
+        String local = args[1];
+        String remote = args[2];
+        String merged = args[3];
         
         // have to figure out which parser to use somehow
-        // may be able to take it in as an additional git mergetool input
+        // will create Parser interface later
+        // may be able to take in file name parameter as an additional git mergetool input
+        
+        System.out.println("Parsing base file...");
         AST baseTree = PythonParser.parse(new File(base));
+        
+        System.out.println("Parsing local file...");
         AST localTree = PythonParser.parse(new File(local));
+        
+        System.out.println("Parsing remote file...");
         AST remoteTree = PythonParser.parse(new File(remote));
         
+        
+        System.out.println("Matching tree nodes...");
         ASTMatcher matcher = new ASTMatcher(baseTree.getRoot(), localTree.getRoot(), remoteTree.getRoot());
-        System.out.println(baseTree);
-        System.out.println(baseTree.idTree());
-        System.out.println(baseTree.debugTree());
         
-        System.out.println();
+        System.out.println("Generating tree diffs...");
+        // ActionSet actions;
         
-        System.out.println(localTree);
-        System.out.println(localTree.idTree());
-        System.out.println(localTree.debugTree());
-        
-        System.out.println();
-        
-        System.out.println(remoteTree);
-        System.out.println(remoteTree.idTree());
-        System.out.println(remoteTree.debugTree());
-        
-        ASTDiffer.lineBasedDiff(baseTree, remoteTree);
-        
-        
-        
-        ASTDiffer diff = new ASTDiffer(baseTree, localTree, remoteTree);
-        
-        List<Action> actions = diff.mergedDiff();
-        
+        System.out.println("Merging changes into base file...");
         // baseTree.apply(actionns);
         
-        // merge imports
-        // Set<String> imports = mergeImports(baseTree.imports(), localTree.imports(), remoteTree.imports());
-        // baseTree.imports().clear();
-        // baseTree.imports().addAll(imports);
-        
         // write baseTree to merged
+        System.out.println("Writing result to " + merged);
         String result = baseTree.toString();
-        // System.out.println(result);
         
         // write result -> merged
         PrintWriter out = new PrintWriter(merged);
         out.println(result);
-    }
-    
-    // combines imports from all three files
-    // uses TreeSet to maintain some sort of order
-    public static Set<String> mergeImports(List<String> base, List<String> local, List<String> remote) {
-    	Set<String> importSet = new TreeSet<>();
-    	importSet.addAll(base);
-    	importSet.addAll(local);
-    	importSet.addAll(remote);
-    	return importSet;
     }
 }
