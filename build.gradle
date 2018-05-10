@@ -17,17 +17,6 @@ repositories {
 }
 
 dependencies {
-    // https://mvnrepository.com/artifact/com.github.gumtreediff/core
-    compile group: 'com.github.gumtreediff', name: 'core', version: '2.1.0'
-    
-    // https://mvnrepository.com/artifact/com.github.gumtreediff/client
-    compile group: 'com.github.gumtreediff', name: 'client', version: '2.1.0'
-    
-    // https://mvnrepository.com/artifact/com.github.gumtreediff/gen.jdt
-    compile group: 'com.github.gumtreediff', name: 'gen.jdt', version: '2.1.0'
-    
-    // https://mvnrepository.com/artifact/com.github.gumtreediff/gen.ruby
-    compile group: 'com.github.gumtreediff', name: 'gen.ruby', version: '2.1.0'
     
     // https://mvnrepository.com/artifact/commons-io/commons-io
 	compile group: 'commons-io', name: 'commons-io', version: '2.5'

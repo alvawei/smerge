@@ -2,7 +2,7 @@ package smerge.ast.actions;
 
 import smerge.ast.ASTNode;
 
-public class Insert {
+public class Insert implements Action {
 	
 	private ASTNode parent; // node the child is inserted into (in base tree)
 	private ASTNode child; // child introduced in local or remote tree

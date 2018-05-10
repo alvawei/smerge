@@ -12,7 +12,7 @@ import com.github.difflib.algorithm.DiffException;
 import com.github.difflib.patch.Delta;
 import com.github.difflib.patch.Patch;
 
-import smerge.ast.ASTMatcher.Match;
+import smerge.ast.Match;
 import smerge.ast.actions.Action;
 import smerge.ast.actions.ActionSet;
 
@@ -44,6 +44,10 @@ public class ASTDiffer {
 		List<Match> matches = matcher.matches();
 		for (int i = 1; i < matches.size(); i++) { // start at 1 to skip root
 			Match m = matches.get(i);
+			ASTNode base = m.base();
+			ASTNode local = m.local();
+			ASTNode remote = m.remote();
+
 			addActions(actions, matches, m.base(), m.local());
 			addActions(actions, matches, m.base(), m.remote());
 		}
@@ -59,7 +63,7 @@ public class ASTDiffer {
 				ASTNode parent = node.parent;
 				int position = parent.children().indexOf(node);
 				ASTNode baseParentEquivalent = matches.get(parent.getID()).base();
-				actions.addInsert(baseParentEquivalent, node, position);
+				m.addInsert(baseParentEquivalent, node, position);
 			}
 		} else if (node == null) {
 			// node was deleted
@@ -73,6 +77,7 @@ public class ASTDiffer {
 			
 			if (baseParentID != nodeParentID) {
 				// node must have been moved
+				// need to also see if node changed position
 				// actions.addMove();
 			}
 			

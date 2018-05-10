@@ -12,30 +12,6 @@ public class ASTMatcher {
 	public static final int LOCAL = 1;
 	public static final int REMOTE = 2;
 	
-	public class Match {
-		private ASTNode[] nodes;
-		
-	    public Match() {
-	    	this.nodes = new ASTNode[3];
-	    }
-	    
-	    public void addNode(ASTNode node, int version) {
-	    	nodes[version] = node;
-	    }
-	    
-	    public ASTNode base() {
-	    	return nodes[BASE];
-	    }
-	    
-	    public ASTNode local() {
-	    	return nodes[LOCAL];
-	    }
-	    
-	    public ASTNode remote() {
-	    	return nodes[REMOTE];
-	    }
-	}
-	
 	private List<Match> matches;
 	
 	// smaller similarity = good
