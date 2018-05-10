@@ -15,8 +15,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import com.github.difflib.algorithm.DiffException;
-
 
 /**
  * Runs Smerge
@@ -29,7 +27,7 @@ public class Merger {
      * @throws IOException 
      * @throws DiffException 
      */
-    public static void main(String[] args) throws IOException, DiffException {
+    public static void main(String[] args) throws IOException {
     	if (args.length != 4) {
     		throw new RuntimeException("Expected arguments: $BASE, $LOCAL, $REMOTE, $MERGED");
     	}
