@@ -89,7 +89,7 @@ public class ASTDiffer {
 				// m.addMove();
 			}
 			
-			if (base.label.equals(node.label)) {
+			if (!base.label.equals(node.label)) {
 				// node updated
 				m.addUpdate(base, node);
 			}			

@@ -9,6 +9,7 @@ import smerge.ast.AST;
 import smerge.ast.ASTDiffer;
 import smerge.ast.ASTMatcher;
 import smerge.ast.actions.Action;
+import smerge.ast.actions.ActionSet;
 import smerge.ast.python.PythonParser;
 
 public class Test {
@@ -41,9 +42,9 @@ public class Test {
         System.out.println(remoteTree);
         System.out.println(remoteTree.debugTree());
                
-        
-        
         ASTDiffer diff = new ASTDiffer(baseTree, localTree, remoteTree);
+        ActionSet actions = diff.diff();
+        System.out.println(actions);
 	}
 
 }

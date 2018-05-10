@@ -11,4 +11,8 @@ public class Move implements Action {
 	public void apply() {
 		
 	}
+	
+	public String toString() {
+		return "Move";
+	}
 }

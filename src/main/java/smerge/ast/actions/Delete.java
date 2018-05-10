@@ -18,6 +18,10 @@ public class Delete implements Action {
 	public void apply() {
 		parent.children().remove(position);
 	}
+	
+	public String toString() {
+		return "Delete " + child.getID() + " from " + parent.getID();
+	}
 
 	
 }

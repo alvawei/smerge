@@ -18,5 +18,9 @@ public class Insert implements Action {
 	public void apply() {
 		parent.children().add(position, child);
 	}
+	
+	public String toString() {
+		return "Insert " + child.getID() + " under " + parent.getID();
+	}
 
 }

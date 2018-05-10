@@ -17,10 +17,12 @@ public class Match {
 	public static final int UPDATE = 2;
 	public static final int MOVE = 3;
 	
+	private int id;
 	private ASTNode[] nodes;
 	private Action[] actions;
 	
-    public Match() {
+    public Match(int id) {
+    	this.id = id;
     	this.nodes = new ASTNode[3];
     	this.actions = new Action[4];
     }
@@ -65,7 +67,7 @@ public class Match {
 				// keep base comment
 				actions[UPDATE] = null;
 			} else {
-				throw new RuntimeException("unmergable conflict: two updates");
+				throw new RuntimeException("unmergable conflict: two updates " + id);
 			}
 		}
 		actions[UPDATE] = new Update(before, after);

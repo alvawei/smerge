@@ -30,7 +30,7 @@ public class ASTMatcher {
 		while (it.hasNext()) {
 			ASTNode next = it.next();
 			next.setID(id);
-			matches.add(new Match());
+			matches.add(new Match(id));
 			matches.get(id).addNode(next, BASE);
 			id++;
 		}
@@ -81,7 +81,7 @@ public class ASTMatcher {
 				}
 			}
 			if (next1.getID() == 0) {
-				matches.add(new Match());
+				matches.add(new Match(id));
 				matches.get(id).addNode(next1, version);
 				next1.setID(id++);
 			}

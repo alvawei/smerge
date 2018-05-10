@@ -38,13 +38,25 @@ public class ActionSet {
 	}
 	
 	public class ActionSort implements Comparator<Action> {
+		
+		// order by action type: delete -> insert -> update
 
 		@Override
 		public int compare(Action o1, Action o2) {
-			// TODO Auto-generated method stub
-			return 0;
+			if (o1 instanceof Delete && !(o2 instanceof Delete))
+				return -1;
+			
+			if (o2 instanceof Delete && !(o1 instanceof Delete))
+				return 1;
+			
+				
+				return 0;
 		}
 
 		
+	}
+	
+	public String toString() {
+		return actions.toString();
 	}
 }

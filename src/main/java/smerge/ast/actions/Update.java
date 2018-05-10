@@ -16,5 +16,9 @@ public class Update implements Action {
 	public void apply() {
 		// before.setLabel(after.getLabel());
 	}
+	
+	public String toString() {
+		return "Update " + before.getID();
+	}
 
 }
