@@ -1,20 +1,12 @@
 package smerge.ast;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import com.github.difflib.DiffUtils;
-import com.github.difflib.algorithm.DiffException;
-import com.github.difflib.patch.Delta;
-import com.github.difflib.patch.Patch;
 
 import smerge.ast.Match;
 import smerge.ast.actions.Action;
 import smerge.ast.actions.ActionSet;
+import smerge.ast.actions.Delete;
+import smerge.ast.actions.Insert;
 
 // given two matched trees, produce a list of actions
 // actions are things like move, add, remove nodes (lines) 
@@ -88,9 +80,23 @@ public class ASTDiffer {
 			int nodeParentID = node.parent.getID();
 			
 			if (baseParentID != nodeParentID) {
+				System.out.println(" Move detected " + m.id);
+				System.out.println(baseParentID + " -> " + nodeParentID);
 				// node must have been moved
 				// need to also see if node changed position
-				// m.addMove();
+				ASTNode srcParent = matches.get(baseParentID).base();
+				int srcPos = srcParent.children().indexOf(base);
+				Insert ins = new Insert(srcParent, base, srcPos);
+				
+				ASTNode destParent = matches.get(nodeParentID).base();
+				// check if it was a move to a node not yet in base
+				if (destParent == null) {
+					destParent = node.parent;
+				}
+				int destPos = node.parent.children().indexOf(node);
+				Delete del = new Delete(destParent, base, destPos);
+				
+				m.addMove(ins, del);
 			}
 			
 			if (!base.label.equals(node.label)) {

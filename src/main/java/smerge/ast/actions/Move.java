@@ -4,15 +4,21 @@ import smerge.ast.ASTNode;
 
 public class Move implements Action {
 	
-	private ASTNode parent;
-	private ASTNode child; // node in 
+	public Insert ins;
+	public Delete del;
+	
+	public Move(Insert ins, Delete del) {
+		this.ins = ins;
+		this.del = del;
+	}
 	
 	
 	public void apply() {
-		
+		del.apply();
+		ins.apply();
 	}
 	
 	public String toString() {
-		return "Move";
+		return "Move (" + ins + ", " + del + ")";
 	}
 }

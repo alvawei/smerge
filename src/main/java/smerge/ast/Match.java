@@ -71,11 +71,11 @@ public class Match {
 		actions[UPDATE] = new Update(before, after);
 	}
 	
-	public void addMove() {
+	public void addMove(Insert ins, Delete del) {
 		if (actions[DELETE] != null) {
 			throw new RuntimeException("unmergable conflict: node deleted and moved");
 		} else {
-			actions[MOVE] = new Move();
+			actions[MOVE] = new Move(ins, del);
 		}
 	}
 	
