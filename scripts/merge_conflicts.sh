@@ -7,6 +7,10 @@ else
     RESULTS_DIR=$2
     NUM=0
     GET_FILES=1;
+
+    touch $RESULTS_DIR/result.txt
+    rm $RESULTS_DIR/result.txt
+    touch $RESULTS_DIR/result.txt
     
     while read line; do
 	COMMITS=($line)
@@ -54,13 +58,13 @@ else
 			RESULT="$(yes | git -C ${REPO_DIR} mergetool --tool=smerge $FILEPATH)"
 			
 			if [[ $RESULT =~ *SUCCESS* ]]; then
-			    echo "SUCCESS"
+			    echo "SUCCESS" >> $RESULTS_DIR/result.txt
 
 			    cp $FILEPATH $RESULTS_DIR/
 			    mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_actual.py
 			 
 			else
-			    echo "FAILURE"
+			    echo "FAILURE" >> $RESULTS_DIR/result.txt
 			fi
 		    fi
 
@@ -69,7 +73,6 @@ else
 
 		    cp $FILEPATH $RESULTS_DIR/
 		    mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_expected.py
-
 
 		fi
 	    fi

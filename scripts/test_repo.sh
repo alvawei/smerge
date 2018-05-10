@@ -22,12 +22,7 @@ else
 	mv  ${RESULTS_DIR}/${REPO_NAME}_merge_conflicts.txt ${RESULTS_DIR}/merge_conflicts.txt 
     fi
     
-    ./merge_conflicts.sh ${REPO_DIR} ${RESULTS_DIR}
-
-    # Run Conflerge w/ trees on found conflicts in the repo
-#    if [ ! -f ${RESULTS_DIR}/res.txt ]; then
-#	./merge_conflicts.sh ${REPO_DIR} ${RESULTS_DIR} $3 > ${RESULTS_DIR}/res.txt
-#    fi
+    #./merge_conflicts.sh ${REPO_DIR} ${RESULTS_DIR}
     
     # Output <repositoryname>.csv file
 #    ./make_csv.sh ${REPO_NAME} ${RESULTS_DIR} $3
