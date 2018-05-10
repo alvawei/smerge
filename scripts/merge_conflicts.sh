@@ -6,6 +6,7 @@ else
     REPO_DIR=$1
     RESULTS_DIR=$2
     NUM=0
+    GET_FILES=1;
     
     while read line; do
 	COMMITS=($line)
@@ -29,28 +30,35 @@ else
 			mkdir $RESULTS_DIR/conflicts
 		    fi
 		    
-		    cp $FILEPATH $RESULTS_DIR/
-		    mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_conflict.py
-		    
-		    git -C $REPO_DIR reset --merge
+		    if [ $GET_FILES -eq 1 ]; then
+			# get copies of base local remote and conflict
+			cp $FILEPATH $RESULTS_DIR/
+			mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_conflict.py
+			
+			git -C $REPO_DIR reset --merge
+			
+			cp $FILEPATH $RESULTS_DIR/
+			mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_local.py
+			
+			git -C $REPO_DIR checkout remote
+			
+			cp $FILEPATH $RESULTS_DIR/
+			mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_remote.py
+			
+			git -C $REPO_DIR checkout --force -b base $BASE
+			
+			cp $FILEPATH $RESULTS_DIR/
+			mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_base.py
+		    else
+			# TODO
+			# try to resolve conflict using our mergetool
+		    fi
 
-		    cp $FILEPATH $RESULTS_DIR/
-		    mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_local.py
-		    
-		    git -C $REPO_DIR checkout remote
-		    
-		    cp $FILEPATH $RESULTS_DIR/
-		    mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_remote.py
-		    
+		    # get the human merged file
 		    git -C $REPO_DIR checkout --force -b merged $MERGED
 
 		    cp $FILEPATH $RESULTS_DIR/
 		    mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_expected.py
-
-		    git -C $REPO_DIR checkout --force -b base $BASE
-		    
-		    cp $FILEPATH $RESULTS_DIR/
-		    mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_base.py
 
 
 		fi
