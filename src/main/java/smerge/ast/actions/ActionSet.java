@@ -13,15 +13,11 @@ import java.util.Comparator;
 // basically a tree diff
 public class ActionSet {
 	
-	public List<Insert> inserts;
-	public List<Delete> deletes;
-	public List<Update> updates;
-	public List<Move> moves;
 	
-	private SortedSet<Action> actions;
+	public List<Action> actions;
 	
 	public ActionSet() {
-		actions = new TreeSet<Action>(new ActionSort());
+		actions = new ArrayList<>();
 	}
 	
 	// returns true iff actions are merged into base tree
@@ -52,8 +48,6 @@ public class ActionSet {
 				
 				return 0;
 		}
-
-		
 	}
 	
 	public String toString() {

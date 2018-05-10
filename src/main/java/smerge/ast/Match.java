@@ -17,7 +17,7 @@ public class Match {
 	public static final int UPDATE = 2;
 	public static final int MOVE = 3;
 	
-	private int id;
+	public int id;
 	private ASTNode[] nodes;
 	private Action[] actions;
 	
@@ -44,9 +44,6 @@ public class Match {
     }
     
 	public void addInsert(ASTNode parent, ASTNode child, int position) {
-		if (actions[INSERT] != null) {
-			// impossible case?
-		}
 		actions[INSERT] = new Insert(parent, child, position);
 		
 	}
@@ -62,7 +59,8 @@ public class Match {
 		if (actions[UPDATE] != null) {
 			if (before.getType() == ASTNode.IMPORT) {
 				// merge imports
-				((Update) actions[UPDATE]).after.label += after.label;
+				((Update) actions[UPDATE]).after.label += before.label + after.label;
+				return;
 			} else if (before.getType() == ASTNode.COMMENT) {
 				// keep base comment
 				actions[UPDATE] = null;
@@ -83,5 +81,13 @@ public class Match {
 	
 	public Action[] actions() {
 		return actions;
+	}
+	
+	public String toString() {
+		String b = base() == null ? "0" : "1";
+		String l = local() == null ? "0" : "1";
+		String r = remote() == null ? "0" : "1";
+
+		return "" + id + "(" + b + l + r + ")";
 	}
 }

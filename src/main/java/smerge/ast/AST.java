@@ -26,12 +26,7 @@ public class AST {
 	
 	
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		for (String imp : imports) {
-			sb.append(imp + "\n");
-		}
-		sb.append(root.toString());
-		return sb.toString();
+		return root.toString();
 	}
 	
 	public String debugTree() {

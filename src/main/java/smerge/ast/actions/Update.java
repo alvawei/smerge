@@ -14,7 +14,7 @@ public class Update implements Action {
 	
 	// swap before with after
 	public void apply() {
-		// before.setLabel(after.getLabel());
+		before.label = after.label;
 	}
 	
 	public String toString() {

@@ -36,6 +36,8 @@ public class ASTDiffer {
 		int baseId = matcher.getBaseId();
 		int localId = matcher.getLocalId();
 		int remoteId = matcher.getRemoteId();
+		
+		System.out.println("matches = " + matcher.matches());
 	}
 	
 	public ActionSet diff() {
@@ -44,12 +46,14 @@ public class ASTDiffer {
 		List<Match> matches = matcher.matches();
 		for (int i = 1; i < matches.size(); i++) { // start at 1 to skip root
 			Match m = matches.get(i);
+			
 			ASTNode base = m.base();
 			ASTNode local = m.local();
 			ASTNode remote = m.remote();
 
 			addActions(actions, matches, m, m.local());
 			addActions(actions, matches, m, m.remote());
+			
 			
 			
 			for (Action a : m.actions()) {

@@ -39,7 +39,6 @@ public class ASTMatcher {
 		baseId = id;
 		localMatchId = match(local, base, baseId, LOCAL);
 		remoteMatchId = match(remote, base, localMatchId, REMOTE);
-		
 	}
 	
 	// match t1 to t2

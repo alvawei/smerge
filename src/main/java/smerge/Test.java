@@ -28,7 +28,8 @@ public class Test {
         AST localTree = PythonParser.parse(new File(local));
         AST remoteTree = PythonParser.parse(new File(remote));
         
-        ASTMatcher matcher = new ASTMatcher(baseTree.getRoot(), localTree.getRoot(), remoteTree.getRoot());
+        ASTDiffer diff = new ASTDiffer(baseTree, localTree, remoteTree);
+
         System.out.println(baseTree);
         System.out.println(baseTree.debugTree());
         
@@ -42,9 +43,12 @@ public class Test {
         System.out.println(remoteTree);
         System.out.println(remoteTree.debugTree());
                
-        ASTDiffer diff = new ASTDiffer(baseTree, localTree, remoteTree);
         ActionSet actions = diff.diff();
         System.out.println(actions);
+        
+        actions.apply();
+        System.out.println(baseTree);
+        System.out.println(baseTree.debugTree());
 	}
 
 }

@@ -25,7 +25,7 @@ public class ASTNode {
 	private int id;
 	
 	protected int type;
-	protected String label;
+	public String label;
 	protected ASTNode parent;
 	protected List<ASTNode> children;
 	
