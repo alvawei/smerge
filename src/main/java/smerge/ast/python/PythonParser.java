@@ -1,6 +1,7 @@
 package smerge.ast.python;
 
 import smerge.ast.AST;
+import smerge.ast.ASTMatcher;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -17,20 +18,23 @@ public class PythonParser {
 	// Testing Method
 	public static void main(String[] args) throws IOException {
 			
-		/*
-		File base = new File("conflicts/test/test_base.py");
-		AST baseTree = parse(base);
-		System.out.println(baseTree);
 		
-		File local = new File("conflicts/test/test_local.py");
+		File base = new File("scripts/test_results/flask_test_results/conflicts/1___init___base.py");
+		AST baseTree = parse(base);
+		
+		File local = new File("scripts/test_results/flask_test_results/conflicts/1___init___local.py");
 		AST localTree = parse(local);
-		System.out.println(localTree);
-		*/
+		
 
 		
-		File remote = new File("scripts/test_results/flask_test_results/conflicts/1___init___base.py");
+		File remote = new File("scripts/test_results/flask_test_results/conflicts/1___init___remote.py");
 		AST remoteTree = parse(remote);
-		System.out.println(remoteTree);
+		
+		ASTMatcher matcher = new ASTMatcher(baseTree.getRoot(), localTree.getRoot(), remoteTree.getRoot());
+		
+		System.out.println(baseTree.debugTree());
+		System.out.println(localTree.debugTree());
+		System.out.println(remoteTree.debugTree());
 		
 	}
 	
@@ -50,7 +54,7 @@ public class PythonParser {
 		// build AST
 		String line = br.readLine();
 		while (line != null) {
-			if (line.endsWith("\\")) {
+			if (line.endsWith("\\") || line.endsWith(",")) {
 				line += "\n" + br.readLine();
 				continue;
 			}
@@ -68,9 +72,6 @@ public class PythonParser {
 			int indentation = getIndentation(line);
 			String lineContent = line.trim();
 			int type = getType(lineContent);
-			
-			
-			
 			
 			PythonNode node = new PythonNode(indentation, lineContent + "\n", type);
 

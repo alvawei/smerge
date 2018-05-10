@@ -52,22 +52,23 @@ public class Merger {
         System.out.println("Parsing remote file...");
         AST remoteTree = PythonParser.parse(new File(remote));
         
-        
-        System.out.println("Matching tree nodes...");
-        ASTMatcher matcher = new ASTMatcher(baseTree.getRoot(), localTree.getRoot(), remoteTree.getRoot());
-        
         System.out.println("Generating tree diffs...");
-        // ActionSet actions;
+        ActionSet actions = new ASTDiffer(baseTree, localTree, remoteTree).diff();
         
         System.out.println("Merging changes into base file...");
-        // baseTree.apply(actionns);
+        boolean success = actions.apply();
         
-        // write baseTree to merged
-        System.out.println("Writing result to " + merged);
-        String result = baseTree.toString();
-        
-        // write result -> merged
-        PrintWriter out = new PrintWriter(merged);
-        out.println(result);
+        if (success) {
+            // write baseTree to merged
+            System.out.println("Writing result to " + merged);
+            String result = baseTree.toString();
+            
+            // write result -> merged
+            PrintWriter out = new PrintWriter(merged);
+            out.println(result);
+        } else {
+        	System.out.println("Failed to merge.");
+        }
+
     }
 }

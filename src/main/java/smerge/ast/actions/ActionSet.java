@@ -21,6 +21,11 @@ public class ActionSet {
 		this.moves = new ArrayList<>();
 	}
 	
+	// returns true iff actions are merged into base tree
+	public boolean apply() {
+		return false;
+	}
+	
 
 	
 	public void addInsert(ASTNode parent, ASTNode child, int position) {
@@ -31,8 +36,8 @@ public class ActionSet {
 		deletes.add(new Delete(parent, child, position));
 	}
 
-	public void addUpdate() {
-		updates.add(new Update());
+	public void addUpdate(ASTNode before, ASTNode after) {
+		updates.add(new Update(before, after));
 	}
 	
 	public void addMove() {

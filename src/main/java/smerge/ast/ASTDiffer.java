@@ -78,38 +78,9 @@ public class ASTDiffer {
 			
 			if (base.label.equals(node.label)) {
 				// node updated
-				// actions.addUpdate();
+				actions.addUpdate(base, node);
 			}
 			
 		}
 	}
-
-	// merges the base->local and base->remote diffs
-	// returns null if not possible
-	public List<Action> mergedDiff() {
-		List<Action> actions = new ArrayList<Action>();
-
-		return null;
-	}
-	
-	public static List<Action> lineBasedDiff(AST src, AST dest) throws DiffException {
-		Map<Integer, ArrayList<Integer>> srcEncoding= new HashMap<>();
-		src.getRoot().encode(srcEncoding);
-		Map<Integer, ArrayList<Integer>> destEncoding = new HashMap<>();
-		dest.getRoot().encode(destEncoding);
-
-		
-		List<Integer> original = srcEncoding.get(0);
-		List<Integer> revised = destEncoding.get(0);
-
-		Patch<Integer> patch = DiffUtils.diff(original, revised);
-		
-		        
-		for (Delta delta : patch.getDeltas()) {
-		    System.out.println(delta);
-		}
-		
-		return null;
-	}
-	
 }
