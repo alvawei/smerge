@@ -29,19 +29,16 @@ public class Test {
         
         ASTMatcher matcher = new ASTMatcher(baseTree.getRoot(), localTree.getRoot(), remoteTree.getRoot());
         System.out.println(baseTree);
-        System.out.println(baseTree.idTree());
         System.out.println(baseTree.debugTree());
         
         System.out.println();
         
         System.out.println(localTree);
-        System.out.println(localTree.idTree());
         System.out.println(localTree.debugTree());
         
         System.out.println();
         
         System.out.println(remoteTree);
-        System.out.println(remoteTree.idTree());
         System.out.println(remoteTree.debugTree());
                
         

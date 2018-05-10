@@ -38,37 +38,49 @@ public class ASTDiffer {
 		int remoteId = matcher.getRemoteId();
 	}
 	
-	public void iterateMatches() {
+	public ActionSet diff() {
 		// for each id, there are are 1-3 nodes
 		ActionSet actions = new ActionSet();
-		for (Match m : matcher.matches()) {
-			if (m.base() == null){
-				// a node must have been inserted (it was not originally in the base tree)
-				if (m.local() != null)
-					actions.addInsert();
-				if (m.remote() != null)
-					actions.addInsert();
-			} else {
-				// the node existed in base
-				if (m.local() == null) {
-					// node must have been deleted
-					actions.addDelete();
-				} else {
-					if (!m.base().label.equals(m.local().label)) {
-						// content of node changed
-						actions.addUpdate();
-					}
-				}
-				if (m.remote() == null) {
-					// node must have been deleted
-					actions.addDelete();
-				} else {
-					if (!m.base().label.equals(m.remote().label)) {
-						// content of node changed
-						actions.addUpdate();
-					}
-				}
+		List<Match> matches = matcher.matches();
+		for (int i = 1; i < matches.size(); i++) { // start at 1 to skip root
+			Match m = matches.get(i);
+			addActions(actions, matches, m.base(), m.local());
+			addActions(actions, matches, m.base(), m.remote());
+		}
+		
+		return actions;
+	}
+	
+	// node is either local or remote node
+	public void addActions(ActionSet actions, List<Match> matches, ASTNode base, ASTNode node) {
+		if (base == null){
+			if (node != null) {
+				// a new node was inserted
+				ASTNode parent = node.parent;
+				int position = parent.children().indexOf(node);
+				ASTNode baseParentEquivalent = matches.get(parent.getID()).base();
+				actions.addInsert(baseParentEquivalent, node, position);
 			}
+		} else if (node == null) {
+			// node was deleted
+			ASTNode parent = node.parent;
+			int position = parent.children().indexOf(node);
+			ASTNode baseParentEquivalent = matches.get(parent.getID()).base();
+			actions.addDelete(baseParentEquivalent, node, position);
+		} else {
+			int baseParentID = base.parent.getID();
+			int nodeParentID = node.parent.getID();
+			
+			if (baseParentID != nodeParentID) {
+				// node must have been moved
+				// actions.addMove();
+			}
+			
+			if (base.label.equals(node.label)) {
+				// node updated
+				// actions.addUpdate();
+			}
+			
 		}
 	}
 

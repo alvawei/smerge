@@ -24,15 +24,14 @@ public class ActionSet {
 
 	
 	public void addInsert(ASTNode parent, ASTNode child, int position) {
-		inserts.add(new Insert());
+		inserts.add(new Insert(parent, child, position));
 	}
 	
 	public void addDelete(ASTNode parent, ASTNode child, int position) {
-		deletes.add(new Delete());
+		deletes.add(new Delete(parent, child, position));
 	}
 
 	public void addUpdate() {
-		// if two updates on same node, throw error? unless node types are comment?
 		updates.add(new Update());
 	}
 	
