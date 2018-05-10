@@ -44,19 +44,6 @@ public class Test {
         
         
         ASTDiffer diff = new ASTDiffer(baseTree, localTree, remoteTree);
-        
-        List<Action> actions = diff.mergedDiff();
-        
-
-        
-        // write baseTree to merged
-        String result = baseTree.toString();
-        // System.out.println(result);
-        
-        // write result -> merged
-        PrintWriter out = new PrintWriter(merged);
-        out.println(result);
-
 	}
 
 }
