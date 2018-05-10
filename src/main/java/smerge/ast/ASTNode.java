@@ -113,21 +113,4 @@ public class ASTNode {
 		}
 		
 	}
-	
-	public void encode(Map<Integer, ArrayList<Integer>> encoding) {
-		if (!children.isEmpty()) {
-			ArrayList<Integer> childrenIDList = new ArrayList<>();
-			for (ASTNode child : children) {
-				childrenIDList.add(child.getID());
-				child.encode(encoding);
-			}
-			encoding.put(id, childrenIDList);
-		}
-	}
-	
-	/*@Override
-	public boolean equals(Object o) {
-		return o == this;
-	}*/
-	
 }

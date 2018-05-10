@@ -29,7 +29,7 @@ public class PythonNode extends ASTNode {
 		StringBuilder sb = new StringBuilder();
 		if (indentation != -1) {
 			indent(indentation, sb);
-			sb.append(text);
+			sb.append(label);
 		}
 		for (ASTNode child : children) {
 			sb.append(child.toString());
