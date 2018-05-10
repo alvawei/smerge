@@ -77,11 +77,13 @@ public class PythonParser {
 		
 		// holds onto current parents
 		// maps indentation -> last node/line read with this indentation
-		Map<Integer, PythonNode> parents = new HashMap<>();
+		// Map<Integer, PythonNode> parents = new HashMap<>();
+		Stack<PythonNode> parentStack = new Stack<>();
 		
 		// initialize tree
 		PythonNode root = new PythonNode();
-		parents.put(-4, root);
+		// parents.put(-4, root);
+		parentStack.push(root);
 		AST tree = new AST(root);
 	    
 		// build AST
@@ -105,15 +107,24 @@ public class PythonParser {
 			int indentation = getIndentation(line);
 			String lineContent = line.trim();
 			int type = getType(lineContent);
-			
+
 			PythonNode node = new PythonNode(indentation, lineContent + "\n", type);
 
 			// set as last seen node with this indentation
-			parents.put(indentation, node);
+			//parents.put(indentation, node);
+	
 			
 			// find parent of this node and add it as a child
-			PythonNode parent = indentation > 0 ? parents.get(indentation - 4) : root;
+			PythonNode parent = parentStack.peek();
+			while (indentation <= parent.indentation) {
+				parentStack.pop();
+				parent = parentStack.peek();
+			}
 			parent.addChild(node);
+			
+			if (lineContent.endsWith(":")) {
+				parentStack.push(node);
+			}
 			
 			line = br.readLine();
 		}

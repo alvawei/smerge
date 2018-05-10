@@ -71,10 +71,9 @@ public class ASTDiffer {
 			}
 		} else if (node == null) {
 			// node was deleted
-			ASTNode parent = node.parent;
-			int position = parent.children().indexOf(node);
-			ASTNode baseParentEquivalent = matches.get(parent.getID()).base();
-			m.addDelete(baseParentEquivalent, node, position);
+			ASTNode parent = base.parent;
+			int position = parent.children().indexOf(base);
+			m.addDelete(parent, position);
 		} else {
 			int baseParentID = base.parent.getID();
 			int nodeParentID = node.parent.getID();
@@ -85,7 +84,7 @@ public class ASTDiffer {
 				base.indentation = node.indentation;
 				ASTNode srcParent = matches.get(baseParentID).base();
 				int srcPos = srcParent.children().indexOf(base);
-				Delete del = new Delete(srcParent, base, srcPos);
+				Delete del = new Delete(srcParent, srcPos);
 				
 				ASTNode destParent = matches.get(nodeParentID).base();
 				// check if it was a move to a node not yet in base

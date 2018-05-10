@@ -48,11 +48,11 @@ public class Match {
 		
 	}
 	
-	public void addDelete(ASTNode parent, ASTNode child, int position) {
+	public void addDelete(ASTNode parent, int position) {
 		if (actions[UPDATE] != null) {
 			throw new RuntimeException("unmergable conflict: node delted and updated");
 		}
-		actions[DELETE] = new Delete(parent, child, position);
+		actions[DELETE] = new Delete(parent, position);
 	}
 
 	public void addUpdate(ASTNode before, ASTNode after) {

@@ -5,12 +5,10 @@ import smerge.ast.ASTNode;
 public class Delete implements Action {
 	
 	private ASTNode parent; // parent removed from (in base tree)
-	private ASTNode child; // child being removed (remote or local)
 	private int position; // index of child
 	
-	public Delete(ASTNode parent, ASTNode child, int position) {
+	public Delete(ASTNode parent, int position) {
 		this.parent = parent;
-		this.child = child;
 		this.position = position;
 	}
 	
@@ -20,7 +18,7 @@ public class Delete implements Action {
 	}
 	
 	public String toString() {
-		return "Delete " + child.getID() + " from " + parent.getID() + "[" + position + "]";
+		return "Delete " + parent.children().get(position).getID() + " from " + parent.getID() + "[" + position + "]";
 	}
 
 	
