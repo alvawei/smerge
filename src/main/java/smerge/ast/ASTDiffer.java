@@ -12,7 +12,9 @@ import com.github.difflib.algorithm.DiffException;
 import com.github.difflib.patch.Delta;
 import com.github.difflib.patch.Patch;
 
+import smerge.ast.ASTMatcher.Match;
 import smerge.ast.actions.Action;
+import smerge.ast.actions.ActionSet;
 
 // given two matched trees, produce a list of actions
 // actions are things like move, add, remove nodes (lines) 
@@ -35,6 +37,40 @@ public class ASTDiffer {
 		int localId = matcher.getLocalId();
 		int remoteId = matcher.getRemoteId();
 	}
+	
+	public void iterateMatches() {
+		// for each id, there are are 1-3 nodes
+		ActionSet actions = new ActionSet();
+		for (Match m : matcher.matches()) {
+			if (m.base() == null){
+				// a node must have been inserted (it was not originally in the base tree)
+				if (m.local() != null)
+					actions.addInsert();
+				if (m.remote() != null)
+					actions.addInsert();
+			} else {
+				// the node existed in base
+				if (m.local() == null) {
+					// node must have been deleted
+					actions.addDelete();
+				} else {
+					if (!m.base().label.equals(m.local().label)) {
+						// content of node changed
+						actions.addUpdate();
+					}
+				}
+				if (m.remote() == null) {
+					// node must have been deleted
+					actions.addDelete();
+				} else {
+					if (!m.base().label.equals(m.remote().label)) {
+						// content of node changed
+						actions.addUpdate();
+					}
+				}
+			}
+		}
+	}
 
 	// merges the base->local and base->remote diffs
 	// returns null if not possible
@@ -55,6 +91,7 @@ public class ASTDiffer {
 		List<Integer> revised = destEncoding.get(0);
 
 		Patch<Integer> patch = DiffUtils.diff(original, revised);
+		
 		        
 		for (Delta delta : patch.getDeltas()) {
 		    System.out.println(delta);

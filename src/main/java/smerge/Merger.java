@@ -69,9 +69,9 @@ public class Merger {
         // baseTree.apply(actionns);
         
         // merge imports
-        Set<String> imports = mergeImports(baseTree.imports(), localTree.imports(), remoteTree.imports());
-        baseTree.imports().clear();
-        baseTree.imports().addAll(imports);
+        // Set<String> imports = mergeImports(baseTree.imports(), localTree.imports(), remoteTree.imports());
+        // baseTree.imports().clear();
+        // baseTree.imports().addAll(imports);
         
         // write baseTree to merged
         String result = baseTree.toString();

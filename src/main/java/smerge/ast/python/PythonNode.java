@@ -10,7 +10,7 @@ public class PythonNode extends ASTNode {
 	public static final String INDENT = "    ";
 	
 	private int indentation;
-	private String text;
+	public String text;
 		
 	public PythonNode() {
 		this(-1, "@root\n", -1);

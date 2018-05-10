@@ -18,6 +18,9 @@ public class ASTNode {
 	public static final int WHILE_LOOP = 6;
 	public static final int FOR_LOOP = 7;
 	public static final int WHITESPACE = 8;
+	public static final int IMPORT = 9;
+	public static final int COMMENT = 10;
+	public static final int BLOCK_COMMENT = 11;
 	
 	private int id;
 	
@@ -51,6 +54,11 @@ public class ASTNode {
 	
 	public void setParent(ASTNode parent) {
 		this.parent = parent;
+	}
+	
+	public void addChild(ASTNode child) {
+		children.add(child);
+		child.parent = this;
 	}
 	
 	public String getLabel() {
