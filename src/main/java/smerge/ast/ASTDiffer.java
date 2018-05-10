@@ -86,7 +86,7 @@ public class ASTDiffer {
 			if (baseParentID != nodeParentID) {
 				// node must have been moved
 				// need to also see if node changed position
-				// actions.addMove();
+				// m.addMove();
 			}
 			
 			if (base.label.equals(node.label)) {

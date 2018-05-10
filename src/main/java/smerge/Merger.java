@@ -53,20 +53,21 @@ public class Merger {
         AST remoteTree = PythonParser.parse(new File(remote));
         
         System.out.println("Generating tree diffs...");
-        ActionSet actions = new ASTDiffer(baseTree, localTree, remoteTree).diff();
-        
-        System.out.println("Merging changes into base file...");
-        boolean success = actions.apply();
-        
-        if (success) {
+        boolean success = true;
+        try {
+            ActionSet actions = new ASTDiffer(baseTree, localTree, remoteTree).diff();
+            actions.apply();
             // write baseTree to merged
             System.out.println("Writing result to " + merged);
             String result = baseTree.toString();
             
             // write result -> merged
             PrintWriter out = new PrintWriter(merged);
+            
             out.println(result);
-        } else {
+            
+        } catch (RuntimeException e) {
+        	e.printStackTrace();
         	System.out.println("Failed to merge.");
         }
 
