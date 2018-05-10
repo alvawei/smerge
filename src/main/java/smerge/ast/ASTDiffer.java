@@ -48,15 +48,23 @@ public class ASTDiffer {
 			ASTNode local = m.local();
 			ASTNode remote = m.remote();
 
-			addActions(actions, matches, m.base(), m.local());
-			addActions(actions, matches, m.base(), m.remote());
+			addActions(actions, matches, m, m.local());
+			addActions(actions, matches, m, m.remote());
+			
+			
+			for (Action a : m.actions()) {
+				if (a != null) {
+					actions.add(a);
+				}
+			}
 		}
 		
 		return actions;
 	}
 	
 	// node is either local or remote node
-	public void addActions(ActionSet actions, List<Match> matches, ASTNode base, ASTNode node) {
+	public void addActions(ActionSet actions, List<Match> matches, Match m, ASTNode node) {
+		ASTNode base = m.base();
 		if (base == null){
 			if (node != null) {
 				// a new node was inserted
@@ -70,7 +78,7 @@ public class ASTDiffer {
 			ASTNode parent = node.parent;
 			int position = parent.children().indexOf(node);
 			ASTNode baseParentEquivalent = matches.get(parent.getID()).base();
-			actions.addDelete(baseParentEquivalent, node, position);
+			m.addDelete(baseParentEquivalent, node, position);
 		} else {
 			int baseParentID = base.parent.getID();
 			int nodeParentID = node.parent.getID();
@@ -83,9 +91,8 @@ public class ASTDiffer {
 			
 			if (base.label.equals(node.label)) {
 				// node updated
-				actions.addUpdate(base, node);
-			}
-			
+				m.addUpdate(base, node);
+			}			
 		}
 	}
 }

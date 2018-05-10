@@ -27,20 +27,7 @@ public class ActionSet {
 	}
 	
 
-	
-	public void addInsert(ASTNode parent, ASTNode child, int position) {
-		inserts.add(new Insert(parent, child, position));
-	}
-	
-	public void addDelete(ASTNode parent, ASTNode child, int position) {
-		deletes.add(new Delete(parent, child, position));
-	}
-
-	public void addUpdate(ASTNode before, ASTNode after) {
-		updates.add(new Update(before, after));
-	}
-	
-	public void addMove() {
-		moves.add(new Move());
+	public void add(Action a) {
+		
 	}
 }

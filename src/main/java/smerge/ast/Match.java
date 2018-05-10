@@ -78,4 +78,8 @@ public class Match {
 			actions[MOVE] = new Move();
 		}
 	}
+	
+	public Action[] actions() {
+		return actions;
+	}
 }
