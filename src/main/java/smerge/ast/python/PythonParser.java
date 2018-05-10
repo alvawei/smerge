@@ -42,16 +42,10 @@ public class PythonParser {
 		// maps indentation -> last node/line read with this indentation
 		Map<Integer, PythonNode> parents = new HashMap<>();
 		
-		// keeps track of current number of empty lines
-		PythonNode importsNode = new PythonNode();
-		int emptyLines = 0;
-		
 		// initialize tree
 		PythonNode root = new PythonNode();
-		parents.put(-1, root);
+		parents.put(-4, root);
 		AST tree = new AST(root);
-		
-		Stack<PythonNode> parentStack = new Stack<>();
 	    
 		// build AST
 		String line = br.readLine();
@@ -87,59 +81,6 @@ public class PythonParser {
 			PythonNode parent = indentation > 0 ? parents.get(indentation - 4) : root;
 			parent.addChild(node);
 			
-			/*
-			
-			switch (type) {
-					
-				case PythonNode.IMPORT:
-					if (importsNode.getParent() == null) {
-						// add imports under previous comments, etc.
-						PythonNode parent = parents.get(0);
-						parent.addChild(importsNode);
-						parents.put(0, importsNode);
-					}
-					importsNode.text += lineContent + "\n";
-					break;
-				
-				case PythonNode.WHITESPACE:
-					emptyLines++;
-					break;
-					
-				case PythonNode.BLOCK_COMMENT:
-					// have to read until block comment closes
-					lineContent += "\n";
-					String nextLine = br.readLine();
-					while (!nextLine.contains("\"\"\"")) {
-						lineContent += nextLine + "\n";
-						nextLine = br.readLine();
-					}
-					lineContent += nextLine + "\n";
-					// no break
-					
-				default:
-					PythonNode node = new PythonNode(indentation, lineContent + "\n", type);
-
-					// set as last seen node with this indentation
-					parents.put(indentation, node);
-					
-					// find parent of this node
-					PythonNode parent = parents.get(indentation - 1);
-					
-					if (emptyLines > 0) {
-						// preappend empty lines
-						String newLines = "";
-						for (int i = 0; i < emptyLines; i++) newLines += "\n";
-						PythonNode whitespaceNode = new PythonNode(0, newLines, PythonNode.WHITESPACE);
-						parent.addChild(whitespaceNode);
-						emptyLines = 0;
-					}
-					
-					// insert node into tree
-					parent.addChild(node);
-					break;
-					
-			} 
-			*/
 			line = br.readLine();
 		}
 		return tree;
