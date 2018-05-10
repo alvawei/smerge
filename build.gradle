@@ -9,6 +9,10 @@
 apply plugin: 'java'
 apply plugin: 'eclipse'
 
+apply plugin: 'application'
+
+mainClassName = 'smerge.Merger'
+
 version = '1.0'
 jar {
     manifest {
