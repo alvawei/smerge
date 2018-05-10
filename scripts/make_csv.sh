@@ -20,7 +20,7 @@ ALL_PERFECT_NC=$(grep SUCCESS $2/*.outc | wc -l)
 # Total number of tested conflicts
 CONFLICTS=$[$2/res.txt | wc -l]
 
-# Number of Conflerge merges identical to human merges but differing in comments
+# Number of Smerge merges identical to human merges but differing in comments
 PERFECT_NC=$[ALL_PERFECT_NC-PERFECT]
 
 # Number of incorrect merges
