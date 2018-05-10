@@ -63,7 +63,6 @@ public class Merger {
             
             // write result -> merged
             PrintWriter out = new PrintWriter(merged);
-            
             out.println(result);
             
         } catch (RuntimeException e) {

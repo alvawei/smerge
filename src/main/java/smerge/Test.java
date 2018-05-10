@@ -50,6 +50,8 @@ public class Test {
         System.out.println("Generating tree diffs...");
         try {
             ActionSet actions = diff.diff();
+        	System.out.println(actions);
+
             actions.apply();
             
             System.out.println(baseTree);
@@ -62,6 +64,7 @@ public class Test {
             // write result -> merged
             PrintWriter out = new PrintWriter(merged);
             out.println(result);
+            out.close();
             
         } catch (RuntimeException e) {
         	e.printStackTrace();
