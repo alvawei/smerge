@@ -86,7 +86,7 @@ public class ASTDiffer {
 				// need to also see if node changed position
 				ASTNode srcParent = matches.get(baseParentID).base();
 				int srcPos = srcParent.children().indexOf(base);
-				Insert ins = new Insert(srcParent, base, srcPos);
+				Delete del = new Delete(srcParent, base, srcPos);
 				
 				ASTNode destParent = matches.get(nodeParentID).base();
 				// check if it was a move to a node not yet in base
@@ -94,7 +94,7 @@ public class ASTDiffer {
 					destParent = node.parent;
 				}
 				int destPos = node.parent.children().indexOf(node);
-				Delete del = new Delete(destParent, base, destPos);
+				Insert ins = new Insert(destParent, base, destPos);
 				
 				m.addMove(ins, del);
 			}
