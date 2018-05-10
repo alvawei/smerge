@@ -27,5 +27,5 @@ else
     ./run_diff.sh ${RESULTS_DIR}
 
     # Output <repositoryname>.csv file
-#    ./make_csv.sh ${REPO_NAME} ${RESULTS_DIR} $3
+    ./make_csv.sh ${REPO_NAME} ${RESULTS_DIR} $3
 fi
