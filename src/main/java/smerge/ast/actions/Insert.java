@@ -8,7 +8,7 @@ public class Insert implements Action {
 	private ASTNode child; // child introduced in local or remote tree
 	private int position; // index of child
 	
-	public Insert(ASTNode parent, ASTNode child, int positon) {
+	public Insert(ASTNode parent, ASTNode child, int position) {
 		this.parent = parent;
 		this.child = child;
 		this.position = position;
