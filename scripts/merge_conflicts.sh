@@ -6,7 +6,7 @@ else
     REPO_DIR=$1
     RESULTS_DIR=$2
     NUM=0
-    GET_FILES=1;
+    GET_FILES=0;
 
     touch $RESULTS_DIR/result.txt
     rm $RESULTS_DIR/result.txt

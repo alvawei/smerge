@@ -22,8 +22,10 @@ else
 	mv  ${RESULTS_DIR}/${REPO_NAME}_merge_conflicts.txt ${RESULTS_DIR}/merge_conflicts.txt 
     fi
     
-    #./merge_conflicts.sh ${REPO_DIR} ${RESULTS_DIR}
+    ./merge_conflicts.sh ${REPO_DIR} ${RESULTS_DIR}
     
+    ./run_diff.sh ${RESULTS_DIR}
+
     # Output <repositoryname>.csv file
 #    ./make_csv.sh ${REPO_NAME} ${RESULTS_DIR} $3
 fi
