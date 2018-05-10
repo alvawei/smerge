@@ -80,8 +80,6 @@ public class ASTDiffer {
 			int nodeParentID = node.parent.getID();
 			
 			if (baseParentID != nodeParentID) {
-				System.out.println(" Move detected " + m.id);
-				System.out.println(baseParentID + " -> " + nodeParentID);
 				// node must have been moved
 				// need to also see if node changed position
 				ASTNode srcParent = matches.get(baseParentID).base();

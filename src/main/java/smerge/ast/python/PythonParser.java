@@ -1,12 +1,15 @@
 package smerge.ast.python;
 
 import smerge.ast.AST;
+import smerge.ast.ASTDiffer;
 import smerge.ast.ASTMatcher;
+import smerge.ast.actions.ActionSet;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
@@ -19,22 +22,52 @@ public class PythonParser {
 	public static void main(String[] args) throws IOException {
 			
 		
-		File base = new File("scripts/test_results/flask_test_results/conflicts/1___init___base.py");
-		AST baseTree = parse(base);
-		
+		File base = new File("scripts/test_results/flask_test_results/conflicts/1___init___base.py");		
 		File local = new File("scripts/test_results/flask_test_results/conflicts/1___init___local.py");
-		AST localTree = parse(local);
-		
+		File remote = new File("scripts/test_results/flask_test_results/conflicts/1___init___remote.py");
+				
 
 		
-		File remote = new File("scripts/test_results/flask_test_results/conflicts/1___init___remote.py");
-		AST remoteTree = parse(remote);
-		
-		ASTMatcher matcher = new ASTMatcher(baseTree.getRoot(), localTree.getRoot(), remoteTree.getRoot());
-		
-		System.out.println(baseTree.debugTree());
-		System.out.println(localTree.debugTree());
-		System.out.println(remoteTree.debugTree());
+        System.out.println("Parsing files...");
+        AST baseTree = PythonParser.parse(base);
+        AST localTree = PythonParser.parse(local);
+        AST remoteTree = PythonParser.parse(remote);
+        
+        ASTDiffer diff = new ASTDiffer(baseTree, localTree, remoteTree);
+
+        System.out.println(baseTree.debugTree());
+        
+        System.out.println();
+        
+        System.out.println(localTree.debugTree());
+        
+        
+        System.out.println();
+        System.out.println(remoteTree.debugTree());
+               
+
+        
+        
+        System.out.println("Generating tree diffs...");
+        try {
+            ActionSet actions = diff.diff();
+            actions.apply();
+            
+            System.out.println(baseTree);
+            System.out.println(baseTree.debugTree());
+            
+            // write baseTree to merged
+            //System.out.println("Writing result to " + merged);
+            String result = baseTree.toString();
+            
+            // write result -> merged
+            //PrintWriter out = new PrintWriter(merged);
+            //out.println(result);
+            
+        } catch (RuntimeException e) {
+        	e.printStackTrace();
+        	System.out.println("Failed to merge.");
+        }
 		
 	}
 	

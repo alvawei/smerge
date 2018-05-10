@@ -24,6 +24,7 @@ public class Test {
         
         // have to figure out which parser to use somehow
         // may be able to take it in as an additional git mergetool input
+        System.out.println("Parsing files...");
         AST baseTree = PythonParser.parse(new File(base));
         AST localTree = PythonParser.parse(new File(local));
         AST remoteTree = PythonParser.parse(new File(remote));
@@ -43,12 +44,29 @@ public class Test {
         System.out.println(remoteTree);
         System.out.println(remoteTree.debugTree());
                
-        ActionSet actions = diff.diff();
-        System.out.println(actions);
+
         
-        actions.apply();
-        System.out.println(baseTree);
-        System.out.println(baseTree.debugTree());
+        
+        System.out.println("Generating tree diffs...");
+        try {
+            ActionSet actions = diff.diff();
+            actions.apply();
+            
+            System.out.println(baseTree);
+            System.out.println(baseTree.debugTree());
+            
+            // write baseTree to merged
+            System.out.println("Writing result to " + merged);
+            String result = baseTree.toString();
+            
+            // write result -> merged
+            PrintWriter out = new PrintWriter(merged);
+            out.println(result);
+            
+        } catch (RuntimeException e) {
+        	e.printStackTrace();
+        	System.out.println("Failed to merge.");
+        }
 	}
 
 }
