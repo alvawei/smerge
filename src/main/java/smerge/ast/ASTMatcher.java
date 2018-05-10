@@ -37,7 +37,7 @@ public class ASTMatcher {
 	private List<Match> matches;
 	
 	// smaller similarity = good
-	private static final double SIM_THRESHOLD = 0.2;
+	private static final double SIM_THRESHOLD = 0.3;
 	//private static final double LEAF_THRESHOLD = 0.8;
 	private int localMatchId = 0;
 	private int remoteMatchId = 0;
