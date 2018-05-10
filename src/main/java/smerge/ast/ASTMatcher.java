@@ -1,8 +1,10 @@
 package smerge.ast;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 public class ASTMatcher {
 	
@@ -65,9 +67,12 @@ public class ASTMatcher {
 	}
 	
 	// match t1 to t2
-	// precondition: t2 is labeled
+	// precondition: t2 is labeled (t2 is base)
 	// return the max id used + 1
 	private int match(ASTNode t1, ASTNode t2, int id, int version) {
+		
+		Set<Integer> matchedIDs = new HashSet<Integer>();
+		
 		Iterator<ASTNode> it1 = t1.preOrder();
 		ASTNode root = it1.next();
 		root.setID(0);
@@ -79,17 +84,22 @@ public class ASTMatcher {
 			it2.next();
 			while (it2.hasNext()) {
 				ASTNode next2 = it2.next();
+				if (matchedIDs.contains(next2.getID())) {
+					continue;
+				}
 				boolean isLeaf2 = next2.children().isEmpty();
 				if (isLeaf1 && isLeaf2) {
 					if (compareLeaf(next1, next2)) {
 						next1.setID(next2.getID());
 						matches.get(next1.getID()).addNode(next1, version);
+						matchedIDs.add(next2.getID());
 						break;
 					}
 				} else if (!isLeaf1 && !isLeaf2) {
 					if (compareInner(next1, next2)) {
 						next1.setID(next2.getID());
 						matches.get(next1.getID()).addNode(next1, version);
+						matchedIDs.add(next2.getID());
 						break;
 					}
 				}
