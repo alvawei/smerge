@@ -7,7 +7,7 @@ We use Travis CI for continuous integration (click the badge below).
 *smerge* uses gradle for project dependencies. The build system can be invoked through the following command:
 
 ```
-./gradlew assemble
+gradle build
 ```
 
 # User Manual
@@ -19,7 +19,7 @@ Smerge is a merge tool that resolves merge conflicts with abstract syntax trees 
 * Update your `.gitconfig` to include: 
 ```bash
 [mergetool "smerge"]
-        cmd = java -jar ~/smerge/Merger.jar \"$BASE\" \"$LOCAL\" \"$REMOTE\" \"$MERGED\"
+        cmd = java -jar ~/smerge/build/libs/smerge-1.0.jar \"$BASE\" \"$LOCAL\" \"$REMOTE\" \"$MERGED\"
 [merge]
         tool = smerge
 ```

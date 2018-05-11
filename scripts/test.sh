@@ -11,5 +11,9 @@ cat repos.txt | while read line; do
     git clone $line.git
     cd $CUR_DIR
     ./test_repo.sh $REPO_NAME
+    
+    # create a final table with all of the csv's included
+    echo "Repo,Conflicts,Unresolved,Correct,CorrectNC,Incorrect,%Correct,%CorrectCW,%Unresolved,%Incorrect" > table.csv
+    cat *.csv > table.csv
 done
 
