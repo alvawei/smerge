@@ -82,7 +82,9 @@ else
 	git -C $REPO_DIR checkout master
 	git -C $REPO_DIR branch -D local
 	git -C $REPO_DIR branch -D remote
-	git -C $REPO_DIR branch -D base
+	if [ $GET_FILES -eq 1 ]; then
+	    git -C $REPO_DIR branch -D base
+	fi
 	git -C $REPO_DIR branch -D merged
 	git -C $REPO_DIR reset --hard master
 

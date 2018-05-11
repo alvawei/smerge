@@ -6,7 +6,7 @@ for FILE in `ls *_actual.py`; do
     F1=${FILENAME}_actual.py
     F2=${FILENAME}_expected.py
     DIFF=${FILENAME}.out
-    DIFF_NC=$${FILENAME}_nc.out
+    DIFF_NC=${FILENAME}_nc.out
 
     # compare actual merge and expected merge
     diff $F1 $F2 > $DIFF
