@@ -174,8 +174,8 @@ public class PythonParser {
 			} else {
 				if (part.startsWith("\"\"\"")) {
 					closing = "\"\"\"";
-				} else if (part.startsWith("'''")) {
-					closing = "'''";
+				} else if (part.startsWith("\'\'\'")) {
+					closing = "\'\'\'";
 				} else if (part.startsWith("\"")) {
 					closing = "\"";
 				} else if (part.startsWith("'")) {
@@ -187,7 +187,7 @@ public class PythonParser {
 				} else if (part.startsWith("[")) {
 					closing = "]";
 				}
-				index += (closing == null ? 1 : closing.length());
+				index += (closing == null ? 1 : closing.length() - 1);
 			}
 			
 			
