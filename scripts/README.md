@@ -16,3 +16,7 @@ For reference, the categories on the table are defined below:
 * **Correct w/o Comments/Whitespace**: The number of conflicts that were resolved correctly with exception to cases where comments or custom whitespace were modified. 
 * **Unresolved**: The number of conflicts that Smerge aborted because attempting to merge would result in possibly undesired behavior. These conflicts would require manual resolution.
 * **Incorrect**: The number of conflicts that Smerge reported to have merged, but the solution it produced differed from the programmer’s manual resolution. 
+
+## References
+This evaluation technique is heavily inspired by a predecessor tool: Conflerge.
+[1]Hanawalt, G., Harrison, J., & Saksena, I. (2017, March 10). Conflerge: Automatically Resolving Merge Conflicts[Scholarly project]. Retrieved April 5, 2018, from https://github.com/ishansaksena/Conflerge
