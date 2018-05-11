@@ -43,10 +43,7 @@ public class Test {
         
         System.out.println(remoteTree);
         System.out.println(remoteTree.debugTree());
-               
-
-        
-        
+                       
         System.out.println("Generating tree diffs...");
         try {
             ActionSet actions = diff.diff();

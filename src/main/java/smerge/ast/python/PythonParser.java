@@ -20,9 +20,13 @@ public class PythonParser {
 	
 	// Testing Method
 	public static void main(String[] args) throws IOException {
+		// String file = "scripts/test_results/keras_test_results/conflicts/35_setup_base.py";
+		String file = "scripts/test_results/flask_test_results/conflicts/1___init___base.py";
+		AST tree = parse(new File(file));
+		System.out.println(tree);
 			
 		
-		File base = new File("scripts/test_results/flask_test_results/conflicts/1___init___base.py");		
+		/*File base = new File("scripts/test_results/flask_test_results/conflicts/1___init___base.py");		
 		File local = new File("scripts/test_results/flask_test_results/conflicts/1___init___local.py");
 		File remote = new File("scripts/test_results/flask_test_results/conflicts/1___init___remote.py");
 				
@@ -67,7 +71,7 @@ public class PythonParser {
         } catch (RuntimeException e) {
         	e.printStackTrace();
         	System.out.println("Failed to merge.");
-        }
+        } */
 		
 	}
 	
@@ -89,20 +93,9 @@ public class PythonParser {
 		// build AST
 		String line = br.readLine();
 		while (line != null) {
-			if (line.endsWith("\\") || line.endsWith(",")) {
-				line += "\n" + br.readLine();
-				continue;
-			}
 			
-			// read entire block comment
-			if (line.contains("\"\"\"")) {
-				int firstIndex = line.indexOf("\"\"\"");
-				String s = line.substring(firstIndex + 3);
-				while (!s.contains("\"\"\"")) {
-					s += "\n" + br.readLine();
-				}
-				line = line.substring(0, firstIndex + 3) + s;
-			}
+			line = ensureEnclosed(line, br);
+
 			
 			int indentation = getIndentation(line);
 			String lineContent = line.trim();
@@ -152,6 +145,55 @@ public class PythonParser {
 			return PythonNode.WHITESPACE;
 		}
 		return -1;
+	}
+	
+	// reads more lines if it is a multilined comment, list, etc...
+	private static String ensureEnclosed(String line, BufferedReader br) throws IOException {
+		while (line.endsWith("\\") || line.endsWith(",")) {
+			line += "\n" + br.readLine();
+		}
+		
+		// (, {, [, """, ''', etc.
+		Stack<String> unclosedTokens = new Stack<>();
+		String closing = null;
+		boolean inString = false;
+		int index = 0;
+		
+		while (index < line.length()) {
+			String part = line.substring(index);
+			if (closing != null) {
+				// find closing character
+				index += closing.length();
+				if (part.startsWith(closing)) {
+					closing = null;
+					continue;
+				} else if (index >= line.length()) {
+					// have to read next line
+					line += "\n" + br.readLine();
+				}
+			} else {
+				if (part.startsWith("\"\"\"")) {
+					closing = "\"\"\"";
+				} else if (part.startsWith("'''")) {
+					closing = "'''";
+				} else if (part.startsWith("\"")) {
+					closing = "\"";
+				} else if (part.startsWith("'")) {
+					closing = "'";
+				} else if (part.startsWith("(")) {
+					closing = ")";
+				} else if (part.startsWith("{")) {
+					closing = "}";
+				} else if (part.startsWith("[")) {
+					closing = "]";
+				}
+				index += (closing == null ? 1 : closing.length());
+			}
+			
+			
+		}
+		
+		return line;
 	}
 	
 	// returns the number of spaces at the beginning of line (tabs = 4 spaces)
