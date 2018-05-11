@@ -84,3 +84,6 @@ Git's standard merge tool will flag a conflict like this as unmergable. After ru
 Once Smerge generates the ASTs, it checks where the conflict is located in the tree. If the trees are identical, then the differences are cosmetic and the conflict is a false conflict. False conflicts are resolved by choosing the changes from the newer branch. If the differences are in separate subtrees, the conflict can be resolved by performing a tree merge on the ASTs.
 
 If the differences occur in the same subtree, then the conflict involves overlapping structural differences. In this case, Smerge uses several heuristics to produce a candidate merge, but the final resolution is left up to the developer.
+
+## Evaluation of Tool
+Instructions on how to reproduce evaluation results can be find [here](https://github.com/alvawei/smerge/tree/master/scripts)
