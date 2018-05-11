@@ -85,5 +85,5 @@ Once Smerge generates the ASTs, it checks where the conflict is located in the t
 
 If the differences occur in the same subtree, then the conflict involves overlapping structural differences. In this case, Smerge uses several heuristics to produce a candidate merge, but the final resolution is left up to the developer.
 
-## Evaluation of Tool
+## Evaluation of Smerge
 Instructions on how to reproduce evaluation results can be found [here](https://github.com/alvawei/smerge/tree/master/scripts).
