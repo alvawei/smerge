@@ -20,7 +20,7 @@ else
 	
 	git -C $REPO_DIR checkout --force -b remote $REMOTE
  	git -C $REPO_DIR checkout --force -b local $LOCAL
-	BASE=$(git -C $REPO_DIR merge-base local remote)
+	#BASE=$(git -C $REPO_DIR merge-base local remote)
 	git -C $REPO_DIR merge remote > $RESULTS_DIR/merge.txt
 	
 	while read conflict; do
