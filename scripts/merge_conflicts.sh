@@ -66,8 +66,11 @@ else
 			else
 			    echo "FAILURE" >> $RESULTS_DIR/result.txt
 			fi
-		    fi
+			
+			git -C $REPO_DIR reset --merge
 
+		    fi
+		    
 		    # get the human merged file
 		    git -C $REPO_DIR checkout --force -b merged $MERGED
 
@@ -78,13 +81,13 @@ else
 	    fi
 	done <<< $(grep CONFLICT $RESULTS_DIR/merge.txt)
 
-	git -C $REPO_DIR reset --merge
+	git -C $REPO_DIR reset --merge			
 	git -C $REPO_DIR checkout master
-	git -C $REPO_DIR branch -D local
-	git -C $REPO_DIR branch -D remote
 	if [ $GET_FILES -eq 1 ]; then
 	    git -C $REPO_DIR branch -D base
 	fi
+	git -C $REPO_DIR branch -D local
+	git -C $REPO_DIR branch -D remote
 	git -C $REPO_DIR branch -D merged
 	git -C $REPO_DIR reset --hard master
 
