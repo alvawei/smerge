@@ -19,4 +19,5 @@ For reference, the categories on the table are defined below:
 
 ## References
 This evaluation technique is heavily inspired by a predecessor tool: Conflerge.
+
 [1]Hanawalt, G., Harrison, J., & Saksena, I. (2017, March 10). Conflerge: Automatically Resolving Merge Conflicts[Scholarly project]. Retrieved April 5, 2018, from https://github.com/ishansaksena/Conflerge
