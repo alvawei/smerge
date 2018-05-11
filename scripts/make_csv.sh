@@ -37,4 +37,4 @@ P_INCORRECT=$((INCORRECT/CONFLICTS*100))
 
 
 # echo "Repo,Conflicts,Unresolved,Correct,CorrectNC,Incorrect,%Correct,%CorrectCW,%Unresolved,%Incorrect" > ${REPO}.csv
-printf "%s,%d,%d,%d,%d,%d,%d,%d,%d,%d" "$REPO" "$CONFLICTS" "$UNRESOLVED" "$PERFECT" "$PERFECT_NC" "$INCORRECT" "$P_CORRECT" "$P_CORRECTNC" "$P_UNRESOLVED" "$P_INCORRECT" >> ${REPO}.csv
+printf "%s,%d,%d,%d,%d,%d,%d,%d,%d,%d\n" "$REPO" "$CONFLICTS" "$UNRESOLVED" "$PERFECT" "$PERFECT_NC" "$INCORRECT" "$P_CORRECT" "$P_CORRECTNC" "$P_UNRESOLVED" "$P_INCORRECT" > ${REPO}.csv
