@@ -1,12 +1,8 @@
 package smerge.ast.actions;
 
+import smerge.ast.Match;
+
 import java.util.List;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-import smerge.ast.ASTNode;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -17,8 +13,13 @@ public class ActionSet {
 	
 	public List<Action> actions;
 	
-	public ActionSet() {
+	public ActionSet(List<Match> matches) {
 		actions = new ArrayList<>();
+		for (Match m : matches) {
+			for (Action a : m.actions()) {
+				actions.add(a);
+			}
+		}
 	}
 	
 	// returns true iff actions are merged into base tree

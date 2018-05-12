@@ -102,9 +102,7 @@ public class PythonParser implements Parser {
 		}
 		
 		// (, {, [, """, ''', etc.
-		Stack<String> unclosedTokens = new Stack<>();
 		String closing = null;
-		boolean inString = false;
 		int index = 0;
 		
 		while (index < line.length()) {

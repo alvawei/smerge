@@ -2,19 +2,11 @@ package smerge;
 
 import smerge.ast.AST;
 import smerge.ast.Differ;
-import smerge.ast.Matcher;
-import smerge.ast.actions.Action;
 import smerge.ast.actions.ActionSet;
 import smerge.ast.parsers.Parser;
-import smerge.ast.parsers.python.PythonParser;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 
 
 /**
@@ -29,6 +21,7 @@ public class Merger {
      * @throws DiffException 
      */
     public static void main(String[] args) throws IOException {
+    	
     	if (args.length != 4) {
     		throw new RuntimeException("Expected arguments: $BASE, $LOCAL, $REMOTE, $MERGED");
     	}
@@ -38,10 +31,10 @@ public class Merger {
         String remote = args[2];
         String merged = args[3];
         
-        
         // get the correct parser (pass in filename for file extension/type?)
         Parser parser = Parser.getInstance(null);
         
+        // parse files into ASTs
         System.out.println("Parsing base file...");
         AST baseTree = parser.parse(base);
         
@@ -51,6 +44,8 @@ public class Merger {
         System.out.println("Parsing remote file...");
         AST remoteTree = parser.parse(remote);
         
+        
+        // merge trees
         System.out.println("Generating tree diffs...");
         try {
             ActionSet actions = Differ.diff(baseTree, localTree, remoteTree);
@@ -62,6 +57,7 @@ public class Merger {
             // write result -> merged
             PrintWriter out = new PrintWriter(merged);
             out.println(result);
+            out.close();
             
         } catch (RuntimeException e) {
         	e.printStackTrace();

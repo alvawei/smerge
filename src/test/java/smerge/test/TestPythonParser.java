@@ -8,7 +8,7 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-import smerge.ast.python.PythonParser;
+import smerge.ast.parsers.python.PythonParser;
 import smerge.ast.AST;
 
 public class TestPythonParser {
@@ -19,7 +19,7 @@ public class TestPythonParser {
 	public void TestSimple() throws IOException {
 		File f = new File(SIMPLE);
 		String fileContent = readFile(f);
-		AST tree = PythonParser.parse(f);
+		AST tree = new PythonParser().parse(SIMPLE);
 		
 		System.out.println(fileContent);
 		System.out.println(tree);
@@ -38,6 +38,7 @@ public class TestPythonParser {
 		            while ((c = fileInputStream.read()) != -1){
 		                stringBuffer.append((char) c);
 		            }
+		            fileInputStream.close();
 		        } catch (IOException e) {
 		            e.printStackTrace();
 		        }

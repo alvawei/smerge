@@ -1,14 +1,10 @@
 package smerge;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.List;
 
 import smerge.ast.AST;
 import smerge.ast.Differ;
-import smerge.ast.Matcher;
-import smerge.ast.actions.Action;
 import smerge.ast.actions.ActionSet;
 import smerge.ast.parsers.python.PythonParser;
 

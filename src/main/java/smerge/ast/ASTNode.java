@@ -2,14 +2,14 @@ package smerge.ast;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
-import java.util.Stack;
 import java.util.Iterator;
 import java.util.LinkedList;
 
 public abstract class ASTNode {
 	
+	
+	public static final int ROOT = -2;
 	public static final int CLASS = 1;
 	public static final int METHOD = 2;
 	public static final int ASSIGNMENT = 3;
@@ -31,6 +31,7 @@ public abstract class ASTNode {
 	protected List<ASTNode> children;
 	
 	public ASTNode() {
+		this.type = ROOT;
 		this.children = new ArrayList<>();
 	}
 	
@@ -85,12 +86,20 @@ public abstract class ASTNode {
 			child.debugTree(sb, indent + "    ");
 		}
 	}
-	
+		
 	public void idTree(StringBuilder sb, String indent) {
 		sb.append(indent + id + "\n");
 		for (ASTNode child : children) {
 			child.idTree(sb, indent + " ");
 		}
+	}
+	
+	public boolean isRoot() {
+		return type == ROOT;
+	}
+	
+	public boolean isLeafNode() {
+		return children.isEmpty();
 	}
 	
 	// pre-order iterator starting with the given root

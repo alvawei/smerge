@@ -1,7 +1,5 @@
 package smerge.ast.actions;
 
-import smerge.ast.ASTNode;
-
 public class Move implements Action {
 	
 	public Insert ins;

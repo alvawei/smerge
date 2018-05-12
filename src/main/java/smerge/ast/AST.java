@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class AST {
+public class AST implements Iterable<ASTNode> {
 	
 	private ASTNode root;
 	
@@ -41,7 +41,8 @@ public class AST {
 		return sb.toString();
 	}
 	
-	public Iterator<ASTNode> preOrder() {
+	// pre-order traversal
+	public Iterator<ASTNode> iterator() {
 		return root.preOrder();
 	}
 }
