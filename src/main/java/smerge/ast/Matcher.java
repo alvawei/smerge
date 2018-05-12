@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-public class ASTMatcher {
+public class Matcher {
 	
 	public static final int BASE = 0;
 	public static final int LOCAL = 1;
@@ -21,7 +21,11 @@ public class ASTMatcher {
 	private int remoteMatchId = 0;
 	private int baseId = 0;	
 	// traverse all the trees, match the nodes between the same trees with a unique id
-	public ASTMatcher(ASTNode base, ASTNode local, ASTNode remote) {
+	public Matcher(AST baseTree, AST localTree, AST remoteTree) {
+		ASTNode base = baseTree.getRoot();
+		ASTNode local = localTree.getRoot();
+		ASTNode remote = remoteTree.getRoot();
+		
 		matches = new ArrayList<>();
 		
 		// label base

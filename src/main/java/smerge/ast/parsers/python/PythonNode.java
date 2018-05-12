@@ -1,4 +1,4 @@
-package smerge.ast.python;
+package smerge.ast.parsers.python;
 
 import smerge.ast.ASTNode;
 

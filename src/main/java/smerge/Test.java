@@ -6,11 +6,11 @@ import java.io.PrintWriter;
 import java.util.List;
 
 import smerge.ast.AST;
-import smerge.ast.ASTDiffer;
-import smerge.ast.ASTMatcher;
+import smerge.ast.Differ;
+import smerge.ast.Matcher;
 import smerge.ast.actions.Action;
 import smerge.ast.actions.ActionSet;
-import smerge.ast.python.PythonParser;
+import smerge.ast.parsers.python.PythonParser;
 
 public class Test {
 	
@@ -25,12 +25,11 @@ public class Test {
         // have to figure out which parser to use somehow
         // may be able to take it in as an additional git mergetool input
         System.out.println("Parsing files...");
-        AST baseTree = PythonParser.parse(new File(base));
-        AST localTree = PythonParser.parse(new File(local));
-        AST remoteTree = PythonParser.parse(new File(remote));
-        
-        ASTDiffer diff = new ASTDiffer(baseTree, localTree, remoteTree);
-        
+        PythonParser p = new PythonParser();
+        AST baseTree = p.parse(base);
+        AST localTree = p.parse(local);
+        AST remoteTree = p.parse(remote);
+                
         System.out.println(baseTree);
         System.out.println(baseTree.debugTree());
         
@@ -46,7 +45,7 @@ public class Test {
                        
         System.out.println("Generating tree diffs...");
         try {
-            ActionSet actions = diff.diff();
+            ActionSet actions = Differ.diff(baseTree, localTree, remoteTree);
         	System.out.println(actions);
 
             actions.apply();

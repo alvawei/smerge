@@ -8,7 +8,7 @@ import java.util.Stack;
 import java.util.Iterator;
 import java.util.LinkedList;
 
-public class ASTNode {
+public abstract class ASTNode {
 	
 	public static final int CLASS = 1;
 	public static final int METHOD = 2;

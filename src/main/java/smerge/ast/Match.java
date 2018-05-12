@@ -18,6 +18,7 @@ public class Match {
 	public static final int MOVE = 3;
 	
 	public int id;
+	
 	private ASTNode[] nodes;
 	private Action[] actions;
 	

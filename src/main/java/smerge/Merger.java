@@ -1,11 +1,12 @@
 package smerge;
 
 import smerge.ast.AST;
-import smerge.ast.ASTDiffer;
-import smerge.ast.ASTMatcher;
+import smerge.ast.Differ;
+import smerge.ast.Matcher;
 import smerge.ast.actions.Action;
 import smerge.ast.actions.ActionSet;
-import smerge.ast.python.PythonParser;
+import smerge.ast.parsers.Parser;
+import smerge.ast.parsers.python.PythonParser;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -37,23 +38,22 @@ public class Merger {
         String remote = args[2];
         String merged = args[3];
         
-        // have to figure out which parser to use somehow
-        // will create Parser interface later
-        // may be able to take in file name parameter as an additional git mergetool input
+        
+        // get the correct parser (pass in filename for file extension/type?)
+        Parser parser = Parser.getInstance(null);
         
         System.out.println("Parsing base file...");
-        AST baseTree = PythonParser.parse(new File(base));
+        AST baseTree = parser.parse(base);
         
         System.out.println("Parsing local file...");
-        AST localTree = PythonParser.parse(new File(local));
+        AST localTree = parser.parse(local);
         
         System.out.println("Parsing remote file...");
-        AST remoteTree = PythonParser.parse(new File(remote));
+        AST remoteTree = parser.parse(remote);
         
         System.out.println("Generating tree diffs...");
-        boolean success = true;
         try {
-            ActionSet actions = new ASTDiffer(baseTree, localTree, remoteTree).diff();
+            ActionSet actions = Differ.diff(baseTree, localTree, remoteTree);
             actions.apply();
             // write baseTree to merged
             System.out.println("Writing result to " + merged);
