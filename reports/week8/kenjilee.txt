@@ -1,0 +1,22 @@
+Kenji Nicholson
+kenjilee
+CSE 403 Week 8 Individual Report
+5/6/18
+
+1.) For next week, I plan on revising the report to address TA feedback. I also plan on looking
+at potential ways that we can gather repositories for our evaluation phase. This may include
+writing scripts to get conflicting merges from the repos we listed. Additionally, I will research
+how to classify a merge as a false positive or a true positive, since that is a grey area in our
+report. For implementation, I will look at the output of gumtree and think of ways we can use it
+to merge into a final tree that we give to the customer.
+
+2.) So far, I've addressed most of the TA feedback. This included giving examples for better reading
+and clarity, and also addressing minor in line comments. I also wrote up the instructions on how to
+reproduce our results-- although I may have to make it clearer since the TA failed to reproduce them.
+I also contributed to writing the scripts.
+
+3.) For next week, I plan on helping out with preparing the presentation, taking the feedback left from
+the last one into account. I will also get up to date on the implementation by looking at all the code
+and asking questions to see what it does. This will enable us to all improve upon it. On top of this,
+we will address the feedback by possibly adding a definitions section, since we've ran into that issue
+very often.
