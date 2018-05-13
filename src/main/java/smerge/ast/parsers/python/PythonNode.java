@@ -12,10 +12,10 @@ public class PythonNode extends ASTNode {
 	public String text;
 		
 	public PythonNode() {
-		this(-1, "@root\n", -1);
+		this(-1, "@root\n", Type.ROOT);
 	}
 	
-	public PythonNode (int indentation, String text, int type) {
+	public PythonNode (int indentation, String text, Type type) {
 		super();
 		this.indentation = indentation;
 		this.text = text;

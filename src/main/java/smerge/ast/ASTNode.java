@@ -8,30 +8,24 @@ import java.util.LinkedList;
 
 public abstract class ASTNode {
 	
-	
-	public static final int ROOT = -2;
-	public static final int CLASS = 1;
-	public static final int METHOD = 2;
-	public static final int ASSIGNMENT = 3;
-	public static final int RETURN = 4;
-	public static final int IF_STATEMENT = 5;
-	public static final int WHILE_LOOP = 6;
-	public static final int FOR_LOOP = 7;
-	public static final int WHITESPACE = 8;
-	public static final int IMPORT = 9;
-	public static final int COMMENT = 10;
-	public static final int BLOCK_COMMENT = 11;
+	public enum Type {
+		ROOT, IMPORT, WHITESPACE,
+		CLASS, METHOD,
+		IF_STATEMENT, WHILE_LOOP, FOR_LOOP,
+		ASSIGNMENT, RETURN,
+		COMMENT, BLOCK_COMMENT
+	}
 	
 	private int id;
 	public int indentation;
 	
-	protected int type;
+	protected Type type;
 	public String label;
 	protected ASTNode parent;
 	protected List<ASTNode> children;
 	
 	public ASTNode() {
-		this.type = ROOT;
+		this.type = Type.ROOT;
 		this.children = new ArrayList<>();
 	}
 	
@@ -67,7 +61,7 @@ public abstract class ASTNode {
 		return label;
 	}
 	
-	public int getType() {
+	public Type getType() {
 		return type;
 	}
 	
@@ -93,10 +87,7 @@ public abstract class ASTNode {
 			child.idTree(sb, indent + " ");
 		}
 	}
-	
-	public boolean isRoot() {
-		return type == ROOT;
-	}
+
 	
 	public boolean isLeafNode() {
 		return children.isEmpty();

@@ -55,11 +55,11 @@ public class Match {
 
 	public void addUpdate(ASTNode before, ASTNode after) {
 		if (update != null) {
-			if (before.getType() == ASTNode.IMPORT) {
+			if (before.getType() == ASTNode.Type.IMPORT) {
 				// merge imports
 				update.after.label += before.label + after.label;
 				return;
-			} else if (before.getType() == ASTNode.COMMENT) {
+			} else if (before.getType() == ASTNode.Type.COMMENT) {
 				// keep base comment
 				update = null;
 			} else {

@@ -47,7 +47,7 @@ public class PythonParser implements Parser {
 			
 			int indentation = getIndentation(line);
 			String lineContent = line.trim();
-			int type = getType(lineContent);
+			PythonNode.Type type = getType(lineContent);
 
 			PythonNode node = new PythonNode(indentation, lineContent + "\n", type);
 
@@ -72,27 +72,27 @@ public class PythonParser implements Parser {
 		return tree;
 	}
 	
-	private static int getType(String lineContent) {
+	private static PythonNode.Type getType(String lineContent) {
 		if (lineContent.startsWith("def")) {
-			return PythonNode.METHOD;
+			return PythonNode.Type.METHOD;
 		} else if (lineContent.startsWith("if")) {
-		    return PythonNode.IF_STATEMENT;
+		    return PythonNode.Type.IF_STATEMENT;
 		} else if (lineContent.startsWith("while")) {
-			return PythonNode.WHILE_LOOP;
+			return PythonNode.Type.WHILE_LOOP;
 		} else if (lineContent.startsWith("for")) {
-			return PythonNode.FOR_LOOP;
+			return PythonNode.Type.FOR_LOOP;
 		} else if (lineContent.startsWith("return")) {
-			return PythonNode.RETURN;
+			return PythonNode.Type.RETURN;
 		} else if (lineContent.startsWith("import") || lineContent.startsWith("from")) {
-			return PythonNode.IMPORT;
+			return PythonNode.Type.IMPORT;
 		} else if (lineContent.startsWith("#")) {
-			return PythonNode.COMMENT;
+			return PythonNode.Type.COMMENT;
 		} else if (lineContent.startsWith("\"\"\"") && lineContent.endsWith("\"\"\"")) {
-			return PythonNode.BLOCK_COMMENT;
+			return PythonNode.Type.BLOCK_COMMENT;
 		} else if (lineContent.isEmpty()) {
-			return PythonNode.WHITESPACE;
+			return PythonNode.Type.WHITESPACE;
 		}
-		return -1;
+		return null;
 	}
 	
 	// reads more lines if it is a multilined comment, list, etc...
