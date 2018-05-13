@@ -1,7 +1,7 @@
 Kenji Nicholson
 kenjilee
 CSE 403 Week 8 Individual Report
-5/6/18
+5/13/18
 
 1.) For next week, I plan on revising the report to address TA feedback. I also plan on looking
 at potential ways that we can gather repositories for our evaluation phase. This may include
