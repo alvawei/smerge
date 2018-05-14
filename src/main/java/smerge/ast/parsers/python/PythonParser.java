@@ -13,19 +13,20 @@ import java.util.Stack;
 
 public class PythonParser implements Parser {
 	public static final String[] opens = {"\"\"\"", "'''", "\"", "'", "(", "[", "{"};
-	public static final String[] closes = {"\"\"\"", "'''", "\"", "'", "\\)$", "\\]$", "}"};
-	public static final String[] continues = {"\\"};
-	
+	public static final String[] closes = {"\"\"\"", "'''", "\"", "'", ")", "]", "}"};	
 		
 	// main method used for quick testing
 	public static void main(String[] args) throws IOException {
-		String filename = "scripts/test_results/keras_test_results/conflicts/35_setup_base.py";
-		// String filename = "scripts/test_results/flask_test_results/conflicts/1___init___base.py";
 		
-		Parser parser = new PythonParser();
-		AST tree = parser.parse(filename);
-		System.out.println(tree);
+		PythonParser p = new PythonParser();
 		
+		
+		File[] files = new File("scripts/test_results/flask_test_results/conflicts").listFiles();
+	    
+		for (File f : files) {
+			System.out.println(f);
+			p.parse(f.toString());
+		}
 		
 		
 	}
@@ -44,12 +45,7 @@ public class PythonParser implements Parser {
 		// convert all tokens into PythonNodes
 		String token;
 		
-		int tokenNum = 0;
 		while ((token = getNextToken(br)) != null) {
-			System.out.println("token " + tokenNum++);
-
-			System.out.println(token);
-			System.out.println();
 			
 			int indentation = getIndentation(token);
 			String content = token.trim() + "\n";
@@ -80,18 +76,21 @@ public class PythonParser implements Parser {
 		int index = 0;
 		Stack<String> subtokens = new Stack<>();
 		
+		outerloop:
 		while (index < token.length()) {
-			String part = token.substring(index);
-
 			
-			boolean increment = true;
+			// append next line if needed
+			
+			
+			String part = token.substring(index);
+			
 			// check for a closing
 			if (!subtokens.isEmpty()) {
 				String close = closing(subtokens.peek());
 				if (part.startsWith(close)) {
 					subtokens.pop();
 					index += close.length();
-					increment = false;
+					continue;
 				}
 			}
 			
@@ -101,19 +100,18 @@ public class PythonParser implements Parser {
 					if (part.startsWith(opens[i])) {
 						subtokens.push(opens[i]);
 						index += opens[i].length();
-						increment = false;
-						break;
+						continue outerloop;
 					}
 				}
 			}
-
-			if (increment) index++;
-
+			
+			index++;
 			// add another line if needed
 			if (index == token.length() && (token.trim().endsWith("\\") || !subtokens.isEmpty())) {
 				String temp = br.readLine();
-				if (temp != null)
+				if (temp != null) {
 					token += "\n" + temp;
+				}
 			}
 		}		
 		return token;
