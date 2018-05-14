@@ -17,7 +17,7 @@ public class ActionSet {
 		actions = new ArrayList<>();
 		for (Match m : matches) {
 			for (Action a : m.actions()) {
-				actions.add(a);
+				if (a != null) actions.add(a);
 			}
 		}
 	}

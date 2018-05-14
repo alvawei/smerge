@@ -21,7 +21,7 @@ public class PythonParser implements Parser {
 		PythonParser p = new PythonParser();
 		
 		
-		File[] files = new File("scripts/test_results/flask_test_results/conflicts").listFiles();
+		File[] files = new File("scripts/test_results/keras_test_results/conflicts").listFiles();
 	    
 		for (File f : files) {
 			System.out.println(f);

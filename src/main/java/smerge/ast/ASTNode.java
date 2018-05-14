@@ -27,6 +27,7 @@ public abstract class ASTNode {
 	public ASTNode() {
 		this.type = Type.ROOT;
 		this.children = new ArrayList<>();
+		this.id = -1;
 	}
 	
 	// used for matching

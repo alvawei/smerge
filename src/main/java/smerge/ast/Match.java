@@ -78,20 +78,20 @@ public class Match {
 		}
 	}
 	
-    public void setBaseNode(ASTNode base) {
+    public Match setBaseNode(ASTNode base) {
     	base.setID(id);
     	this.base = base;
+    	return this;
     }
     
-    public void setEditNode(ASTNode edit, boolean isLocal) {
+    public Match setEditNode(ASTNode edit, boolean isLocal) {
     	edit.setID(id);
-    	
     	if (isLocal) {
         	this.local = edit;
     	} else {
     		this.remote = edit;
     	}
-
+    	return this;
     }
 	
 	public Action[] actions() {

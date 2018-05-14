@@ -30,33 +30,29 @@ public class Matcher {
 		matchedIDs.add(0);
 		
 		// compare each node in the baseTree to each node in editTree
-		for (ASTNode base : baseTree) {
-			if (matchedIDs.contains(base.getID())) continue;
-			for (ASTNode edit : editTree) {
+		for (ASTNode edit : editTree) {
+			if (edit.getID() == 0) continue;
+			for (ASTNode base : baseTree) {
 				
 				// can't be matched, skip
-				if (matchedIDs.contains(edit.getID()) || base.getType() != edit.getType()) 
+				if (matchedIDs.contains(base.getID()) || base.getType() != edit.getType()) 
 					continue;
 				
 				if ((base.isLeafNode() && compareLeafNodes(base, edit)) ||
 						(!base.isLeafNode() && compareInnerNodes(base, edit))) {
 					// it's a match
 					int id = base.getID();
-					Match m = matches.get(id);
-					m.setEditNode(edit, isLocal);
+					matches.get(id).setEditNode(edit, isLocal);
 					matchedIDs.add(id);
 					
 					// do this now to detect conflicting actions early
-					Differ.detectActions(matches, id, isLocal);
-					
-				} else {
-					// not a match; create new one
-					Match m = new Match(nextID);
-					m.setEditNode(edit, isLocal);
-					matches.add(m);
-					nextID++;
-				}
+					Differ.detectActions(matches, id, isLocal);					
+				}	
 				
+			}
+			if (edit.getID() == -1) {
+				// no possible match found, create new one
+				matches.add(new Match(nextID++).setEditNode(edit, isLocal));
 			}
 		}
 	}
@@ -64,10 +60,7 @@ public class Matcher {
 	private void labelBaseTree(AST baseTree) {
 		nextID = 0;
 		for (ASTNode node : baseTree) {
-			Match m = new Match(nextID);
-			m.setBaseNode(node);
-			matches.add(m);
-			nextID++;
+			matches.add(new Match(nextID++).setBaseNode(node));
 		}
 	}
 	
