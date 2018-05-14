@@ -7,10 +7,15 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Stack;
 
 
 public class PythonParser implements Parser {
+	public static final String[] opens = {"\"\"\"", "'''", "\"", "'", "(", "[", "{"};
+	public static final String[] closes = {"\"\"\"", "'''", "\"", "'", "\\)$", "\\]$", "}"};
+	public static final String[] continues = {"\\"};
+	
 		
 	// main method used for quick testing
 	public static void main(String[] args) throws IOException {
@@ -21,6 +26,8 @@ public class PythonParser implements Parser {
 		AST tree = parser.parse(filename);
 		System.out.println(tree);
 		
+		
+		
 	}
 	
 	// parses the given python file into a PythonTree
@@ -28,33 +35,28 @@ public class PythonParser implements Parser {
 		BufferedReader br = new BufferedReader(new FileReader(new File(filename)));
 		
 		// holds onto current parents
-		// maps indentation -> last node/line read with this indentation
-		// Map<Integer, PythonNode> parents = new HashMap<>();
 		Stack<PythonNode> parentStack = new Stack<>();
 		
 		// initialize tree
 		PythonNode root = new PythonNode();
-		// parents.put(-4, root);
 		parentStack.push(root);
-		AST tree = new AST(root);
 	    
-		// build AST
-		String line = br.readLine();
-		while (line != null) {
-			
-			line = ensureEnclosed(line, br);
+		// convert all tokens into PythonNodes
+		String token;
+		
+		int tokenNum = 0;
+		while ((token = getNextToken(br)) != null) {
+			System.out.println("token " + tokenNum++);
 
+			System.out.println(token);
+			System.out.println();
 			
-			int indentation = getIndentation(line);
-			String lineContent = line.trim();
-			PythonNode.Type type = getType(lineContent);
+			int indentation = getIndentation(token);
+			String content = token.trim() + "\n";
+			PythonNode.Type type = getType(content);
 
-			PythonNode node = new PythonNode(indentation, lineContent + "\n", type);
+			PythonNode node = new PythonNode(indentation, content, type);
 
-			// set as last seen node with this indentation
-			//parents.put(indentation, node);
-	
-			
 			// find parent of this node and add it as a child
 			PythonNode parent = parentStack.peek();
 			while (indentation <= parent.indentation) {
@@ -63,15 +65,73 @@ public class PythonParser implements Parser {
 			}
 			parent.addChild(node);
 			
-			if (lineContent.endsWith(":")) {
+			// next lines "should" be children
+			if (content.endsWith(":\n")) {
 				parentStack.push(node);
-			}
-			
-			line = br.readLine();
+			}			
 		}
-		return tree;
+		return new AST(root);
 	}
 	
+	public String getNextToken(BufferedReader br) throws IOException {
+		String token = br.readLine();
+		if (token == null || token.trim().startsWith("#")) return token;
+		
+		int index = 0;
+		Stack<String> subtokens = new Stack<>();
+		
+		while (index < token.length()) {
+			String part = token.substring(index);
+
+			
+			boolean increment = true;
+			// check for a closing
+			if (!subtokens.isEmpty()) {
+				String close = closing(subtokens.peek());
+				if (part.startsWith(close)) {
+					subtokens.pop();
+					index += close.length();
+					increment = false;
+				}
+			}
+			
+			// check for an opening if not in a string currently
+			if (subtokens.isEmpty() || !isString(subtokens.peek())) {
+				for (int i = 0; i < opens.length; i++) {
+					if (part.startsWith(opens[i])) {
+						subtokens.push(opens[i]);
+						index += opens[i].length();
+						increment = false;
+						break;
+					}
+				}
+			}
+
+			if (increment) index++;
+
+			// add another line if needed
+			if (index == token.length() && (token.trim().endsWith("\\") || !subtokens.isEmpty())) {
+				String temp = br.readLine();
+				if (temp != null)
+					token += "\n" + temp;
+			}
+		}		
+		return token;
+	}
+	
+	
+	// returns the number of spaces at the beginning of line (tabs = 4 spaces)
+	private static int getIndentation(String line) {
+		int indentation = 0;
+		boolean tab = false;
+		while (line.startsWith(" ", indentation) ||
+			   (tab = line.startsWith("\t", indentation))) {
+			indentation += tab ? 4 : 1;
+		}
+		return indentation;
+	}
+	
+	// determines the type of the node given the content
 	private static PythonNode.Type getType(String lineContent) {
 		if (lineContent.startsWith("def")) {
 			return PythonNode.Type.METHOD;
@@ -95,64 +155,11 @@ public class PythonParser implements Parser {
 		return null;
 	}
 	
-	// reads more lines if it is a multilined comment, list, etc...
-	private static String ensureEnclosed(String line, BufferedReader br) throws IOException {
-		while (line.endsWith("\\")) {
-			line += "\n" + br.readLine();
-		}
-		
-		// (, {, [, """, ''', etc.
-		String closing = null;
-		int index = 0;
-		
-		while (index < line.length()) {
-			String part = line.substring(index);
-			if (closing != null) {
-				// find closing character
-				index += closing.length();
-				if (part.startsWith(closing)) {
-					closing = null;
-				} else if (index >= line.length()) {
-					// have to read next line
-					line += "\n" + br.readLine();
-				}
-			} else {
-				if (part.startsWith("\"\"\"")) {
-					closing = "\"\"\"";
-				} else if (part.startsWith("\'\'\'")) {
-					closing = "\'\'\'";
-				} else if (part.startsWith("\"")) {
-					closing = "\"";
-				} else if (part.startsWith("'")) {
-					closing = "'";
-				} else if (part.startsWith("(")) {
-					closing = ")";
-				} else if (part.startsWith("{")) {
-					closing = "}";
-				} else if (part.startsWith("[")) {
-					closing = "]";
-				}
-				index += (closing == null ? 1 : closing.length() - 1);
-				if (closing != null && index >= line.length()) {
-					line += "\n" + br.readLine();
-				}
-			}
-			
-			
-		}
-		
-		return line;
+	private static String closing(String open) {
+		return closes[Arrays.asList(opens).indexOf(open)];
 	}
 	
-	// returns the number of spaces at the beginning of line (tabs = 4 spaces)
-	private static int getIndentation(String line) {
-		int indentation = 0;
-		boolean tab = false;
-		while (line.startsWith(" ", indentation) ||
-			   (tab = line.startsWith("\t", indentation))) {
-			indentation += tab ? 4 : 1;
-		}
-		return indentation;
+	private static boolean isString(String s) {
+		return s.equals("\"\"\"") || s.equals("'''") || s.equals("\"") || s.equals("'");
 	}
-
 }

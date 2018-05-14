@@ -45,14 +45,17 @@ public abstract class ASTNode {
 	}
 	
 	public ASTNode getParent() {
-		return this.parent;
+		return parent;
 	}
 	
 	public void setParent(ASTNode parent) {
 		this.parent = parent;
 	}
 	
+	// adds the given child to this node ands sets this node as its parent
+	// removes the child node from its original parent
 	public void addChild(ASTNode child) {
+		if (child.parent != null) child.parent.children.remove(child);
 		children.add(child);
 		child.parent = this;
 	}
