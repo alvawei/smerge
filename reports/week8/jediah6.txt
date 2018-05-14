@@ -1,0 +1,37 @@
+Jediah Conachan (jediah6)
+5/14/18
+CSE 403
+Individual Status Report #6 (Week 8)
+
+==================
+Last Week's Goals:
+==================
+
+ - Finish implementing actions (need to be able to apply them to the base tree)
+   - possibly try merging two sets of actions as well
+ - Improve python parser functionality (parse python method parameters as their own nodes)
+ - Help other teammates with tree diffing algorithm as needed
+   - can't test actions without this
+   - will probably have to make changes to generic AST
+ - Begin working on second parser (may attempt java, time permitting)
+
+================
+Weekly Progress:
+================
+
+- did most of the "first" implementation of our tool (parsing files into generic ASTs, merging tree diffs (actions), applying actions back to base tree)
+- worked with Alva on the matching algorithm
+- wasted too many hours trying to learn ANTLR to generate a new parser
+- reworking current python parser to ensure it works on all python files we are testing on
+- cleaned up a lot of the code and added more documentation so others can understand it better
+
+
+===========
+Next Steps:
+===========
+
+- ensure the python parser works with all testing files
+- work with Alva and Steven on improving tree matching/diffing
+- possibly add a second parser (should be easier after rewriting python parser, can reuse a lot of code)
+    - still have to decide on the language
+
