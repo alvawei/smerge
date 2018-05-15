@@ -1,21 +1,25 @@
 package smerge.ast.actions;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 
-// basically a tree diff
+// basically a merged tree diff
+// actively merges actions as they are detected in both local and remote trees
+// sorts the actions and applies them to the base tree
+
 public class ActionSet {
 	
 	private Map<Integer, Insert> inserts;
 	private Map<Integer, Delete> deletes;
 	private Map<Integer, Move> moves;
 	private Map<Integer, Update> updates;
+	
+	private SortedSet<Action> sortedActions;
 		
 	private Set<Integer> noDeletes; // set of base nodes that cant be deleted
 	
@@ -35,8 +39,16 @@ public class ActionSet {
 			addDelete(id, moves.get(id).del);
 		}
 		
-		// apply the
-		return false;
+		// sort actions
+		sortedActions = new TreeSet<>(new ActionSort());
+		sortedActions.addAll(inserts.values());
+		sortedActions.addAll(deletes.values());
+		sortedActions.addAll(updates.values());
+		
+		// apply actions
+		for (Action a : sortedActions) a.apply();
+		
+		return true;
 	}
 	
 	public void addInsert(int id, Insert insert) {
@@ -99,20 +111,16 @@ public class ActionSet {
 		}
 	}
 	
+	// note this returns different strings before and after running apply()
 	public String toString() {
 		String result = "Actions:\n";
-		for (Action a : inserts.values()) {
-			result += a.toString() + "\n";
-		}
-		for (Action a : deletes.values()) {
-			result += a.toString() + "\n";
-		}
-		for (Action a : moves.values()) {
-			result += a.toString() + "\n";
-		}
-		for (Action a : updates.values()) {
-			result += a.toString() + "\n";
-		}
+		if (sortedActions != null)
+			return result + sortedActions.toString();
+		
+		for (Action a : inserts.values()) result += a.toString() + "\n";
+		for (Action a : deletes.values()) result += a.toString() + "\n";
+		for (Action a : moves.values()) result += a.toString() + "\n";
+		for (Action a : updates.values()) result += a.toString() + "\n";
 		return result;
 	}
 }
