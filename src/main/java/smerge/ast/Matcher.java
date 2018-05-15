@@ -39,14 +39,12 @@ public class Matcher {
 					continue;
 				
 				if ((base.isLeafNode() && compareLeafNodes(base, edit)) ||
-						(!base.isLeafNode() && compareInnerNodes(base, edit))) {
+						(!base.isLeafNode() && compareInnerNodes(base, edit)) ||
+						base.getType() == ASTNode.Type.WHITESPACE) {
 					// it's a match
 					int id = base.getID();
 					matches.get(id).setEditNode(edit, isLocal);
-					matchedIDs.add(id);
-					
-					// do this now to detect conflicting actions early
-					// Differ.detectActions(matches, id, isLocal);					
+					matchedIDs.add(id);				
 				}	
 				
 			}

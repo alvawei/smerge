@@ -20,60 +20,13 @@ import smerge.ast.actions.Update;
 
 public class Match {
 	
-	// positions of specific nodes in the node array below
-	public static final int BASE = 0;
-	public static final int LOCAL = 1;
-	public static final int REMOTE = 2;
-	
 	private int id;
-	private ASTNode base, local, remote;
-	
-	private Insert insert;
-	private Delete delete; 
-	private Move move;
-	private Update update;
-	
+	private ASTNode base, local, remote;	
 	
     public Match(int id) {
     	this.id = id;
     }
     
-
-    
-	public void addInsert(ASTNode parent, ASTNode child, int position) {
-		insert = new Insert(parent, child, position);
-		
-	}
-	
-	public void addDelete(ASTNode parent, int position) {
-		// unmergable if the other user deleted this node
-		if (update != null) {
-			throw new RuntimeException("unmergable conflict: node delted and updated");
-		}
-		delete = new Delete(parent, position);
-	}
-
-	public void addUpdate(ASTNode before, ASTNode after) throws MergeException {
-		/*
-		if (update != null) {
-			if (!base.merge(update.after, after))
-				throw new MergeException(this);
-			else update = null;
-		} else {
-			//update = new Update(before, after);
-		}
-		*/
-	}
-	
-	public void addMove(Insert ins, Delete del) {
-		// unmergable if other user deleted this node
-		if (delete != null) {
-			throw new RuntimeException("unmergable conflict: node deleted and moved");
-		} else {
-			move = new Move(ins, del);
-		}
-	}
-	
     public Match setBaseNode(ASTNode base) {
     	base.setID(id);
     	this.base = base;
@@ -89,10 +42,6 @@ public class Match {
     	}
     	return this;
     }
-	
-	public Action[] actions() {
-		return new Action[]{insert, delete, move, update};
-	}
 	
     public ASTNode getBaseNode() {
     	return base;

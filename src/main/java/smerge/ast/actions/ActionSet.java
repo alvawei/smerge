@@ -3,12 +3,18 @@ package smerge.ast.actions;
 import smerge.ast.Match;
 
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 
 // basically a tree diff
 public class ActionSet {
+	
+	private Map<Integer, Insert> inserts;
+	private Map<Integer, Delete> deletes;
+	private Map<Integer, Move> moves;
+	private Map<Integer, Update> updates;
 	
 	
 	public List<Action> actions;
@@ -43,7 +49,7 @@ public class ActionSet {
 	}
 	
 
-	public void add(Action a) {
+	public void add(int id, Action a) {
 		actions.add(a);
 	}
 	
