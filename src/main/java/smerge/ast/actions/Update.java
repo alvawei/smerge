@@ -4,21 +4,26 @@ import smerge.ast.ASTNode;
 
 public class Update implements Action {
 	
-	private ASTNode before;
-	public ASTNode after;
+	private ASTNode base;
+	private ASTNode local;
+	private ASTNode remote;
 	
-	public Update(ASTNode before, ASTNode after) {
-		this.before = before;
-		this.after = after;
+	public Update(ASTNode base, ASTNode edit, boolean isLocal) {
+		this.base = base;
+		if (isLocal) {
+			this.local = local;
+		} else {
+			this.remote = remote;
+		}
 	}
 	
 	// swap before with after
 	public void apply() {
-		before.setContent(after.getContent());
+		//base.setContent(newContent);
 	}
 	
 	public String toString() {
-		return "Update " + before.getID();
+		return "Update " + base.getID();
 	}
 
 }

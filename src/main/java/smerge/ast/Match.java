@@ -54,11 +54,15 @@ public class Match {
 	}
 
 	public void addUpdate(ASTNode before, ASTNode after) throws MergeException {
+		/*
 		if (update != null) {
 			if (!base.merge(update.after, after))
 				throw new MergeException(this);
+			else update = null;
+		} else {
+			//update = new Update(before, after);
 		}
-		update = new Update(before, after);
+		*/
 	}
 	
 	public void addMove(Insert ins, Delete del) {

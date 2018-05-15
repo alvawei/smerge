@@ -1,5 +1,7 @@
 package smerge.ast.parsers.python;
 
+import java.util.Arrays;
+
 import smerge.ast.ASTNode;
 
 
@@ -8,11 +10,9 @@ import smerge.ast.ASTNode;
 public class PythonNode extends ASTNode {
 	
 	public static final String INDENT = "    ";
-	
-	public String text;
-		
+			
 	public PythonNode() {
-		this(-1, "@root\n", Type.ROOT);
+		this(-1, "@root", Type.ROOT);
 	}
 	
 	public PythonNode (int indentation, String content, Type type) {
@@ -20,19 +20,6 @@ public class PythonNode extends ASTNode {
 		this.indentation = indentation;
 		this.content = content;
 		this.type = type;
-	}
-	
-	// unparses this (sub)tree back to source code
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		if (indentation != -1) {
-			indent(indentation, sb);
-			sb.append(content);
-		}
-		for (ASTNode child : children) {
-			sb.append(child.toString());
-		}
-		return sb.toString();
 	}
 	
 	// unparse this node and it's children
@@ -53,9 +40,19 @@ public class PythonNode extends ASTNode {
 		}
 	}
 
+	// merges this (base) with n1 and n2 (local and remote or vice versa)
 	@Override
 	public boolean merge(ASTNode n1, ASTNode n2) {
-		// TODO Auto-generated method stub
+		if (type == Type.IMPORT) {
+			// keep n1 and n2 imports
+			String[] imports = {this.content, n1.getContent(), n2.getContent()};
+			Arrays.sort(imports);
+			this.content = imports[0] + "\n" + imports[1] + "\n" + imports[2];
+			return true;
+		} else if (type == Type.COMMENT || type == Type.BLOCK_COMMENT) {
+			// keep base comment
+			return true;
+		}
 		return false;
 	}
 }
