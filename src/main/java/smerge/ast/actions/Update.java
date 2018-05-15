@@ -16,9 +16,9 @@ public class Update implements Action {
 	
 	public void setEdit(ASTNode edit, boolean isLocal) {
 		if (isLocal) {
-			this.local = local;
+			this.local = edit;
 		} else {
-			this.remote = remote;
+			this.remote = edit;
 		}
 	}
 	
@@ -27,6 +27,9 @@ public class Update implements Action {
 	}
 	// swap before with after
 	public void apply() {
+		if (local != null && remote != null) {
+			// merge nodes or identify conflict
+		}
 		//base.setContent(newContent);
 	}
 	

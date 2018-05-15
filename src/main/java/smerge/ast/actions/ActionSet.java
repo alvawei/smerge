@@ -100,6 +100,16 @@ public class ActionSet {
 
 		@Override
 		public int compare(Action o1, Action o2) {
+			if (o1 instanceof Delete && o2 instanceof Delete) {
+				// delete from the bottom of the tree
+				// larger id's first might work?
+			}
+			
+			if (o1 instanceof Insert && o2 instanceof Insert) {
+				// insert from the top of the tree
+				// smaller ids first should work?
+				
+			}
 			if (o1 instanceof Delete && !(o2 instanceof Delete))
 				return -1;
 			
