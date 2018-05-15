@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 
 import smerge.ast.AST;
 import smerge.ast.Differ;
+import smerge.ast.MergeException;
 import smerge.ast.actions.ActionSet;
 import smerge.ast.parsers.python.PythonParser;
 
@@ -12,7 +13,7 @@ public class Test {
 	
 	// i just run this main method for easy testing
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, MergeException {
 		String base = "conflicts/test/test_base.py"; // args[0];
         String local = "conflicts/test/test_local.py"; // args[1];
         String remote = "conflicts/test/test_remote.py"; // args[2];

@@ -8,6 +8,8 @@ import java.util.LinkedList;
 
 public abstract class ASTNode {
 	
+	// types that a node could be
+	// two nodes can be matched only if they share the same type
 	public enum Type {
 		ROOT, IMPORT, WHITESPACE,
 		CLASS, METHOD,
@@ -16,29 +18,32 @@ public abstract class ASTNode {
 		COMMENT, BLOCK_COMMENT
 	}
 	
-	private int id;
-	public int indentation;
-	
 	protected Type type;
-	public String label;
+	protected String content;
 	protected ASTNode parent;
+	
+	// we may need to change the way children are stored and added for merging purposes
+	// such as ensuring children are at a specific position
 	protected List<ASTNode> children;
 	
+	public int indentation; // unsure if needed
+	
+	private int id;
+
 	public ASTNode() {
 		this.type = Type.ROOT;
 		this.children = new ArrayList<>();
 		this.id = -1;
 	}
 	
-	// used for matching
-	public int getID() {
-		return id;
-	}
+	// most important method of this generic ASTNode:
+	// all subtrees must be capable of unparsing themselves
+	public abstract void unparse(StringBuilder sb);
 	
-	// used for matching
-	public void setID(int id) {
-		this.id = id;
-	}
+	// attempts to merge the two given nodes into this node
+	// should handle import merges
+	// returns true iff these nodes are mergable
+	public abstract boolean merge(ASTNode n1, ASTNode n2);
 	
 	// returns the direct list of this node's children
 	public List<ASTNode> children() {
@@ -61,40 +66,36 @@ public abstract class ASTNode {
 		child.parent = this;
 	}
 	
-	public String getLabel() {
-		return label;
+	public String getContent() {
+		return content;
+	}
+	
+	public void setContent(String content) {
+		this.content = content;
 	}
 	
 	public Type getType() {
 		return type;
 	}
+
+	public boolean isRoot() {
+		return indentation == -1;
+	}
+	public boolean isLeafNode() {
+		return children.isEmpty();
+	}
+	
+	
+	public int getID() {
+		return id;
+	}
+
+	public void setID(int id) {
+		this.id = id;
+	}
 	
 	public Iterator<ASTNode> preOrder() {
 		return new NodeIterator(this);
-	}
-	
-	// used for update action
-	public void update(ASTNode other) {
-		// handeled in PythonNode
-	}
-	
-	public void debugTree(StringBuilder sb, String indent) {
-		sb.append(indent + "(" +  id + ") " + label);
-		for (ASTNode child : children) {
-			child.debugTree(sb, indent + "    ");
-		}
-	}
-		
-	public void idTree(StringBuilder sb, String indent) {
-		sb.append(indent + id + "\n");
-		for (ASTNode child : children) {
-			child.idTree(sb, indent + " ");
-		}
-	}
-
-	
-	public boolean isLeafNode() {
-		return children.isEmpty();
 	}
 	
 	// pre-order iterator starting with the given root
@@ -122,5 +123,12 @@ public abstract class ASTNode {
 
 		}
 		
+	}
+	
+	public void debugTree(StringBuilder sb, String indent) {
+		sb.append("@" + id + "\n" + indent + content + "\n");
+		for (ASTNode child : children) {
+			child.debugTree(sb, indent + "    ");
+		}
 	}
 }

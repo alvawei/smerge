@@ -14,7 +14,7 @@ public class Matcher {
 	private List<Match> matches;
 	private int nextID; // the next id to be given to a new matching
 
-	public Matcher(AST baseTree, AST localTree, AST remoteTree) {	
+	public Matcher(AST baseTree, AST localTree, AST remoteTree) throws MergeException {	
 		matches = new ArrayList<>();
 		
 		labelBaseTree(baseTree);
@@ -24,7 +24,7 @@ public class Matcher {
 	
 	// match editTree's nodes to baseTree's
 	// editTree is localTree if isLocal, otherwise editTree is remoteTree
-	public void match(AST baseTree, AST editTree, boolean isLocal) {
+	public void match(AST baseTree, AST editTree, boolean isLocal) throws MergeException {
 		Set<Integer> matchedIDs = new HashSet<Integer>();
 		matches.get(0).setEditNode(editTree.getRoot(), isLocal);
 		matchedIDs.add(0);
@@ -66,14 +66,14 @@ public class Matcher {
 	
 	// return true iff these leaf nodes should be matched
 	private boolean compareLeafNodes(ASTNode n1, ASTNode n2) {
-		double similarity = (double) distance(n1.getLabel(), n2.getLabel()) / Math.max(n1.getLabel().length(), n2.getLabel().length());
+		double similarity = (double) distance(n1.getContent(), n2.getContent()) / Math.max(n1.getContent().length(), n2.getContent().length());
 		return similarity <= SIM_THRESHOLD;
 	}
 	
 	// return true iff these non-leaf nodes should be matched
 	// in the future change to comparing nodes?
 	private boolean compareInnerNodes(ASTNode n1, ASTNode n2) {
-		return  n1.getLabel().equals(n2.getLabel());
+		return  n1.getContent().equals(n2.getContent());
 	}
 	
 	// calculates Levenshtein distance between two strings

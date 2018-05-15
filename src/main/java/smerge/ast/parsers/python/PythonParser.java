@@ -48,7 +48,7 @@ public class PythonParser implements Parser {
 		while ((token = getNextToken(br)) != null) {
 			
 			int indentation = getIndentation(token);
-			String content = token.trim() + "\n";
+			String content = token.trim();
 			PythonNode.Type type = getType(content);
 
 			PythonNode node = new PythonNode(indentation, content, type);
@@ -62,7 +62,7 @@ public class PythonParser implements Parser {
 			parent.addChild(node);
 			
 			// next lines "should" be children
-			if (content.endsWith(":\n")) {
+			if (content.endsWith(":")) {
 				parentStack.push(node);
 			}			
 		}

@@ -2,6 +2,7 @@ package smerge;
 
 import smerge.ast.AST;
 import smerge.ast.Differ;
+import smerge.ast.MergeException;
 import smerge.ast.actions.ActionSet;
 import smerge.ast.parsers.Parser;
 
@@ -59,7 +60,7 @@ public class Merger {
             out.println(result);
             out.close();
             
-        } catch (RuntimeException e) {
+        } catch (MergeException e) {
         	e.printStackTrace();
         	System.out.println("Failed to merge.");
         }

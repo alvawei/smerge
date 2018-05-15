@@ -53,18 +53,10 @@ public class Match {
 		delete = new Delete(parent, position);
 	}
 
-	public void addUpdate(ASTNode before, ASTNode after) {
+	public void addUpdate(ASTNode before, ASTNode after) throws MergeException {
 		if (update != null) {
-			if (before.getType() == ASTNode.Type.IMPORT) {
-				// merge imports
-				update.after.label += before.label + after.label;
-				return;
-			} else if (before.getType() == ASTNode.Type.COMMENT) {
-				// keep base comment
-				update = null;
-			} else {
-				throw new RuntimeException("unmergable conflict: two updates " + id);
-			}
+			if (!base.merge(update.after, after))
+				throw new MergeException(this);
 		}
 		update = new Update(before, after);
 	}

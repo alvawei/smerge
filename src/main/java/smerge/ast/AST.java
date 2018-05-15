@@ -1,32 +1,29 @@
 package smerge.ast;
 
-import java.util.List;
-import java.util.ArrayList;
 import java.util.Iterator;
+
+/*
+ * This class represents a generic Abstract Syntax Tree. It is a wrapper
+ * around a root ASTNode.
+ * 
+ */
 
 public class AST implements Iterable<ASTNode> {
 	
 	private ASTNode root;
 	
-	// stored in a list just for purpose of retaining order
-	protected List<String> imports;
-	
 	public AST(ASTNode root) {
 		this.root = root;
-		this.imports = new ArrayList<>();
 	}
 	
 	public ASTNode getRoot() {
 		return root;
-	}
+	}	
 	
-	public List<String> imports() {
-		return imports;
-	}
-	
-	
-	public String toString() {
-		return root.toString();
+	public String unparse() {
+		StringBuilder sb = new StringBuilder();
+		root.unparse(sb);
+		return sb.toString();
 	}
 	
 	public String debugTree() {
@@ -35,13 +32,7 @@ public class AST implements Iterable<ASTNode> {
 		return sb.toString();
 	}
 	
-	public String idTree() {
-		StringBuilder sb = new StringBuilder();
-		root.idTree(sb, "");
-		return sb.toString();
-	}
-	
-	// pre-order traversal
+	// returns an iterator that performs a preorder traversal of the tree
 	public Iterator<ASTNode> iterator() {
 		return root.preOrder();
 	}

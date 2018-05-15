@@ -15,11 +15,10 @@ public class PythonNode extends ASTNode {
 		this(-1, "@root\n", Type.ROOT);
 	}
 	
-	public PythonNode (int indentation, String text, Type type) {
+	public PythonNode (int indentation, String content, Type type) {
 		super();
 		this.indentation = indentation;
-		this.text = text;
-		this.label = this.text;
+		this.content = content;
 		this.type = type;
 	}
 	
@@ -28,12 +27,23 @@ public class PythonNode extends ASTNode {
 		StringBuilder sb = new StringBuilder();
 		if (indentation != -1) {
 			indent(indentation, sb);
-			sb.append(label);
+			sb.append(content);
 		}
 		for (ASTNode child : children) {
 			sb.append(child.toString());
 		}
 		return sb.toString();
+	}
+	
+	// unparse this node and it's children
+	public void unparse(StringBuilder sb) {
+		if (!this.isRoot()) {
+			indent(indentation, sb);
+			sb.append(content);
+		}
+		for (ASTNode child : children) {
+			child.unparse(sb);
+		}
 	}
 	
 	// appends indentation to the given string builder
@@ -42,13 +52,10 @@ public class PythonNode extends ASTNode {
 			sb.append(" ");
 		}
 	}
-	
-	@Override
-	public void update(ASTNode o) {
-		PythonNode other = (PythonNode) o;
-		System.out.println(this.indentation + " -> "  + other.indentation);
-		this.indentation = other.indentation;
-		this.label = other.label;
-	}
 
+	@Override
+	public boolean merge(ASTNode n1, ASTNode n2) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }
