@@ -26,14 +26,18 @@ public class AST implements Iterable<ASTNode> {
 		return sb.toString();
 	}
 	
+	// returns an iterator that performs a preorder traversal of the tree
+	public Iterator<ASTNode> iterator() {
+		return root.preOrder();
+	}
+	
+	public String toString() {
+		return unparse();
+	}
+	
 	public String debugTree() {
 		StringBuilder sb = new StringBuilder();
 		root.debugTree(sb, "");
 		return sb.toString();
-	}
-	
-	// returns an iterator that performs a preorder traversal of the tree
-	public Iterator<ASTNode> iterator() {
-		return root.preOrder();
 	}
 }

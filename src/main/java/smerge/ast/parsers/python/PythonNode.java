@@ -39,7 +39,7 @@ public class PythonNode extends ASTNode {
 	public void unparse(StringBuilder sb) {
 		if (!this.isRoot()) {
 			indent(indentation, sb);
-			sb.append(content);
+			sb.append(content + "\n");
 		}
 		for (ASTNode child : children) {
 			child.unparse(sb);
