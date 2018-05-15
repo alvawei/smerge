@@ -10,6 +10,11 @@ public class Update implements Action {
 	
 	public Update(ASTNode base, ASTNode edit, boolean isLocal) {
 		this.base = base;
+		setEdit(edit, isLocal);
+		
+	}
+	
+	public void setEdit(ASTNode edit, boolean isLocal) {
 		if (isLocal) {
 			this.local = local;
 		} else {
@@ -17,6 +22,9 @@ public class Update implements Action {
 		}
 	}
 	
+	public ASTNode getEdit(boolean isLocal) {
+		return isLocal ? local : remote;
+	}
 	// swap before with after
 	public void apply() {
 		//base.setContent(newContent);

@@ -2,10 +2,12 @@ package smerge.ast.actions;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 
 // basically a tree diff
 public class ActionSet {
@@ -15,49 +17,69 @@ public class ActionSet {
 	private Map<Integer, Move> moves;
 	private Map<Integer, Update> updates;
 		
+	private Set<Integer> noDeletes; // set of base nodes that cant be deleted
+	
 	public ActionSet() {
 		inserts = new HashMap<>();
 		deletes = new HashMap<>();
 		moves = new HashMap<>();
 		updates = new HashMap<>();
+		
+		noDeletes = new HashSet<>();
 	}
 	
 	// returns true iff actions are merged into base tree
 	public boolean apply() {
-		/*
-		// unwrap moves into single insert and delete
-		for (int i = 0; i < actions.size(); i++) {
-			if (actions.get(i) instanceof Move) {
-				Move m = (Move) actions.get(i);
-				actions.remove(i);
-				actions.add(m.ins);
-				actions.add(m.del);
-			}
+		for (int id : moves.keySet()) {
+			addInsert(id, moves.get(id).ins);
+			addDelete(id, moves.get(id).del);
 		}
-		// sort actions to be applied in specifc order
-		Collections.sort(actions, new ActionSort());
 		
-		for (Action a : actions) {
-			a.apply();
-		}
-		*/
+		// apply the
 		return false;
 	}
 	
 	public void addInsert(int id, Insert insert) {
+		if (inserts.containsKey(id)) {
+			throw new RuntimeException("Duplicate Insert: conflicting Move?");
+		}
+		int parentID = insert.getParentID();
+		if (deletes.containsKey(parentID)) {
+			deletes.remove(parentID);
+		}
+		noDeletes.add(parentID);
+		inserts.put(id, insert);
 		
 	}
 	
+	// TODO:
+	// need to not delete a node if the other edit tree inserts/moves a node as a child to the deletion
 	public void addDelete(int id, Delete delete) {
-		
+		if (!noDeletes.contains(id)) {
+			deletes.put(id, delete);
+		}
 	}
 	
+	// this may be complicated?
+	// possibly just implement as an insert and a delete,
+	// but what if both trees move it to different locations:
+	// conflicting inserts, which could be determined in addInsert()
 	public void addMove(int id, Move move) {
-		
+		moves.put(id, move);
 	}
 	
-	public void addUpdate(int id, Update update) {
-		
+	public void addUpdate(int id, Update update, boolean isLocal) {
+		if (updates.containsKey(id)) {
+			// merge updates
+		    updates.get(id).setEdit(update.getEdit(isLocal), isLocal);
+		} else {
+			// remove delete from other edit if it exists
+			if (deletes.containsKey(id)) {
+				deletes.remove(id);
+			}
+			noDeletes.add(id);
+			updates.put(id, update);
+		}		
 	}
 	
 	public class ActionSort implements Comparator<Action> {

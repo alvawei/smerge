@@ -20,6 +20,10 @@ public class Insert implements Action {
 		parent.children().add(position, child);
 	}
 	
+	// returns the id of the parent
+	public int getParentID() {
+		return parent.getID();
+	}
 	public String toString() {
 		return "Insert " + child.getID() + " under " + parent.getID() + "[" + position + "]";
 	}
