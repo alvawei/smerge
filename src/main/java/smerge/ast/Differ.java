@@ -10,11 +10,20 @@ import smerge.ast.actions.Insert;
 // produces an ActionSet given 3 trees
 public class Differ {
 	
-	public static ActionSet diff(AST base, AST local, AST remote) throws MergeException {
+	private Matcher matcher;
+	
+	public Differ(AST base, AST local, AST remote) throws MergeException {
+		this.matcher = new Matcher(base, local, remote);
+	}
+	
+	public List<Match> getMatches() {
+		return matcher.matches();
+	}
+	
+	public ActionSet diff(AST base, AST local, AST remote) throws MergeException {
 		// match the nodes between the three trees
 		// note the matcher constructor indirectly calls detectActions()
 		// we could combine this class with the Matcher class easily if we wanted
-		Matcher matcher = new Matcher(base, local, remote);
 		ActionSet actions = new ActionSet(matcher.matches());
 		return actions;
 	}

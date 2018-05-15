@@ -19,9 +19,10 @@ public class Merger {
     /**
      * @param args [BASE, LOCAL, REMOTE, MERGED] files
      * @throws IOException 
+     * @throws MergeException 
      * @throws DiffException 
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, MergeException {
     	
     	if (args.length != 4) {
     		throw new RuntimeException("Expected arguments: $BASE, $LOCAL, $REMOTE, $MERGED");
@@ -48,8 +49,9 @@ public class Merger {
         
         // merge trees
         System.out.println("Generating tree diffs...");
+        Differ differ = new Differ(baseTree, localTree, remoteTree);
         try {
-            ActionSet actions = Differ.diff(baseTree, localTree, remoteTree);
+            ActionSet actions = differ.diff(baseTree, localTree, remoteTree);
             actions.apply();
             // write baseTree to merged
             System.out.println("Writing result to " + merged);

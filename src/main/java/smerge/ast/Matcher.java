@@ -46,7 +46,7 @@ public class Matcher {
 					matchedIDs.add(id);
 					
 					// do this now to detect conflicting actions early
-					Differ.detectActions(matches, id, isLocal);					
+					// Differ.detectActions(matches, id, isLocal);					
 				}	
 				
 			}

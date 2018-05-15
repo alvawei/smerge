@@ -36,14 +36,16 @@ public class Test {
         System.out.println();
         
         System.out.println(remoteTree);
+        
+        System.out.println("Matching trees...");
+        Differ differ = new Differ(baseTree, localTree, remoteTree);
+        System.out.println(baseTree.debugTree());
+        System.out.println(localTree.debugTree());
+        System.out.println(remoteTree.debugTree());
                        
         System.out.println("Generating tree diffs...");
         try {
-            ActionSet actions = Differ.diff(baseTree, localTree, remoteTree);
-            
-            System.out.println(baseTree.debugTree());
-            System.out.println(localTree.debugTree());
-            System.out.println(remoteTree.debugTree());
+            ActionSet actions = differ.diff(baseTree, localTree, remoteTree);
 
         	System.out.println(actions);
 
