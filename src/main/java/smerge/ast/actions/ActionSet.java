@@ -1,12 +1,11 @@
 package smerge.ast.actions;
 
-import smerge.ast.Match;
-
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 
 // basically a tree diff
 public class ActionSet {
@@ -15,21 +14,17 @@ public class ActionSet {
 	private Map<Integer, Delete> deletes;
 	private Map<Integer, Move> moves;
 	private Map<Integer, Update> updates;
-	
-	
-	public List<Action> actions;
-	
-	public ActionSet(List<Match> matches) {
-		actions = new ArrayList<>();
-		for (Match m : matches) {
-			for (Action a : m.actions()) {
-				if (a != null) actions.add(a);
-			}
-		}
+		
+	public ActionSet() {
+		inserts = new HashMap<>();
+		deletes = new HashMap<>();
+		moves = new HashMap<>();
+		updates = new HashMap<>();
 	}
 	
 	// returns true iff actions are merged into base tree
 	public boolean apply() {
+		/*
 		// unwrap moves into single insert and delete
 		for (int i = 0; i < actions.size(); i++) {
 			if (actions.get(i) instanceof Move) {
@@ -45,12 +40,24 @@ public class ActionSet {
 		for (Action a : actions) {
 			a.apply();
 		}
+		*/
 		return false;
 	}
 	
-
-	public void add(int id, Action a) {
-		actions.add(a);
+	public void addInsert(int id, Insert insert) {
+		
+	}
+	
+	public void addDelete(int id, Delete delete) {
+		
+	}
+	
+	public void addMove(int id, Move move) {
+		
+	}
+	
+	public void addUpdate(int id, Update update) {
+		
 	}
 	
 	public class ActionSort implements Comparator<Action> {
@@ -71,6 +78,19 @@ public class ActionSet {
 	}
 	
 	public String toString() {
-		return actions.toString();
+		String result = "Actions:\n";
+		for (Action a : inserts.values()) {
+			result += a.toString() + "\n";
+		}
+		for (Action a : deletes.values()) {
+			result += a.toString() + "\n";
+		}
+		for (Action a : moves.values()) {
+			result += a.toString() + "\n";
+		}
+		for (Action a : updates.values()) {
+			result += a.toString() + "\n";
+		}
+		return result;
 	}
 }
