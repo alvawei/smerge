@@ -34,11 +34,18 @@ public class ActionSet {
 	
 	// returns true iff actions are merged into base tree
 	public boolean apply() {
+		
+		System.out.println(moves);
 		for (int id : moves.keySet()) {
 			addInsert(id, moves.get(id).ins);
 			addDelete(id, moves.get(id).del);
-		}
+		} 
+		for (Delete delete : deletes.values()) delete.apply();
+		for (Insert insert : inserts.values()) insert.apply();
+		for (Update update : updates.values()) update.apply();
 		
+		
+		/*
 		// sort actions
 		sortedActions = new TreeSet<>(new ActionSort());
 		sortedActions.addAll(inserts.values());
@@ -48,6 +55,7 @@ public class ActionSet {
 		System.out.println(sortedActions);
 		// apply actions
 		for (Action a : sortedActions) a.apply();
+		*/
 		
 		return true;
 	}
