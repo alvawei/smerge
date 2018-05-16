@@ -55,10 +55,7 @@ public class Differ {
 				actions.addInsert(id, ins);
 			}
 		} else if (edit == null) {
-			// node was deleted
-			ASTNode parent = base.parent;
-			int position = parent.children().indexOf(base);
-			Delete del = new Delete(parent, position);
+			Delete del = new Delete(base);
 			actions.addDelete(id, del);
 		} else {
 			if (base.parent != null && edit.parent != null) {
@@ -69,10 +66,14 @@ public class Differ {
 				
 				if (baseParentID != nodeParentID || (baseNodeIndex != editNodeIndex)) {
 					// node must have been moved to a different parent
-					base.indentation = edit.indentation;
+					
+					// update indentation
+					Update update = new Update(base, edit, isLocal);
+					actions.addUpdate(id, update, isLocal);
+					
 					ASTNode srcParent = matchList.get(baseParentID).getBaseNode();
 					int srcPos = srcParent.children().indexOf(base);
-					Delete del = new Delete(srcParent, srcPos);
+					Delete del = new Delete(base);
 					
 					ASTNode destParent = matchList.get(nodeParentID).getBaseNode();
 					// check if it was a move to a node not yet in base
@@ -80,7 +81,7 @@ public class Differ {
 						destParent = edit.parent;
 					}
 					int destPos = edit.parent.children().indexOf(edit);
-					Insert ins = new Insert(destParent, edit, destPos);
+					Insert ins = new Insert(destParent, base, destPos);
 					Move move = new Move(ins, del);
 					
 					actions.addMove(id, move);

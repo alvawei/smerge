@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 
+
 // basically a merged tree diff
 // actively merges actions as they are detected in both local and remote trees
 // sorts the actions and applies them to the base tree
@@ -37,11 +38,28 @@ public class ActionSet {
 		
 		System.out.println(moves);
 		for (int id : moves.keySet()) {
+			noDeletes.remove(id);
 			addInsert(id, moves.get(id).ins);
 			addDelete(id, moves.get(id).del);
 		} 
+		
+		System.out.println(deletes);
 		for (Delete delete : deletes.values()) delete.apply();
-		for (Insert insert : inserts.values()) insert.apply();
+		
+		// apply inserts by inserting parent nodes first
+		while (!inserts.isEmpty()) {
+			Set<Integer> inserted = new HashSet<>();
+			for (int id : inserts.keySet()) {
+				Insert ins = inserts.get(id);
+				// don't insert if it's parent hasn't been inserted yet
+				if (!inserts.containsKey(ins.getParentID())) {
+					ins.apply();
+					inserted.add(id);
+				}
+			}
+			for (int id : inserted) inserts.remove(id);
+		}
+		
 		for (Update update : updates.values()) update.apply();
 		
 		
@@ -68,9 +86,7 @@ public class ActionSet {
 		if (deletes.containsKey(parentID)) {
 			deletes.remove(parentID);
 		}
-		noDeletes.add(parentID);
 		inserts.put(id, insert);
-		
 	}
 	
 	// TODO:
@@ -103,12 +119,21 @@ public class ActionSet {
 		}		
 	}
 	
+	/*
 	public class ActionSort implements Comparator<Action> {
 		
 		// order by action type: delete -> insert -> update
 
 		@Override
 		public int compare(Action o1, Action o2) {
+			if (o1 instanceof Insert && o2 instanceof Insert) {
+				Insert ins1 = (Insert) o1;
+				Insert ins2 = (Insert) o2;
+				
+				if ()
+				
+				
+			}
 			
 			// DO NOT EVER RETURN 0
 			// otherwise actions are considered equal and rewrite each other when being sorted in the set
@@ -123,7 +148,7 @@ public class ActionSet {
 				
 			return -1;
 		}
-	}
+	} */
 	
 	// note this returns different strings before and after running apply()
 	public String toString() {

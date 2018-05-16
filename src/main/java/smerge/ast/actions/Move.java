@@ -17,6 +17,6 @@ public class Move implements Action {
 	}
 	
 	public String toString() {
-		return "Move (" + ins + ", " + del + ")";
+		return "Move (" + del + ", " + ins + ")";
 	}
 }

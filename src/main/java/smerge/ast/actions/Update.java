@@ -30,9 +30,9 @@ public class Update implements Action {
 		if (local != null && remote != null) {
 			base.merge(local, remote);
 		} else if (local != null) {
-			base.setContent(local.getContent());
+			base.update(local);
 		} else if (remote != null) {
-			base.setContent(remote.getContent());
+			base.update(remote);
 		}
 	}
 	

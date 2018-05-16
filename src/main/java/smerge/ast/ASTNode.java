@@ -45,6 +45,8 @@ public abstract class ASTNode {
 	// returns true iff these nodes are mergable
 	public abstract boolean merge(ASTNode n1, ASTNode n2);
 	
+	public abstract void update(ASTNode edit);
+	
 	// returns the direct list of this node's children
 	public List<ASTNode> children() {
 		return children;
@@ -126,8 +128,12 @@ public abstract class ASTNode {
 	}
 	
 	public void debugTree(StringBuilder sb, String indent) {
-		int parentID = parent != null ? parent.getID() : -1;
-		sb.append("(" + id + ":" + parentID + ")" + indent + content + "\n");
+		String idString = "(" + id;
+		if (parent != null) {
+			idString += ":" + parent.getID() + "[" + parent.children.indexOf(this) + "]";
+		}
+		idString += ")";
+		sb.append(idString + indent + content + "\n");
 		for (ASTNode child : children) {
 			child.debugTree(sb, indent + "    ");
 		}
