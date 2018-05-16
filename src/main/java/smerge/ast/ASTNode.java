@@ -126,7 +126,8 @@ public abstract class ASTNode {
 	}
 	
 	public void debugTree(StringBuilder sb, String indent) {
-		sb.append("(" + id + ")" + indent + content + "\n");
+		int parentID = parent != null ? parent.getID() : -1;
+		sb.append("(" + id + ":" + parentID + ")" + indent + content + "\n");
 		for (ASTNode child : children) {
 			child.debugTree(sb, indent + "    ");
 		}
