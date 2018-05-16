@@ -1,0 +1,18 @@
+Steven Miller
+stevem62@uw.edu
+CSE 403 Week 8 Individual Report
+5/14/18
+
+1) The coming week:
+- Start to work on implementing the tree merger
+- Make any report revisions
+
+2) This week, I contributed to the Differ, making some code revisions and refactors
+to identifying the different actions required for the merging process. I got stuck
+for a while with my environment, because there was something messed up with my
+IDE not being able to find my java_home variable. Eventually I figured it out,
+but prevented me from doing as much work as I could have done.
+
+3) The coming week:
+- continue implementing the action identification (there are many different cases to cover)
+- if time permitted, work on ordering actions, and move on to defining how to apply the actions
