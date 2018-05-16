@@ -49,6 +49,7 @@ public class Test {
 
         	System.out.println(actions);
 
+        	System.out.println("Merging changes...");
             actions.apply();
             
             System.out.println(baseTree);

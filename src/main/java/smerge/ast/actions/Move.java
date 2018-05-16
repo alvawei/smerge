@@ -12,8 +12,8 @@ public class Move implements Action {
 	
 	
 	public void apply() {
-		del.apply();
-		ins.apply();
+		// del.apply();
+		// ins.apply();
 	}
 	
 	public String toString() {

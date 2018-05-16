@@ -1,4 +1,6 @@
 import A
+import B
+import C
 
-x = 1
+    x = 2
 

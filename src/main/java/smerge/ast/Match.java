@@ -27,6 +27,10 @@ public class Match {
     	this.id = id;
     }
     
+    public int getID() {
+    	return id;
+    }
+    
     public Match setBaseNode(ASTNode base) {
     	base.setID(id);
     	this.base = base;

@@ -14,7 +14,7 @@ public class Delete implements Action {
 	
 
 	public void apply() {
-		parent.children().remove(position);
+		// parent.children().remove(position);
 	}
 	
 	public String toString() {

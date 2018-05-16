@@ -31,19 +31,17 @@ public class Differ {
 	// we could combine this class with the Matcher class easily if we wanted	
 	public ActionSet diff(AST base, AST local, AST remote) throws MergeException {
 		// for each match in mathces, all detect actions on base/local, base/remote
-		int id = 0;
 		for (Match m : matchList) {
-			detectActions(id, true);
-			detectActions(id, false);
-			id++;
+			detectActions(m, true);
+			detectActions(m, false);
 		}
 		return actions;
 	}
 	
 	// edit node is either local or remote node
 	// this is called from Matcher while matching
-	public void detectActions(int id, boolean isLocal) throws MergeException {
-		Match m = matchList.get(id);
+	public void detectActions(Match m, boolean isLocal) throws MergeException {
+		int id = m.getID();
 		ASTNode base = m.getBaseNode();
 		ASTNode edit = isLocal ? m.getLocalNode() : m.getRemoteNode();
 		if (base == null){

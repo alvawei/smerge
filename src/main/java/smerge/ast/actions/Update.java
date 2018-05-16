@@ -27,10 +27,14 @@ public class Update implements Action {
 	}
 	// swap before with after
 	public void apply() {
+		System.out.println("merging updates");
 		if (local != null && remote != null) {
-			// merge nodes or identify conflict
+			base.merge(local, remote);
+		} else if (local != null) {
+			base.setContent(local.getContent());
+		} else if (remote != null) {
+			base.setContent(remote.getContent());
 		}
-		//base.setContent(newContent);
 	}
 	
 	public String toString() {
