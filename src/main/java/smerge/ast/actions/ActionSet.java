@@ -39,8 +39,6 @@ public class ActionSet {
 			addDelete(id, moves.get(id).del);
 		}
 		
-		System.out.println(updates);
-		
 		// sort actions
 		sortedActions = new TreeSet<>(new ActionSort());
 		sortedActions.addAll(inserts.values());
@@ -105,7 +103,7 @@ public class ActionSet {
 		public int compare(Action o1, Action o2) {
 			
 			// DO NOT EVER RETURN 0
-			// otherwise actions rewrite each other when being sorted in a the set
+			// otherwise actions are considered equal and rewrite each other when being sorted in the set
 			
 			// do all updates last
 			if (o1 instanceof Update) return 1;
@@ -114,27 +112,8 @@ public class ActionSet {
 			// then do deletes
 			if (o1 instanceof Delete) return -1;
 			if (o2 instanceof Delete) return 1;
-			
-			
-			
-			if (o1 instanceof Delete && o2 instanceof Delete) {
-				// delete from the bottom of the tree
-				// larger id's first might work?
-			}
-			
-			if (o1 instanceof Insert && o2 instanceof Insert) {
-				// insert from the top of the tree
-				// smaller ids first should work?
 				
-			}
-			if (o1 instanceof Delete && !(o2 instanceof Delete))
-				return -1;
-			
-			if (o2 instanceof Delete && !(o1 instanceof Delete))
-				return 1;
-			
-				
-				return -1;
+			return -1;
 		}
 	}
 	

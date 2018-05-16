@@ -50,7 +50,7 @@ public class PythonNode extends ASTNode {
 			this.content = imports[0] + "\n" + imports[1] + "\n" + imports[2];
 			return true;
 		} else if (type == Type.COMMENT || type == Type.BLOCK_COMMENT) {
-			// keep base comment
+			// keep base comment for now
 			return true;
 		}
 		return false;

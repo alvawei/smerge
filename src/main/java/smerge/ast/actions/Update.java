@@ -27,7 +27,6 @@ public class Update implements Action {
 	}
 	// swap before with after
 	public void apply() {
-		System.out.println("merging updates");
 		if (local != null && remote != null) {
 			base.merge(local, remote);
 		} else if (local != null) {

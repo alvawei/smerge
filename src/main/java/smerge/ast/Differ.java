@@ -42,6 +42,7 @@ public class Differ {
 	// this is called from Matcher while matching
 	public void detectActions(Match m, boolean isLocal) throws MergeException {
 		int id = m.getID();
+		if (id == 0) return; // don't do it with root
 		ASTNode base = m.getBaseNode();
 		ASTNode edit = isLocal ? m.getLocalNode() : m.getRemoteNode();
 		if (base == null){
@@ -50,7 +51,7 @@ public class Differ {
 				ASTNode parent = edit.parent;
 				int position = parent.children().indexOf(edit);
 				ASTNode baseParentEquivalent = matchList.get(parent.getID()).getBaseNode();
-				Insert ins = new Insert(parent, baseParentEquivalent, position);
+				Insert ins = new Insert(baseParentEquivalent, edit, position);
 				actions.addInsert(id, ins);
 			}
 		} else if (edit == null) {
