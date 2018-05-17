@@ -82,6 +82,9 @@ public class ActionSet {
 	
 	public void addInsert(ASTNode parent, ASTNode child) {
 		int id = child.getID();
+		if (parent == null) {
+			System.out.println(child.getID());
+		}
 		int parentID = parent.getID();
 		
 		if (inserts.containsKey(id)) {

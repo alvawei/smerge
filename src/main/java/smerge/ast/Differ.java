@@ -50,8 +50,12 @@ public class Differ {
 				// a new node was inserted
 				
 				// get the base parent equivalent
-				ASTNode baseParent = matchList.get(edit.getParent().getID()).getBaseNode();
-				actions.addInsert(baseParent, edit);
+				ASTNode parent = matchList.get(edit.getParent().getID()).getBaseNode();
+				if (parent == null) {
+					// base parent equivalent doesn't exist, parent must also be an insert
+					parent = edit.getParent();
+				}
+				actions.addInsert(parent, edit);
 			}
 		} else if (edit == null) {
 			// node was deleted from base
