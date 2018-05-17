@@ -9,7 +9,7 @@ public class Insert implements Action {
 	private int position;
 	
 	public Insert(ASTNode parent, ASTNode child, int position) {
-		this.parent = parent;
+		this.parent = parent == null ? child.getParent() : parent;
 		this.child = child;
 		this.position = position;
 	}
@@ -32,7 +32,9 @@ public class Insert implements Action {
 		return parent.getID();
 	}
 	public String toString() {
-		return "Insert " + child.getID() + "->" + parent.getID() + "[" + position + "]";
+		return "Insert " + child.getID() + 
+				"->" + parent.getID() + 
+				"[" + position + "]";
 	}
 
 }
