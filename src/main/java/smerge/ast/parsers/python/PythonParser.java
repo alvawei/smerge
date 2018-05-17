@@ -56,6 +56,11 @@ public class PythonParser implements Parser {
 
 			PythonNode node = new PythonNode(indentation, content, type);
 			node.setID(id--);
+			
+			if (type == PythonNode.Type.WHITESPACE) {
+				root.addChild(node);
+				continue;
+			}
 			// find parent of this node and add it as a child
 			PythonNode parent = parentStack.peek();
 			while (indentation <= parent.indentation) {

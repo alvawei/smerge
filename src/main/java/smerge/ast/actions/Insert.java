@@ -22,6 +22,7 @@ public class Insert implements Action {
 	
 	// inserts the sutree with root node under the given parent at the given position
 	public void apply() {
+		System.out.println(child.getID());
 		child.children().clear();
 		parent.children().add(position, child);
 		child.setParent(parent);

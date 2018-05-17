@@ -48,6 +48,8 @@ public class Test {
         System.out.println(actions);
         actions.apply();
         
+        System.out.println(baseTree.debugTree());
+        
         System.out.println("Writing result to " + merged);
         String result = baseTree.unparse();
         
