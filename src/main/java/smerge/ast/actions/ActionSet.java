@@ -4,6 +4,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
+import smerge.ast.ASTNode;
+
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,9 +41,8 @@ public class ActionSet {
 		
 		System.out.println(moves);
 		for (int id : moves.keySet()) {
-			noDeletes.remove(id);
-			addInsert(id, moves.get(id).ins);
-			addDelete(id, moves.get(id).del);
+			inserts.put(id, moves.get(id).getInsert());
+			deletes.put(id, moves.get(id).getDelete());
 		} 
 		
 		System.out.println(deletes);
@@ -78,23 +80,24 @@ public class ActionSet {
 		return true;
 	}
 	
-	public void addInsert(int id, Insert insert) {
+	public void addInsert(ASTNode parent, ASTNode child) {
+		int id = child.getID();
+		int parentID = parent.getID();
+		
 		if (inserts.containsKey(id)) {
 			throw new RuntimeException("Duplicate Insert: conflicting Move?");
 		}
-		System.out.println(insert);
-		int parentID = insert.getParentID();
 		if (deletes.containsKey(parentID)) {
 			deletes.remove(parentID);
 		}
-		inserts.put(id, insert);
+		inserts.put(id, new Insert(parent, child));
 	}
 	
-	// TODO:
 	// need to not delete a node if the other edit tree inserts/moves a node as a child to the deletion
-	public void addDelete(int id, Delete delete) {
+	public void addDelete(ASTNode base) {
+		int id = base.getID();
 		if (!noDeletes.contains(id)) {
-			deletes.put(id, delete);
+			deletes.put(id, new Delete(base));
 		}
 	}
 	
@@ -106,17 +109,26 @@ public class ActionSet {
 		moves.put(id, move);
 	}
 	
-	public void addUpdate(int id, Update update, boolean isLocal) {
+	public void addMove(ASTNode destParent, ASTNode base, int position) {
+		int id = base.getID();
+		if (moves.containsKey(id)) {
+			throw new RuntimeException("duetplicate moves not implemented yet");
+		}
+		moves.put(id, new Move(destParent, base, position));
+	}
+	
+	public void addUpdate(ASTNode base, ASTNode edit, boolean isLocal) {
+		int id = base.getID();
 		if (updates.containsKey(id)) {
 			// merge updates
-		    updates.get(id).setEdit(update.getEdit(isLocal), isLocal);
+		    updates.get(id).setEdit(edit, isLocal);
 		} else {
 			// remove delete from other edit if it exists
 			if (deletes.containsKey(id)) {
 				deletes.remove(id);
 			}
 			noDeletes.add(id);
-			updates.put(id, update);
+			updates.put(id, new Update(base, edit, isLocal));
 		}		
 	}
 	

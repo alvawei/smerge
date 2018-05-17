@@ -1,22 +1,31 @@
 package smerge.ast.actions;
 
+import smerge.ast.ASTNode;
+
 public class Move implements Action {
 	
-	public Insert ins;
-	public Delete del;
+	private Insert insert;
+	private Delete delete;
 	
-	public Move(Insert ins, Delete del) {
-		this.ins = ins;
-		this.del = del;
+	public Move(ASTNode destParent, ASTNode base, int position) {
+		delete = new Delete(base);
+		insert = new Insert(destParent, base, position);
 	}
 	
 	
 	public void apply() {
-		// del.apply();
-		// ins.apply();
+		// currently this method should never be called
+	}
+	
+	public Insert getInsert() {
+		return insert;
+	}
+	
+	public Delete getDelete() {
+		return delete;
 	}
 	
 	public String toString() {
-		return "Move (" + del + ", " + ins + ")";
+		return "Move (" + delete + ", " + insert + ")";
 	}
 }

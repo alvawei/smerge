@@ -6,13 +6,19 @@ public class Insert implements Action {
 	
 	private ASTNode parent; // node the child is inserted into (in base tree)
 	private ASTNode child; // child introduced in edit tree (base if in move)
-	private int position; // index of child
+	private int position;
 	
 	public Insert(ASTNode parent, ASTNode child, int position) {
 		this.parent = parent;
 		this.child = child;
 		this.position = position;
 	}
+	
+	public Insert(ASTNode parent, ASTNode child) {
+		this(parent, child, child.getParent().children().indexOf(child));
+	}
+	
+
 	
 	// inserts the sutree with root node under the given parent at the given position
 	public void apply() {

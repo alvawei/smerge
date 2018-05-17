@@ -47,53 +47,34 @@ public class Differ {
 		ASTNode edit = isLocal ? m.getLocalNode() : m.getRemoteNode();
 		if (base == null){
 			if (edit != null) {
-				// a new node was inserted, insert it to the index
-				ASTNode parent = edit.parent;
-				int position = parent.children().indexOf(edit);
-				ASTNode baseParentEquivalent = matchList.get(parent.getID()).getBaseNode();
-				Insert ins = new Insert(baseParentEquivalent, edit, position);
-				actions.addInsert(id, ins);
+				// a new node was inserted
+				
+				// get the base parent equivalent
+				ASTNode baseParent = matchList.get(edit.getParent().getID()).getBaseNode();
+				actions.addInsert(baseParent, edit);
 			}
 		} else if (edit == null) {
-			Delete del = new Delete(base);
-			actions.addDelete(id, del);
+			// node was deleted from base
+			actions.addDelete(base);
 		} else {
 			if (base.parent != null && edit.parent != null) {
-				int baseParentID = base.parent.getID();
-				int nodeParentID = edit.parent.getID();
-				int baseNodeIndex = base.parent.children.indexOf(base);
-				int editNodeIndex = edit.parent.children.indexOf(edit);
+				int baseParentID = base.getParent().getID();
+				int editParentID = edit.getParent().getID();
+				int baseNodeIndex = base.getParent().children().indexOf(base);
+				int editNodeIndex = edit.getParent().children().indexOf(edit);
 				
-				if (baseParentID != nodeParentID || (baseNodeIndex != editNodeIndex)) {
-					// node must have been moved to a different parent
+				if (baseParentID != editParentID || (baseNodeIndex != editNodeIndex)) {
+					ASTNode destParent = matchList.get(editParentID).getBaseNode();
+					actions.addMove(destParent, base, editNodeIndex);
 					
-					// update indentation
-					Update update = new Update(base, edit, isLocal);
-					actions.addUpdate(id, update, isLocal);
-					
-					ASTNode srcParent = matchList.get(baseParentID).getBaseNode();
-					int srcPos = srcParent.children().indexOf(base);
-					Delete del = new Delete(base);
-					
-					ASTNode destParent = matchList.get(nodeParentID).getBaseNode();
-					// check if it was a move to a node not yet in base
-					if (destParent == null) {
-						destParent = edit.parent;
-					}
-					int destPos = edit.parent.children().indexOf(edit);
-					Insert ins = new Insert(destParent, base, destPos);
-					Move move = new Move(ins, del);
-					
-					actions.addMove(id, move);
-				} 
-//					else if (baseNodeIndex != editNodeIndex) {
-//					// the child node is moved but within the same parent index the same parent
-//				}
+					// also update indentation
+					actions.addUpdate(base, edit, isLocal);
+				
+				}
 			}
 			if (!base.getContent().equals(edit.getContent())) {
 				// node updated
-				Update update = new Update(base, edit, isLocal);
-				actions.addUpdate(id, update, isLocal);
+				actions.addUpdate(base, edit, isLocal);
 			}
 		}
 	}
