@@ -156,6 +156,8 @@ public class PythonParser implements Parser {
 			return PythonNode.Type.BLOCK_COMMENT;
 		} else if (lineContent.isEmpty()) {
 			return PythonNode.Type.WHITESPACE;
+		} else if (lineContent.contains(" = ")) {
+			return PythonNode.Type.ASSIGNMENT;
 		}
 		return null;
 	}
