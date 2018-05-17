@@ -82,6 +82,7 @@ public class ActionSet {
 		if (inserts.containsKey(id)) {
 			throw new RuntimeException("Duplicate Insert: conflicting Move?");
 		}
+		System.out.println(insert);
 		int parentID = insert.getParentID();
 		if (deletes.containsKey(parentID)) {
 			deletes.remove(parentID);

@@ -1,4 +1,4 @@
-import B
+import C
 
-if True:
-    x = 1
+h1 = "hello"
+h2 = "Hello"

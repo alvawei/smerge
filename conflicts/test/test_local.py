@@ -1,3 +1,12 @@
-import C
+import B
 
-x = 2
+h2 = "Hello"
+h1 = "hello"
+
+if (True):
+	if (True):
+		print(h1)
+
+if (True):
+	if (True):
+		print(h2)
