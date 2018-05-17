@@ -45,8 +45,7 @@ public class ActionSet {
 			deletes.put(id, moves.get(id).getDelete());
 		} 
 		
-		System.out.println(deletes);
-		for (Delete delete : deletes.values()) delete.apply();
+
 		
 		// apply inserts by inserting parent nodes first
 		while (!inserts.isEmpty()) {
@@ -61,6 +60,9 @@ public class ActionSet {
 			}
 			for (int id : inserted) inserts.remove(id);
 		}
+		
+		System.out.println(deletes);
+		for (Delete delete : deletes.values()) delete.apply();
 		
 		for (Update update : updates.values()) update.apply();
 		
