@@ -43,9 +43,7 @@ public class ActionSet {
 		for (int id : moves.keySet()) {
 			inserts.put(id, moves.get(id).getInsert());
 			deletes.put(id, moves.get(id).getDelete());
-		} 
-		
-
+		}
 		
 		// apply inserts by inserting parent nodes first
 		while (!inserts.isEmpty()) {

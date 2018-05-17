@@ -15,6 +15,9 @@ import java.io.PrintWriter;
  */
 public class Merger {
 	
+	public static int totalConflicts = 0;
+	public static int solvedConflicts = 0;
+	
     
     /**
      * @param args [BASE, LOCAL, REMOTE, MERGED] files
@@ -50,22 +53,21 @@ public class Merger {
         // merge trees
         System.out.println("Generating tree diffs...");
         Differ differ = new Differ(baseTree, localTree, remoteTree);
-        try {
-            ActionSet actions = differ.diff(baseTree, localTree, remoteTree);
-            actions.apply();
-            // write baseTree to merged
-            System.out.println("Writing result to " + merged);
-            String result = baseTree.unparse();
-            
-            // write result -> merged
-            PrintWriter out = new PrintWriter(merged);
-            out.println(result);
-            out.close();
-            
-        } catch (MergeException e) {
-        	e.printStackTrace();
-        	System.out.println("Failed to merge.");
-        }
-
+        
+        System.out.println("Merging changes...");
+        ActionSet actions = differ.diff();
+        System.out.println(actions);
+        actions.apply();
+        
+        System.out.println("Writing result to " + merged);
+        String result = baseTree.unparse();
+        
+        // write result -> merged
+        PrintWriter out = new PrintWriter(merged);
+        out.println(result);
+        out.close();
+        
+        System.out.println("Merge conflicts resolved:");
+        System.out.println(solvedConflicts + "/" + totalConflicts);
     }
 }

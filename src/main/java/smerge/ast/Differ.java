@@ -12,11 +12,15 @@ import smerge.ast.actions.Update;
 // produces an ActionSet given 3 trees
 public class Differ {
 	
+	private AST base, local, remote;
 	private Matcher matcher;
 	private ActionSet actions;
 	private List<Match> matchList;
 	
 	public Differ(AST base, AST local, AST remote) throws MergeException {
+		this.base = base;
+		this.remote = remote;
+		this.local = local;
 		this.matcher = new Matcher(base, local, remote);
 		this.matchList = matcher.matches();
 		actions = new ActionSet();
@@ -29,7 +33,7 @@ public class Differ {
 	// match the nodes between the three trees
 	// note the matcher constructor indirectly calls detectActions()
 	// we could combine this class with the Matcher class easily if we wanted	
-	public ActionSet diff(AST base, AST local, AST remote) throws MergeException {
+	public ActionSet diff() throws MergeException {
 		// for each match in mathces, all detect actions on base/local, base/remote
 		for (Match m : matchList) {
 			detectActions(m, true);
