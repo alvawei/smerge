@@ -45,6 +45,7 @@ public class ActionSet {
 			deletes.put(id, moves.get(id).getDelete());
 		}
 		
+		System.out.println(inserts);
 		// apply inserts by inserting parent nodes first
 		while (!inserts.isEmpty()) {
 			Set<Integer> inserted = new HashSet<>();
@@ -80,7 +81,7 @@ public class ActionSet {
 		return true;
 	}
 	
-	public void addInsert(ASTNode parent, ASTNode child) {
+	public void addInsert(ASTNode parent, ASTNode child, int position) {
 		int id = child.getID();
 		if (parent == null) {
 			System.out.println(child.getID());
@@ -93,7 +94,7 @@ public class ActionSet {
 		if (deletes.containsKey(parentID)) {
 			deletes.remove(parentID);
 		}
-		inserts.put(id, new Insert(parent, child));
+		inserts.put(id, new Insert(parent, child, position));
 	}
 	
 	// need to not delete a node if the other edit tree inserts/moves a node as a child to the deletion

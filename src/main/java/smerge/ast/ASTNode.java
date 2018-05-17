@@ -143,4 +143,12 @@ public abstract class ASTNode {
 			child.debugTree(sb, indent + "    ");
 		}
 	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof ASTNode) {
+			return id == ((ASTNode) o).getID();
+		}
+		return false;
+	}
 }

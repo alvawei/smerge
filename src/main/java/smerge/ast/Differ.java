@@ -59,7 +59,7 @@ public class Differ {
 					// base parent equivalent doesn't exist, parent must also be an insert
 					parent = edit.getParent();
 				}
-				actions.addInsert(parent, edit);
+				actions.addInsert(parent, edit, edit.getParent().children().indexOf(edit));
 			}
 		} else if (edit == null) {
 			// node was deleted from base
@@ -72,8 +72,15 @@ public class Differ {
 				int editNodeIndex = edit.getParent().children().indexOf(edit);
 				
 				if (baseParentID != editParentID || (baseNodeIndex != editNodeIndex)) {
-					ASTNode destParent = matchList.get(editParentID).getBaseNode();
-					actions.addMove(destParent, base, editNodeIndex);
+					System.out.println("move " + base.getID() + " " +  editNodeIndex);
+					System.out.println(editParentID);
+					
+					ASTNode parent = matchList.get(editParentID).getBaseNode();
+					if (parent == null) {
+						// base parent equivalent doesn't exist, parent must also be an insert
+						parent = edit.getParent();
+					}
+					actions.addMove(parent, base, editNodeIndex);
 					
 					// also update indentation
 					actions.addUpdate(base, edit, isLocal);

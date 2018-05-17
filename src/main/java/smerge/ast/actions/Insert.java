@@ -9,20 +9,14 @@ public class Insert implements Action {
 	private int position;
 	
 	public Insert(ASTNode parent, ASTNode child, int position) {
-		this.parent = parent == null ? child.getParent() : parent;
+		this.parent = parent;
 		this.child = child;
 		this.position = position;
+		if (position == -1) System.out.println("shit");
 	}
-	
-	public Insert(ASTNode parent, ASTNode child) {
-		this(parent, child, child.getParent().children().indexOf(child));
-	}
-	
-
 	
 	// inserts the sutree with root node under the given parent at the given position
 	public void apply() {
-		System.out.println(child.getID());
 		child.children().clear();
 		parent.children().add(position, child);
 		child.setParent(parent);

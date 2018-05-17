@@ -8,6 +8,7 @@ public class Move implements Action {
 	private Delete delete;
 	
 	public Move(ASTNode destParent, ASTNode base, int position) {
+		if (position == -1) System.out.println("shit");
 		delete = new Delete(base);
 		insert = new Insert(destParent, base, position);
 	}
