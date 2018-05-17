@@ -1,0 +1,26 @@
+Last week’s goals:
+Get a working version of the tool up. It doesn’t have to have all of the desired features yet, just the main ones so we can get initial results in.
+Finish basic implementation (parsing, diffing, merging, and unparsing two competing commits) so we can begin getting initial results.
+Write a simple Python parser (Jediah)
+Write a merger (Steven/Alva)
+Continue writing scripts to gather results and instructions on how to reproduce our results. 
+Evaluation of parser and merger (Kenji/Bryan)
+Address feedback on the report by detailing the implementation plan. We will do this by giving a running example and using diagrams to show how the diffing and merging algorithms work on that example.
+
+This week’s progress:
+We addressed the feedback given, but it wasn’t up to standards, so we will fix that this week.
+We were able to get an iteration of the tool that handled the sample files that we provided. We have yet to get samples from online repositories that it can handle.
+We were able to automatically generate data points, but we still need to look at the scripts to see if there are any bugs.
+
+Next week’s goals:
+Work on implementation so it can handle the more complicated cases present in the sampled repositories.
+Work on ensuring correctness of evaluation scripts to ensure that the data collection isn’t causing messed up results.
+Address feedback on report by possibly adding a definitions section and using a real world example. Also gather more results.
+Give feedback to verigames via a code review
+
+TA Meeting Agenda:
+Go over TA feedback
+Ask what process she went through to reproduce our results and see if there are any clarifying instructions we can provide. They should have worked.
+Clarify the true and false positives and negatives relevant to our report.
+
+
