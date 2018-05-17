@@ -38,13 +38,14 @@ public class Matcher {
 				if (matchedIDs.contains(base.getID()) || base.getType() != edit.getType()) 
 					continue;
 				
-				if ((base.isLeafNode() && compareLeafNodes(base, edit)) ||
-						(!base.isLeafNode() && compareInnerNodes(base, edit)) ||
-						base.getType() == ASTNode.Type.WHITESPACE) {
+				if ((base.getType() == ASTNode.Type.WHITESPACE) || 
+						(base.isLeafNode() && compareLeafNodes(base, edit)) ||
+						(!base.isLeafNode() && compareInnerNodes(base, edit))) {
 					// it's a match
 					int id = base.getID();
 					matches.get(id).setEditNode(edit, isLocal);
-					matchedIDs.add(id);				
+					matchedIDs.add(id);
+					break;
 				}	
 				
 			}
@@ -71,7 +72,8 @@ public class Matcher {
 	// return true iff these non-leaf nodes should be matched
 	// in the future change to comparing nodes?
 	private boolean compareInnerNodes(ASTNode n1, ASTNode n2) {
-		return  n1.getContent().equals(n2.getContent());
+		double similarity = (double) distance(n1.getContent(), n2.getContent()) / Math.max(n1.getContent().length(), n2.getContent().length());
+		return similarity <= SIM_THRESHOLD;
 	}
 	
 	// calculates Levenshtein distance between two strings
