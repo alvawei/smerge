@@ -24,7 +24,7 @@ public class TestPythonParser {
 		System.out.println(fileContent);
 		System.out.println(tree.unparse());
 		
-		assertEquals(fileContent, tree.unparse());
+		assertEquals(fileContent.trim(), tree.unparse().trim());
 		
 	}
 	

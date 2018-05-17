@@ -31,7 +31,7 @@ public class Matcher {
 		
 		// compare each node in the baseTree to each node in editTree
 		for (ASTNode edit : editTree) {
-			if (edit.getID() == 0) continue;
+			if (edit.getID() == 0) continue; // skip root
 			for (ASTNode base : baseTree) {
 				
 				// can't be matched, skip
