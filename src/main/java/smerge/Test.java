@@ -49,7 +49,6 @@ public class Test {
         actions.apply();
         
         System.out.println(baseTree.debugTree());
-        
         System.out.println("Writing result to " + merged);
         String result = baseTree.unparse();
         
