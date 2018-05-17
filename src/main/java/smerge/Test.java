@@ -8,7 +8,6 @@ import smerge.ast.Differ;
 import smerge.ast.MergeException;
 import smerge.ast.actions.ActionSet;
 import smerge.ast.parsers.Parser;
-import smerge.ast.parsers.python.PythonParser;
 
 public class Test {
 	

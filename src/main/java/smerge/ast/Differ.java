@@ -4,23 +4,15 @@ import java.util.List;
 
 import smerge.ast.Match;
 import smerge.ast.actions.ActionSet;
-import smerge.ast.actions.Delete;
-import smerge.ast.actions.Insert;
-import smerge.ast.actions.Move;
-import smerge.ast.actions.Update;
 
 // produces an ActionSet given 3 trees
 public class Differ {
 	
-	private AST base, local, remote;
 	private Matcher matcher;
 	private ActionSet actions;
 	private List<Match> matchList;
 	
 	public Differ(AST base, AST local, AST remote) throws MergeException {
-		this.base = base;
-		this.remote = remote;
-		this.local = local;
 		this.matcher = new Matcher(base, local, remote);
 		this.matchList = matcher.matches();
 		actions = new ActionSet();
