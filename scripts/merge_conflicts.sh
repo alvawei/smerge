@@ -46,6 +46,7 @@ else
 			    TOTAL=${BASH_REMATCH[2]}
 
 			    echo "$NUM $SUCCESS / TOTAL" >> $RESULTS_DIR/result.txt
+			fi
 		    done <<< $(grep resolved $RESULTS_DIR/mergetool.txt)
 		    
 		    git -C $REPO_DIR reset --merge
@@ -63,9 +64,6 @@ else
 
 	git -C $REPO_DIR reset --merge			
 	git -C $REPO_DIR checkout master
-	if [ $GET_FILES -eq 1 ]; then
-	    git -C $REPO_DIR branch -D base
-	fi
 	git -C $REPO_DIR branch -D local
 	git -C $REPO_DIR branch -D remote
 	git -C $REPO_DIR branch -D merged
