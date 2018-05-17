@@ -49,9 +49,7 @@ public class PythonParser implements Parser {
 		String token;
 		int id = -1;
 		
-		while ((token = getNextToken(br)) != null) {
-			System.out.println("token:\n" + token);
-			
+		while ((token = getNextToken(br)) != null) {			
 			int indentation = getIndentation(token);
 			String content = token.trim();
 			PythonNode.Type type = getType(content);
