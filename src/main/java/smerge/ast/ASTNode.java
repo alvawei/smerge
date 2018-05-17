@@ -127,6 +127,10 @@ public abstract class ASTNode {
 		
 	}
 	
+	public String debugNode() {
+		return "(" + id + ")" + indentation + content;
+	}
+	
 	public void debugTree(StringBuilder sb, String indent) {
 		String idString = "(" + id;
 		if (parent != null) {
