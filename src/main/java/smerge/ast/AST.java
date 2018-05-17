@@ -1,6 +1,8 @@
 package smerge.ast;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /*
  * This class represents a generic Abstract Syntax Tree. It is a wrapper
@@ -31,6 +33,13 @@ public class AST implements Iterable<ASTNode> {
 		return root.preOrder();
 	}
 	
+	public List<ASTNode> preOrderList() {
+		List<ASTNode> list = new ArrayList<>();
+		for (ASTNode n : this) {
+			list.add(n);
+		}
+		return list;
+	}
 	public String toString() {
 		return unparse();
 	}
