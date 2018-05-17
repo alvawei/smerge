@@ -51,7 +51,7 @@ public class PythonNode extends ASTNode {
 			return true;
 		} else if (type == Type.COMMENT || type == Type.BLOCK_COMMENT) {
 			// keep base comment for now
-			return true;
+			return true; 
 		}
 		if (indentation == n1.indentation && indentation != n2.indentation) {
 			indentation = n2.indentation;

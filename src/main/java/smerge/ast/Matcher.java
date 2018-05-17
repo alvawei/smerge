@@ -48,7 +48,7 @@ public class Matcher {
 				}	
 				
 			}
-			if (edit.getID() == -1) {
+			if (edit.getID() < 0) {
 				// no possible match found, create new one
 				matches.add(new Match(nextID++).setEditNode(edit, isLocal));
 			}

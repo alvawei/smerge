@@ -111,8 +111,8 @@ public class ActionSet {
 	
 	public void addMove(ASTNode destParent, ASTNode base, int position) {
 		int id = base.getID();
-		if (moves.containsKey(id)) {
-			throw new RuntimeException("duetplicate moves not implemented yet");
+		if (moves.containsKey(id) && moves.get(id).getInsert().getParentID() != destParent.getID()) {
+			throw new RuntimeException("conflicting moves");
 		}
 		moves.put(id, new Move(destParent, base, position));
 	}
