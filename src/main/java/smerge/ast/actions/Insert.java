@@ -12,7 +12,6 @@ public class Insert implements Action {
 		this.parent = parent;
 		this.child = child;
 		this.position = position;
-		if (position == -1) System.out.println("shit");
 	}
 	
 	// inserts the sutree with root node under the given parent at the given position

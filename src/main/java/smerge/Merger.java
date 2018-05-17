@@ -67,7 +67,6 @@ public class Merger {
         out.println(result);
         out.close();
         
-        System.out.println("Merge conflicts resolved:");
-        System.out.println(solvedConflicts + "/" + totalConflicts);
+        System.out.println("Merge conflicts resolved: " + solvedConflicts + "/" + totalConflicts);
     }
 }
