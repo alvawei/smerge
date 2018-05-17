@@ -1,9 +1,7 @@
 import A
 import B
 import C
-if (True):
-    
 
-    h2 = "Hello"
-h1 = "hello"
+if (True):
+    h1 = "Hello"
 

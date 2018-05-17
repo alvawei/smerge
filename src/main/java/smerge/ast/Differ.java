@@ -4,23 +4,15 @@ import java.util.List;
 
 import smerge.ast.Match;
 import smerge.ast.actions.ActionSet;
-import smerge.ast.actions.Delete;
-import smerge.ast.actions.Insert;
-import smerge.ast.actions.Move;
-import smerge.ast.actions.Update;
 
 // produces an ActionSet given 3 trees
 public class Differ {
 	
-	private AST base, local, remote;
 	private Matcher matcher;
 	private ActionSet actions;
 	private List<Match> matchList;
 	
 	public Differ(AST base, AST local, AST remote) throws MergeException {
-		this.base = base;
-		this.remote = remote;
-		this.local = local;
 		this.matcher = new Matcher(base, local, remote);
 		this.matchList = matcher.matches();
 		actions = new ActionSet();
@@ -59,7 +51,7 @@ public class Differ {
 					// base parent equivalent doesn't exist, parent must also be an insert
 					parent = edit.getParent();
 				}
-				actions.addInsert(parent, edit);
+				actions.addInsert(parent, edit, edit.getParent().children().indexOf(edit));
 			}
 		} else if (edit == null) {
 			// node was deleted from base
@@ -72,8 +64,15 @@ public class Differ {
 				int editNodeIndex = edit.getParent().children().indexOf(edit);
 				
 				if (baseParentID != editParentID || (baseNodeIndex != editNodeIndex)) {
-					ASTNode destParent = matchList.get(editParentID).getBaseNode();
-					actions.addMove(destParent, base, editNodeIndex);
+					System.out.println("move " + base.getID() + " " +  editNodeIndex);
+					System.out.println(editParentID);
+					
+					ASTNode parent = matchList.get(editParentID).getBaseNode();
+					if (parent == null) {
+						// base parent equivalent doesn't exist, parent must also be an insert
+						parent = edit.getParent();
+					}
+					actions.addMove(parent, base, editNodeIndex);
 					
 					// also update indentation
 					actions.addUpdate(base, edit, isLocal);
