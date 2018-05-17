@@ -19,14 +19,17 @@ public class PythonParser implements Parser {
 	public static void main(String[] args) throws IOException {
 		
 		PythonParser p = new PythonParser();
+		String s = "conflicts/test/test_base.py";
+		System.out.println(p.parse(s).debugTree());
 		
 		
+		/*
 		File[] files = new File("scripts/test_results/keras_test_results/conflicts").listFiles();
 	    
 		for (File f : files) {
 			System.out.println(f);
 			p.parse(f.toString());
-		}
+		} */
 		
 		
 	}
@@ -44,15 +47,17 @@ public class PythonParser implements Parser {
 	    
 		// convert all tokens into PythonNodes
 		String token;
+		int id = -1;
 		
 		while ((token = getNextToken(br)) != null) {
+			System.out.println("token:\n" + token);
 			
 			int indentation = getIndentation(token);
 			String content = token.trim();
 			PythonNode.Type type = getType(content);
 
 			PythonNode node = new PythonNode(indentation, content, type);
-
+			node.setID(id--);
 			// find parent of this node and add it as a child
 			PythonNode parent = parentStack.peek();
 			while (indentation <= parent.indentation) {
@@ -121,10 +126,12 @@ public class PythonParser implements Parser {
 	// returns the number of spaces at the beginning of line (tabs = 4 spaces)
 	private static int getIndentation(String line) {
 		int indentation = 0;
+		int index = 0;
 		boolean tab = false;
-		while (line.startsWith(" ", indentation) ||
-			   (tab = line.startsWith("\t", indentation))) {
+		while (line.startsWith(" ", index) ||
+			   (tab = line.startsWith("\t", index))) {
 			indentation += tab ? 4 : 1;
+			index++;
 		}
 		return indentation;
 	}
