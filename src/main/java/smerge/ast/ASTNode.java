@@ -138,6 +138,8 @@ public abstract class ASTNode {
 			idString += ":" + parent.getID() + "[" + parent.children.indexOf(this) + "]";
 		}
 		idString += ")";
+		for (int i = 0; i < 15 - idString.length(); i++) idString += " ";
+
 		sb.append(idString + indent + content + "\n");
 		for (ASTNode child : children) {
 			child.debugTree(sb, indent + "    ");
