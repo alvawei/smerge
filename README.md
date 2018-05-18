@@ -1,18 +1,17 @@
-# smerge
-## Status
-We use Travis CI for continuous integration (click the badge below). 
+# Smart Merge
 [![Build Status](https://travis-ci.org/alvawei/smerge.svg?branch=master)](https://travis-ci.org/alvawei/smerge)
-
-## Build
-*smerge* uses gradle for project dependencies. The build system can be invoked through the following command:
-
-```
-gradle build
-```
 
 # User Manual
 Smerge is a merge tool that resolves merge conflicts with abstract syntax trees (ASTs) (see below for details). By parsing the source code into ASTs, Smerge is able to automatically resolve false conflicts (conflicts where the differences are purely cosmetic; e.g. variable names or whitespace), as well as provide an intuitive tree-based candidate resolution for conflicts with structural differences in the source code. This in turn allows developers to spend less time fixing trivial merge conflicts as Smerge will resolve them automatically.
 
+
+
+## Build
+*smerge* uses Gradle. Build our project with the following command:
+
+```
+gradlew build
+```
 
 ## Installation
 * Clone the *smerge* repository to ~/.
