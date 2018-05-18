@@ -1,0 +1,8 @@
+I'm using this to keep track of the (potentially temporary) design decisions I've been making.
+
+These design decisions prioritize not deleting nodes. This is because it is easier to delete something then rewrite something.
+
+1. If one user updates a node and the other deletes it, we keep the updated node.
+
+2. If a node is moved by one user such that it keeps the same parent, and another user moves the node such that it has a different parent, the node will be moved to the new different parent.
+

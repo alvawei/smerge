@@ -116,8 +116,19 @@ public class ActionSet {
 	
 	public void addMove(ASTNode destParent, ASTNode base, int position) {
 		int id = base.getID();
-		if (moves.containsKey(id) && moves.get(id).getInsert().getParentID() != destParent.getID()) {
-			throw new RuntimeException("conflicting moves");
+		if (moves.containsKey(id)) {
+			int baseParentID = base.getParent().getID();
+			int otherDestParentID = moves.get(id).getInsert().getParentID();
+			int thisDestParentID = destParent.getID();
+			System.out.println(base.getID() + " " + thisDestParentID + " " + otherDestParentID);
+			if (thisDestParentID != baseParentID && otherDestParentID != baseParentID && 
+					thisDestParentID != otherDestParentID) {
+				// need to duplicate it? or not move it?
+				throw new RuntimeException("conflicting moves");
+			} else if (otherDestParentID != baseParentID){
+				// use existing move over this one
+				return;
+			}
 		}
 		moves.put(id, new Move(destParent, base, position));
 	}
