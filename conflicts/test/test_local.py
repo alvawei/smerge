@@ -1,3 +1,4 @@
 import B
 
-h1 = "Hello"
+h2 = "Hello"
+h1 = "hello"

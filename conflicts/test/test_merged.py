@@ -3,5 +3,6 @@ import B
 import C
 
 if (True):
-    h1 = "Hello"
+    h2 = "Hello"
+h1 = "hello"
 

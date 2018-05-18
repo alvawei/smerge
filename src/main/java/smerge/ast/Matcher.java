@@ -8,7 +8,7 @@ import java.util.Set;
 public class Matcher {
 	
 	// smaller similarity = good
-	private static final double SIM_THRESHOLD = 0.3;
+	private static final double SIM_THRESHOLD = 0.2;
 
 		
 	private List<Match> matches;
@@ -32,13 +32,32 @@ public class Matcher {
 		// compare each node in the baseTree to each node in editTree
 		for (ASTNode edit : editTree) {
 			if (edit.getID() == 0) continue; // skip root
+			double minSimilarity = 1.0;
+			ASTNode bestMatch = null;
 			for (ASTNode base : baseTree) {
 				
 				// can't be matched, skip
 				if (matchedIDs.contains(base.getID()) || base.getType() != edit.getType()) 
 					continue;
 				
-				if ((base.getType() == ASTNode.Type.WHITESPACE) || 
+				if (base.getType() == ASTNode.Type.WHITESPACE) {
+					int id = base.getID();
+					matches.get(id).setEditNode(edit, isLocal);
+					matchedIDs.add(id);
+					break;
+				}
+				
+				if (base.isLeafNode() && compareLeafNodes(base, edit) <= SIM_THRESHOLD) {
+					minSimilarity = compareLeafNodes(base, edit);
+					bestMatch = base;
+				}
+				
+				if (!base.isLeafNode() && compareInnerNodes(base, edit) <= SIM_THRESHOLD) {
+					minSimilarity = compareInnerNodes(base, edit);
+					bestMatch = base;
+				}
+				
+				/*if ((base.getType() == ASTNode.Type.WHITESPACE) || 
 						(base.isLeafNode() && compareLeafNodes(base, edit)) ||
 						(!base.isLeafNode() && compareInnerNodes(base, edit))) {
 					// it's a match
@@ -46,10 +65,14 @@ public class Matcher {
 					matches.get(id).setEditNode(edit, isLocal);
 					matchedIDs.add(id);
 					break;
-				}	
+				}*/	
 				
 			}
-			if (edit.getID() < 0) {
+			if (minSimilarity <= SIM_THRESHOLD) {
+				int id = bestMatch.getID();
+				matches.get(id).setEditNode(edit, isLocal);
+				matchedIDs.add(id);
+			} else if (edit.getID() < 0) {
 				// no possible match found, create new one
 				matches.add(new Match(nextID++).setEditNode(edit, isLocal));
 			}
@@ -64,16 +87,14 @@ public class Matcher {
 	}
 	
 	// return true iff these leaf nodes should be matched
-	private boolean compareLeafNodes(ASTNode n1, ASTNode n2) {
-		double similarity = (double) distance(n1.getContent(), n2.getContent()) / Math.max(n1.getContent().length(), n2.getContent().length());
-		return similarity <= SIM_THRESHOLD;
+	private double compareLeafNodes(ASTNode n1, ASTNode n2) {
+		return (double) distance(n1.getContent(), n2.getContent()) / Math.max(n1.getContent().length(), n2.getContent().length());
 	}
 	
 	// return true iff these non-leaf nodes should be matched
 	// in the future change to comparing nodes?
-	private boolean compareInnerNodes(ASTNode n1, ASTNode n2) {
-		double similarity = (double) distance(n1.getContent(), n2.getContent()) / Math.max(n1.getContent().length(), n2.getContent().length());
-		return similarity <= SIM_THRESHOLD;
+	private double compareInnerNodes(ASTNode n1, ASTNode n2) {
+		return (double) distance(n1.getContent(), n2.getContent()) / Math.max(n1.getContent().length(), n2.getContent().length());
 	}
 	
 	// calculates Levenshtein distance between two strings
