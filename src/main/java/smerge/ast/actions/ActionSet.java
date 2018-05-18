@@ -85,7 +85,6 @@ public class ActionSet {
 	public void addInsert(ASTNode parent, ASTNode child, int position) {
 		int id = child.getID();
 		if (parent == null) {
-			System.out.println(child.getID());
 		}
 		int parentID = parent.getID();
 		
@@ -120,7 +119,6 @@ public class ActionSet {
 			int baseParentID = base.getParent().getID();
 			int otherDestParentID = moves.get(id).getInsert().getParentID();
 			int thisDestParentID = destParent.getID();
-			System.out.println(base.getID() + " " + thisDestParentID + " " + otherDestParentID);
 			if (thisDestParentID != baseParentID && otherDestParentID != baseParentID && 
 					thisDestParentID != otherDestParentID) {
 				// need to duplicate it? or not move it?
