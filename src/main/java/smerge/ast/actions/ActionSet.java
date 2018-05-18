@@ -122,7 +122,9 @@ public class ActionSet {
 			if (thisDestParentID != baseParentID && otherDestParentID != baseParentID && 
 					thisDestParentID != otherDestParentID) {
 				// need to duplicate it? or not move it?
-				throw new RuntimeException("conflicting moves");
+				moves.remove(id);
+				return;
+				//throw new RuntimeException("conflicting moves");
 			} else if (otherDestParentID != baseParentID){
 				// use existing move over this one
 				return;

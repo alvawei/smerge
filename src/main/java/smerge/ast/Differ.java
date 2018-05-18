@@ -16,10 +16,6 @@ public class Differ {
 		this.matcher = new Matcher(base, local, remote);
 		this.matchList = matcher.matches();
 		actions = new ActionSet();
-		
-		System.out.println("6666666666666");
-		Match m = matchList.get(6);
-		System.out.println(m.getBaseNode().getContent().equals(m.getRemoteNode().getContent()));
 	}
 	
 	public List<Match> getMatches() {
