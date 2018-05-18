@@ -56,7 +56,6 @@ public class Merger {
         
         System.out.println("Merging changes...");
         ActionSet actions = differ.diff();
-        System.out.println(actions);
         actions.apply();
         
         System.out.println("Writing result to " + merged);
