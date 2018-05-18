@@ -46,7 +46,6 @@ public class ActionSet {
 			deletes.put(id, moves.get(id).getDelete());
 		} */
 		
-		System.out.println(inserts);
 		// apply inserts by inserting parent nodes first
 		while (!inserts.isEmpty()) {
 			Set<Integer> inserted = new HashSet<>();
@@ -61,7 +60,6 @@ public class ActionSet {
 			for (int id : inserted) inserts.remove(id);
 		}
 		
-		System.out.println(deletes);
 		for (Delete delete : deletes.values()) delete.apply(); 
 		
 		for (Move m : moves.values()) m.apply();

@@ -64,8 +64,6 @@ public class Differ {
 				int editNodeIndex = edit.getParent().children().indexOf(edit);
 				
 				if (baseParentID != editParentID || (baseNodeIndex != editNodeIndex)) {
-					System.out.println("move " + base.getID() + " " +  editNodeIndex);
-					System.out.println(editParentID);
 					
 					ASTNode parent = matchList.get(editParentID).getBaseNode();
 					if (parent == null) {
