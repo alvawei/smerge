@@ -33,11 +33,15 @@ else
 		    if [ ! -d $RESULTS_DIR/conflicts ]; then
 			mkdir $RESULTS_DIR/conflicts
 		    fi
+
+		    cp $FILEPATH $RESULTS_DIR/
+		    mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_conflict.py
+		    
 		    
 		    # try to resolve conflict using our mergetool
 		    echo "$(yes | git -C ${REPO_DIR} mergetool --tool=smerge $FILEPATH)" > $RESULTS_DIR/mergetool.txt
 		    while read mergetool_result; do
-			if [[ $mergetool_result =~ *resolved:[[:space:]](*)/(*) ]]; then
+			if [[ $mergetool_result =~ .*resolved:[[:space:]](.*)/(.*) ]]; then
 			    
 			    cp $FILEPATH $RESULTS_DIR/
 			    mv $RESULTS_DIR/$FILENAME $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_actual.py
@@ -45,7 +49,7 @@ else
 			    SUCCESS=${BASH_REMATCH[1]}
 			    TOTAL=${BASH_REMATCH[2]}
 
-			    echo "$NUM $SUCCESS / TOTAL" >> $RESULTS_DIR/result.txt
+			    echo "$NUM $SUCCESS/$TOTAL" >> $RESULTS_DIR/result.txt
 			fi
 		    done <<< $(grep resolved $RESULTS_DIR/mergetool.txt)
 		    

@@ -5,30 +5,30 @@ for FILE in `ls *_actual.py`; do
     FILENAME=${FILE::-10}
     F1=${FILENAME}_actual.py
     F2=${FILENAME}_expected.py
-    DIFF=${FILENAME}.out
+    DIFF=${FILENAME}_.out
     DIFF_NC=${FILENAME}_nc.out
 
     # compare actual merge and expected merge
     diff $F1 $F2 > $DIFF
 
     if [ -s $DIFF ];then
-	RESULT='FAILURE'
+	RESULT="FAILURE"
     else
-	RESULT='SUCCESS'
+	RESULT="SUCCESS"
     fi
 
-    $RESULT >> $DIFF
+    echo $RESULT >> $DIFF
 
     # compare actual merge and expected merge excluding comments
-    diff -wB -I '^#' > $DIFF_NC
+    diff -wB -I '^#' $F1 $F2 > $DIFF_NC
 
     if [ -s $DIFF_NC ];then
-	RESULT='FAILURE'
+	RESULT="FAILURE"
     else
-	RESULT='SUCCESS'
+	RESULT="SUCCESS"
     fi
 
-    $RESULT >> $DIFF_NC
+    echo $RESULT >> $DIFF_NC
 
 done
 popd
