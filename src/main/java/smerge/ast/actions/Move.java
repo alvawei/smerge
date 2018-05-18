@@ -14,7 +14,8 @@ public class Move implements Action {
 	
 	
 	public void apply() {
-		// currently this method should never be called
+		delete.apply();
+		insert.apply();
 	}
 	
 	public Insert getInsert() {

@@ -53,16 +53,16 @@ public class PythonNode extends ASTNode {
 			// keep base comment for now
 			return true; 
 		}
-		if (indentation == n1.indentation && indentation != n2.indentation) {
-			indentation = n2.indentation;
-		} else if (indentation == n2.indentation) {
-			indentation = n1.indentation;
-		}
-		
-		if (content.equals(n1.getContent()) && !content.equals(n2.getContent())) {
-			content = n2.getContent();
-		} else {
+		if (indentation == n1.indentation && indentation != n2.indentation &&
+				!content.equals(n1.getContent()) && content.equals(n2.getContent())) {
 			content = n1.getContent();
+			indentation = n2.indentation;
+			return true;
+		} else if (indentation == n2.indentation && indentation != n1.indentation &&
+				content.equals(n1.getContent()) && !content.equals(n2.getContent())) {
+			content = n2.getContent();
+			indentation = n1.indentation;
+			return true;
 		}
 		return false;
 	}
@@ -70,5 +70,13 @@ public class PythonNode extends ASTNode {
 	public void update(ASTNode edit) {
 		this.content = edit.getContent();
 		this.indentation = edit.indentation;
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof PythonNode) {
+			return getID() == ((PythonNode) o).getID();
+		}
+		return false;
 	}
 }

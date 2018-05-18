@@ -39,11 +39,12 @@ public class ActionSet {
 	// returns true iff actions are merged into base tree
 	public boolean apply() {
 		
+		/*
 		System.out.println(moves);
 		for (int id : moves.keySet()) {
 			inserts.put(id, moves.get(id).getInsert());
 			deletes.put(id, moves.get(id).getDelete());
-		}
+		} */
 		
 		System.out.println(inserts);
 		// apply inserts by inserting parent nodes first
@@ -61,7 +62,9 @@ public class ActionSet {
 		}
 		
 		System.out.println(deletes);
-		for (Delete delete : deletes.values()) delete.apply();
+		for (Delete delete : deletes.values()) delete.apply(); 
+		
+		for (Move m : moves.values()) m.apply();
 		
 		for (Update update : updates.values()) update.apply();
 		

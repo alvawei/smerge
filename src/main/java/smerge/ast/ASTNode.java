@@ -151,4 +151,8 @@ public abstract class ASTNode {
 		}
 		return false;
 	}
+	
+	public String toString() {
+		return "" + id;
+	}
 }
