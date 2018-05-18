@@ -32,7 +32,7 @@ Files to provide are described as follows:
 
 ## Usage
 
-Before using *smerge*, make sure to run `gradle build` first.
+Before using *smerge*, make sure to run `gradlew build` first.
 
 You may run *smerge* as a [git mergetool](https://git-scm.com/docs/git-mergetool) through the following command:
 
