@@ -32,6 +32,7 @@ public class BiggerTest {
 					f + "_local.py",
 					f + "_remote.py",
 					"tmp/out.py"});
+			System.out.println();
 		}
 		
 		

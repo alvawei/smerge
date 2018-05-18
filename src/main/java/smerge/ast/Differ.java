@@ -16,6 +16,10 @@ public class Differ {
 		this.matcher = new Matcher(base, local, remote);
 		this.matchList = matcher.matches();
 		actions = new ActionSet();
+		
+		System.out.println("6666666666666");
+		Match m = matchList.get(6);
+		System.out.println(m.getBaseNode().getContent().equals(m.getRemoteNode().getContent()));
 	}
 	
 	public List<Match> getMatches() {
@@ -73,7 +77,9 @@ public class Differ {
 					actions.addMove(parent, base, editNodeIndex);
 					
 					// also update indentation
-					actions.addUpdate(base, edit, isLocal);
+					if (parent.getID() != editParentID) {
+						actions.addUpdate(base, edit, isLocal);
+					}
 				
 				}
 			}

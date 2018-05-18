@@ -58,4 +58,13 @@ public class Match {
     public ASTNode getRemoteNode() {
     	return remote;
     }
+    
+    public String toString() {
+    	String baseString = base == null ? null : base.getContent();
+    	String localString = local == null ? null : local.getContent();
+    	String remoteString = remote == null ? null : remote.getContent();
+    	return baseString + "\n" + localString + "\n" + remoteString;
+
+    	
+    }
 }

@@ -14,13 +14,21 @@ public class Test {
 	// i just run this main method for easy testing
 
 	public static void main(String[] args) throws IOException, MergeException {
+		/*
 		String base = "conflicts/test/test_base.py"; // args[0];
         String local = "conflicts/test/test_local.py"; // args[1];
         String remote = "conflicts/test/test_remote.py"; // args[2];
         String merged = "conflicts/test/test_merged.py"; // args[3];
+        */
+		
+		String base = "scripts/test_results/keras_test_results/conflicts/16_test_recurrent_base.py";
+		String local = "scripts/test_results/keras_test_results/conflicts/16_test_recurrent_local.py";
+		String remote = "scripts/test_results/keras_test_results/conflicts/16_test_recurrent_remote.py";
+		String merged = "tmp/temp_out.py";
         
         // get the correct parser (pass in filename for file extension/type?)
         Parser parser = Parser.getInstance(null);
+        
         
         // parse files into ASTs
         System.out.println("Parsing base file...");
