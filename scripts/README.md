@@ -2,6 +2,7 @@
 
 ## Reproducing Results
 * Follow installation instructions included in the User Manual (README.md) in ~/smerge
+* Build *smerge* by running `./gradlew build`
 * Make sure all .sh files in `smerge/scripts` have run permission by running `chmod +x *.sh`
 * Within the `smerge/scripts` directory, run:
 `./test.sh`
