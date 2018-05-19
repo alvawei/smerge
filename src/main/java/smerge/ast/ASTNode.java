@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Stack;
+
+import smerge.ast.actions.ChildrenSet;
+
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -25,16 +28,23 @@ public abstract class ASTNode {
 	
 	// we may need to change the way children are stored and added for merging purposes
 	// such as ensuring children are at a specific position
-	protected List<ASTNode> children;
+	protected ChildrenSet children;
+	// TODO: protected ChildrenSet = new ChildrenSet();
 	
 	public int indentation; // unsure if needed
 	
 	private int id;
+	
+	// used to compare the position within a list of children
+	// TODO: remove all occurrences of checking children node positions using array indexing
+	// to using the index field
+	private double position;
 
-	public ASTNode() {
+	public ASTNode(double position) {
 		this.type = Type.ROOT;
-		this.children = new ArrayList<>();
+		this.children = new ChildrenSet();
 		this.id = -1;
+		this.position = position;
 	}
 	
 	// most important method of this generic ASTNode:
@@ -49,7 +59,7 @@ public abstract class ASTNode {
 	public abstract void update(ASTNode edit);
 	
 	// returns the direct list of this node's children
-	public List<ASTNode> children() {
+	public ChildrenSet children() {
 		return children;
 	}
 	
@@ -63,6 +73,7 @@ public abstract class ASTNode {
 	
 	// adds the given child to this node ands sets this node as its parent
 	// removes the child node from its original parent
+	// TODO: add the child to the ChildrenSet here
 	public void addChild(ASTNode child) {
 		if (child.parent != null) child.parent.children.remove(child);
 		children.add(child);
@@ -88,13 +99,20 @@ public abstract class ASTNode {
 		return children.isEmpty();
 	}
 	
-	
 	public int getID() {
 		return id;
+	}
+	
+	public double getPosition() {
+		return position;
 	}
 
 	public void setID(int id) {
 		this.id = id;
+	}
+	
+	public void setPosition(double position) {
+		this.position = position;
 	}
 	
 	public Iterator<ASTNode> preOrder() {
@@ -119,9 +137,9 @@ public abstract class ASTNode {
 		@Override
 		public ASTNode next() {
 			ASTNode node = stack.pop();
-			for (int i = node.children().size() - 1; i >= 0; i--) {
-				stack.push(node.children().get(i));
-			}
+			Iterator<ASTNode> it = node.children().iterator();
+			while (it.hasNext())
+				stack.push(it.next());
 			return node;
 
 		}
@@ -135,15 +153,16 @@ public abstract class ASTNode {
 	public void debugTree(StringBuilder sb, String indent) {
 		String idString = "(" + id;
 		if (parent != null) {
-			idString += ":" + parent.getID() + "[" + parent.children.indexOf(this) + "]";
+			// TODO: check that this.index is the proper replacement for "parent.children.indexOf(this)"
+			idString += ":" + parent.getID() + "[" + this.position + "]";
 		}
 		idString += ")";
 		for (int i = 0; i < 15 - idString.length(); i++) idString += " ";
 
 		sb.append(idString + indent + content + "\n");
-		for (ASTNode child : children) {
-			child.debugTree(sb, indent + "    ");
-		}
+		Iterator<ASTNode> it = parent.children().iterator();
+		while (it.hasNext())
+			it.next().debugTree(sb, indent + "    ");
 	}
 	
 	@Override
