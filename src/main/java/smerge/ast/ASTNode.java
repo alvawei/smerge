@@ -30,6 +30,7 @@ public abstract class ASTNode {
 	public int indentation; // unsure if needed
 	
 	private int id;
+	private double position;
 
 	public ASTNode() {
 		this.type = Type.ROOT;
@@ -95,6 +96,14 @@ public abstract class ASTNode {
 
 	public void setID(int id) {
 		this.id = id;
+	}
+	
+	public Double getPosition() {
+		return position;
+	}
+	
+	public void setPosition(Double position) {
+		this.position = position;
 	}
 	
 	public Iterator<ASTNode> preOrder() {
