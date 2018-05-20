@@ -2,6 +2,8 @@
 
 ## Reproducing Results
 * Follow installation instructions included in the User Manual (README.md) in ~/smerge
+* Build *smerge* by running `./gradlew build`
+* Run command `git checkout evaluation` to get the last working version of the tool.
 * Make sure all .sh files in `smerge/scripts` have run permission by running `chmod +x *.sh`
 * Within the `smerge/scripts` directory, run:
 `./test.sh`
