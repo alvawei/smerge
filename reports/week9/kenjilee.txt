@@ -1,0 +1,21 @@
+Kenji Nicholson
+kenjilee
+CSE 403 Week 9 Individual Report
+5/20/18
+
+1.) For next week, I plan on helping out with preparing the presentation, taking the feedback left from
+the last one into account. I will also get up to date on the implementation by looking at all the code
+and asking questions to see what it does. This will enable us to all improve upon it. On top of this,
+we will address the feedback by possibly adding a definitions section, since we've ran into that issue
+very often.
+
+2.) This week, I mainly looked at ways we can help improve our evaluation results. Specifically, the team
+is thinking about changing the definition of success for our tool from having a complete match to the
+developer's manual resolution to having a partial match. That is, the tool is able to solve some of the
+conflicts on the file, but not all of them. Another thing I focused on was addressing the feedback given
+last week and helping out with preparing with the presentation/report.
+
+3.) For next week, the central goal is to get evaluation results that suggest our tool is working for its
+purpose. Additionally, we have to analyze the unresolved conflicts and categorize them into true or false positives.
+I will also focus on addressing the feedback and revising the report to get rid of any lingering hypotheticals.
+Additionally, I will focus on editing the eval scripts to reflect our new definition of succcess.
