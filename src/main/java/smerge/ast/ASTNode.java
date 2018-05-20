@@ -4,9 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Stack;
-
-import smerge.ast.actions.ChildrenSet;
-
 import java.util.Iterator;
 import java.util.LinkedList;
 
@@ -70,7 +67,6 @@ public abstract class ASTNode {
 	
 	// adds the given child to this node ands sets this node as its parent
 	// removes the child node from its original parent
-	// TODO: add the child to the ChildrenSet here
 	public void addChild(ASTNode child) {
 		if (child.parent != null) child.parent.children.remove(child);
 		children.add(child);
