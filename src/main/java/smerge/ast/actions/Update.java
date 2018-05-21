@@ -2,6 +2,7 @@ package smerge.ast.actions;
 
 import smerge.Merger;
 import smerge.ast.ASTNode;
+import smerge.ast.NodeMerger;
 
 public class Update implements Action {
 	
@@ -30,13 +31,15 @@ public class Update implements Action {
 	public void apply() {
 		if (local != null && remote != null) {
 			Merger.totalConflicts++;
-			boolean solved = base.merge(local, remote);
+			boolean solved = NodeMerger.merge(base, local, remote);
 			if (solved) Merger.solvedConflicts++;
 			
 		} else if (local != null) {
-			base.update(local);
+			base.setContent(local.getContent());
+			base.setIndentation(local.getIndentation());
 		} else if (remote != null) {
-			base.update(remote);
+			base.setContent(remote.getContent());
+			base.setIndentation(remote.getIndentation());
 		}
 	}
 	

@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import smerge.ast.parsers.Parser;
+
 /*
  * This class represents a generic Abstract Syntax Tree. It is a wrapper
  * around a root ASTNode.
@@ -12,21 +14,17 @@ import java.util.List;
 
 public class AST implements Iterable<ASTNode> {
 	
+	private Parser p;
 	private ASTNode root;
 	
-	public AST(ASTNode root) {
+	public AST(ASTNode root, Parser p) {
 		this.root = root;
+		this.p = p;
 	}
 	
 	public ASTNode getRoot() {
 		return root;
 	}	
-	
-	public String unparse() {
-		StringBuilder sb = new StringBuilder();
-		root.unparse(sb);
-		return sb.toString();
-	}
 	
 	// returns an iterator that performs a preorder traversal of the tree
 	public Iterator<ASTNode> iterator() {
@@ -41,7 +39,7 @@ public class AST implements Iterable<ASTNode> {
 		return list;
 	}
 	public String toString() {
-		return unparse();
+		return p.unparse(this);
 	}
 	
 	public String debugTree() {

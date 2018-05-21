@@ -1,6 +1,7 @@
 package smerge.ast.parsers.python;
 
 import smerge.ast.AST;
+import smerge.ast.ASTNode;
 import smerge.ast.parsers.Parser;
 
 import java.io.BufferedReader;
@@ -11,7 +12,7 @@ import java.util.Arrays;
 import java.util.Stack;
 
 
-public class PythonParser implements Parser {
+public class PythonParser extends Parser {
 	public static final String[] opens = {"\"\"\"", "'''", "\"", "'", "(", "[", "{"};
 	public static final String[] closes = {"\"\"\"", "'''", "\"", "'", ")", "]", "}"};	
 		
@@ -39,31 +40,31 @@ public class PythonParser implements Parser {
 		BufferedReader br = new BufferedReader(new FileReader(new File(filename)));
 		
 		// holds onto current parents
-		Stack<PythonNode> parentStack = new Stack<>();
+		Stack<ASTNode> parentStack = new Stack<>();
 		
 		// initialize tree
-		PythonNode root = new PythonNode();
+		ASTNode root = new ASTNode();
 		parentStack.push(root);
 	    
-		// convert all tokens into PythonNodes
+		// convert all tokens into ASTNodes
 		String token;
 		int id = -1;
 		
 		while ((token = getNextToken(br)) != null) {			
 			int indentation = getIndentation(token);
 			String content = token.trim();
-			PythonNode.Type type = getType(content);
+			ASTNode.Type type = getType(content);
 
-			PythonNode node = new PythonNode(indentation, content, type);
+			ASTNode node = new ASTNode(type, content, indentation);
 			node.setID(id--);
 			
-			if (type == PythonNode.Type.WHITESPACE) {
+			if (type == ASTNode.Type.WHITESPACE) {
 				root.addChild(node);
 				continue;
 			}
 			// find parent of this node and add it as a child
-			PythonNode parent = parentStack.peek();
-			while (indentation <= parent.indentation) {
+			ASTNode parent = parentStack.peek();
+			while (indentation <= parent.getIndentation()){
 				parentStack.pop();
 				parent = parentStack.peek();
 			}
@@ -74,10 +75,29 @@ public class PythonParser implements Parser {
 				parentStack.push(node);
 			}			
 		}
-		return new AST(root);
+		return new AST(root, this);
 	}
 	
-	public String getNextToken(BufferedReader br) throws IOException {
+	// unparses the given tree back into source code
+	public String unparse(AST tree) {
+		StringBuilder sb = new StringBuilder();
+		for (ASTNode child : tree.getRoot().children()) {
+			unparse(child, sb);
+		}
+		
+		return sb.toString();
+	}
+	
+	// recursively unparse a subtree
+	private void unparse(ASTNode node, StringBuilder sb) {
+			sb.append(indent(node.getIndentation()));
+			sb.append(node.getContent() + "\n");
+		for (ASTNode child : node.children()) {
+			unparse(child, sb);
+		}
+	}
+	
+	private String getNextToken(BufferedReader br) throws IOException {
 		String token = br.readLine();
 		if (token == null || token.trim().startsWith("#")) return token;
 		
@@ -140,27 +160,27 @@ public class PythonParser implements Parser {
 	}
 	
 	// determines the type of the node given the content
-	private static PythonNode.Type getType(String lineContent) {
+	private static ASTNode.Type getType(String lineContent) {
 		if (lineContent.startsWith("def")) {
-			return PythonNode.Type.METHOD;
+			return ASTNode.Type.METHOD;
 		} else if (lineContent.startsWith("if")) {
-		    return PythonNode.Type.IF_STATEMENT;
+		    return ASTNode.Type.IF_STATEMENT;
 		} else if (lineContent.startsWith("while")) {
-			return PythonNode.Type.WHILE_LOOP;
+			return ASTNode.Type.WHILE_LOOP;
 		} else if (lineContent.startsWith("for")) {
-			return PythonNode.Type.FOR_LOOP;
+			return ASTNode.Type.FOR_LOOP;
 		} else if (lineContent.startsWith("return")) {
-			return PythonNode.Type.RETURN;
+			return ASTNode.Type.RETURN;
 		} else if (lineContent.startsWith("import") || lineContent.startsWith("from")) {
-			return PythonNode.Type.IMPORT;
+			return ASTNode.Type.IMPORT;
 		} else if (lineContent.startsWith("#")) {
-			return PythonNode.Type.COMMENT;
+			return ASTNode.Type.COMMENT;
 		} else if (lineContent.startsWith("\"\"\"") && lineContent.endsWith("\"\"\"")) {
-			return PythonNode.Type.BLOCK_COMMENT;
+			return ASTNode.Type.BLOCK_COMMENT;
 		} else if (lineContent.isEmpty()) {
-			return PythonNode.Type.WHITESPACE;
+			return ASTNode.Type.WHITESPACE;
 		} else if (lineContent.contains(" = ")) {
-			return PythonNode.Type.ASSIGNMENT;
+			return ASTNode.Type.ASSIGNMENT;
 		}
 		return null;
 	}

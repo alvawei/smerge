@@ -22,9 +22,9 @@ public class TestPythonParser {
 		AST tree = new PythonParser().parse(SIMPLE);
 		
 		System.out.println(fileContent);
-		System.out.println(tree.unparse());
+		System.out.println(tree);
 		
-		assertEquals(fileContent.trim(), tree.unparse().trim());
+		assertEquals(fileContent.trim(), tree.toString().trim());
 		
 	}
 	
