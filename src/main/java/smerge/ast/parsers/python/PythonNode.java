@@ -63,8 +63,16 @@ public class PythonNode extends ASTNode {
 			content = n2.getContent();
 			indentation = n1.indentation;
 			return true;
+		} else {
+			String conflict = "<<<<<<< REMOTE\n" + 
+					n2.getContent() + "\n" +
+					"=======\n" + 
+					n1.getContent() + "\n" +
+					">>>>>>> REMOTE";
+			setContent(conflict);
+			indentation = 0;
+			return false;
 		}
-		return false;
 	}
 	
 	public void update(ASTNode edit) {

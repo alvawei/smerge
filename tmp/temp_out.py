@@ -26,9 +26,17 @@ def _runner(layer_class):
             out = K.eval(layer.get_output(train))
             # Make sure the output has the desired shape
             if ret_seq:
-                assert(out.shape == (nb_samples, output_dim))
+<<<<<<< REMOTE
+assert(out.shape == (nb_samples, timesteps, output_dim))
+=======
+assert(out.shape == (nb_samples, timesteps, output_dim))
+>>>>>>> REMOTE
             else:
-    assert(out1.shape == (nb_samples, output_dim))
+<<<<<<< REMOTE
+assert(out.shape == (nb_samples, output_dim))
+=======
+assert(out.shape == (nb_samples, output_dim))
+>>>>>>> REMOTE
             mask = layer.get_output_mask(train)
     # check statefulness
     model = Sequential()
@@ -41,41 +49,121 @@ def _runner(layer_class):
                         weights=None)
     model.add(layer)
     model.compile(optimizer='sgd', loss='mse')
-    out1 = model.predict(np.ones((nb_samples, timesteps)))
+<<<<<<< REMOTE
+out5 = model.predict(np.ones((nb_samples, timesteps)))
+=======
+out5 = model.predict(np.ones((nb_samples, timesteps)))
+>>>>>>> REMOTE
     assert(out1.shape == (nb_samples, output_dim))
     assert(out1.shape == (nb_samples, output_dim))
     # train once so that the states change
     model.train_on_batch(np.ones((nb_samples, timesteps)),
                          np.ones((nb_samples, output_dim)))
-    out2 = model.predict(np.ones((nb_samples, timesteps)))
+<<<<<<< REMOTE
+out4 = model.predict(np.ones((nb_samples, timesteps)))
+=======
+out4 = model.predict(np.ones((nb_samples, timesteps)))
+>>>>>>> REMOTE
     # if the state is not reset, output should be different
-    assert(out1.max() != out2.max())
+<<<<<<< REMOTE
+assert(out4.max() != out5.max())
+=======
+assert(out4.max() != out5.max())
+>>>>>>> REMOTE
     # check that output changes after states are reset
     # (even though the model itself didn't change)
     layer.reset_states()
     out3 = model.predict(np.ones((nb_samples, timesteps)))
     assert(out2.max() != out3.max())
     # check that container-level reset_states() works
-    model.reset_states()
-    out4 = model.predict(np.ones((nb_samples, timesteps)))
-    assert_allclose(out3, out4, atol=1e-5)
+<<<<<<< REMOTE
+layer.reset_states()
+=======
+layer.reset_states()
+>>>>>>> REMOTE
+<<<<<<< REMOTE
+out2 = model.predict(np.ones((nb_samples, timesteps)))
+=======
+out2 = model.predict(np.ones((nb_samples, timesteps)))
+>>>>>>> REMOTE
+<<<<<<< REMOTE
+assert_allclose(out7, out6, atol=1e-5)
+=======
+assert_allclose(out7, out6, atol=1e-5)
+>>>>>>> REMOTE
     # check that the call to `predict` updated the states
-    out5 = model.predict(np.ones((nb_samples, timesteps)))
-    assert(out4.max() != out5.max())
+<<<<<<< REMOTE
+out1 = model.predict(np.ones((nb_samples, timesteps)))
+=======
+out1 = model.predict(np.ones((nb_samples, timesteps)))
+>>>>>>> REMOTE
+<<<<<<< REMOTE
+assert(out1.max() != out2.max())
+=======
+assert(out1.max() != out2.max())
+>>>>>>> REMOTE
     # Check masking
+<<<<<<< REMOTE
+model.reset_states()
+=======
+model.reset_states()
+>>>>>>> REMOTE
+<<<<<<< REMOTE
+right_padded_input = np.ones((nb_samples, timesteps))
+=======
+right_padded_input = np.ones((nb_samples, timesteps))
+>>>>>>> REMOTE
+<<<<<<< REMOTE
+right_padded_input[0, -1:] = 0
+=======
+right_padded_input[0, -1:] = 0
+>>>>>>> REMOTE
+<<<<<<< REMOTE
+right_padded_input[1, -2:] = 0
+=======
+right_padded_input[1, -2:] = 0
+>>>>>>> REMOTE
+<<<<<<< REMOTE
+right_padded_input[2, -3:] = 0
+=======
+right_padded_input[2, -3:] = 0
+>>>>>>> REMOTE
+<<<<<<< REMOTE
+out7 = model.predict(right_padded_input)
+=======
+out7 = model.predict(right_padded_input)
+>>>>>>> REMOTE
     layer.reset_states()
-    left_padded_input = np.ones((nb_samples, timesteps))
-    left_padded_input[0, :1] = 0
-    left_padded_input[1, :2] = 0
-    left_padded_input[2, :3] = 0
-    out6 = model.predict(left_padded_input)
-    layer.reset_states()
-    right_padded_input = np.ones((nb_samples, timesteps))
-    right_padded_input[0, -1:] = 0
-    right_padded_input[1, -2:] = 0
-    right_padded_input[2, -3:] = 0
-    out7 = model.predict(right_padded_input)
-    assert_allclose(out7, out6, atol=1e-5)
+<<<<<<< REMOTE
+left_padded_input = np.ones((nb_samples, timesteps))
+=======
+left_padded_input = np.ones((nb_samples, timesteps))
+>>>>>>> REMOTE
+<<<<<<< REMOTE
+left_padded_input[0, :1] = 0
+=======
+left_padded_input[0, :1] = 0
+>>>>>>> REMOTE
+<<<<<<< REMOTE
+left_padded_input[1, :2] = 0
+=======
+left_padded_input[1, :2] = 0
+>>>>>>> REMOTE
+<<<<<<< REMOTE
+left_padded_input[2, :3] = 0
+=======
+left_padded_input[2, :3] = 0
+>>>>>>> REMOTE
+<<<<<<< REMOTE
+out6 = model.predict(left_padded_input)
+=======
+out6 = model.predict(left_padded_input)
+>>>>>>> REMOTE
+<<<<<<< REMOTE
+assert_allclose(out3, out4, atol=1e-5)
+=======
+assert_allclose(out3, out4, atol=1e-5)
+>>>>>>> REMOTE
 
 
 
@@ -96,11 +184,19 @@ def test_SimpleRNN():
 
 
 def test_GRU():
-    _runner(recurrent.LSTM)
+<<<<<<< REMOTE
+_runner(recurrent.GRU)
+=======
+_runner(recurrent.GRU)
+>>>>>>> REMOTE
 
 
 def test_LSTM():
-    _runner(recurrent.GRU)
+<<<<<<< REMOTE
+_runner(recurrent.LSTM)
+=======
+_runner(recurrent.LSTM)
+>>>>>>> REMOTE
 
 
 def test_masking_layer():
