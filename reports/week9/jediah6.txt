@@ -1,0 +1,46 @@
+Jediah Conachan (jediah6)
+5/14/18
+CSE 403
+Individual Status Report #7 (Week 9)
+
+==================
+Last Week's Goals:
+==================
+
+- ensure the python parser works with all testing files
+- work with Alva and Steven on improving tree matching/diffing
+- possibly add a second parser (should be easier after rewriting python parser, can reuse a lot of code)
+    - still have to decide on the language
+
+
+ - Finish implementing actions (need to be able to apply them to the base tree)
+   - possibly try merging two sets of actions as well
+ - Improve python parser functionality (parse python method parameters as their own nodes)
+ - Help other teammates with tree diffing algorithm as needed
+   - can't test actions without this
+   - will probably have to make changes to generic AST
+ - Begin working on second parser (may attempt java, time permitting)
+
+================
+Weekly Progress:
+================
+
+- fixed python parser
+- began testing on more complicated files from github repos
+  - found a lot of bugs, fixed a lot of them
+- currently stuck on a few problems with merging actions
+- changed how conflicts we can't solve are handled
+- added a conflict counter for evaluation
+  - not 100% correct
+- reviewed verigame's repository
+- worked on report
+
+
+===========
+Next Steps:
+===========
+
+- continue debugging and clean up messy code
+
+
+
