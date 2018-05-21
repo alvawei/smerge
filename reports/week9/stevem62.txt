@@ -1,0 +1,24 @@
+Steven Miller
+stevem62@uw.edu
+CSE 403 Week 8 Individual Report
+5/14/18
+
+1) The coming week:
+- Start to work on implementing the tree merger
+- Make any report revisions
+
+2) This week I helped with the Diffing process and reimplemented
+some of our code in a different way to minimize the move actions
+we identify. Our way of identifying moves was too general, so that
+every time we moved a line, every line below it that was shifted
+also was labeled as a move. Other than being very inefficient and
+slow on large projects, it was very hard to debug. However, the
+way we decided to implement it left us with some cases we could
+not handle, so we decided to go with a different approach. Unfortunately
+the changes I made did not stick with the project but that's the
+way it goes. I also helped with revising the report.
+
+3) This coming week I will continut to work on implementation,
+trying to fine tune our action identifying and help with the matching
+of nodes. We definitely need to make some big progress this week so
+that we can deliver a fully working project by the deadline.
