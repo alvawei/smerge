@@ -6,6 +6,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import smerge.ast.ASTNode;
+import smerge.ast.NodeMerger;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -25,7 +26,7 @@ public class ActionSet {
 	
 	private SortedSet<Action> sortedActions;
 	
-	private Map<Integer, Set<Insert>> insertSets;
+	private Map<Integer, Map<Integer, Insert>> insertSets;
 	private Map<Integer, Set<Delete>> deleteSets;
 	private Map<Integer, Set<Shift>> shiftSets;
 
@@ -91,15 +92,26 @@ public class ActionSet {
 		return true;
 	}
 	
-	public void addInsert(ASTNode parent, ASTNode child, int position) {
+	public void addInsert(ASTNode parent, ASTNode child, int position, boolean isLocal) {
 		int id = child.getID();
-		if (parent == null) {
-		}
 		int parentID = parent.getID();
 		
-		if (inserts.containsKey(id)) {
-			throw new RuntimeException("Duplicate Insert: conflicting Move?");
+		if (!insertSets.containsKey(parentID)) {
+			insertSets.put(parentID, new HashMap<>());
 		}
+		if (insertSets.get(parentID).containsKey(position)) {
+			// conflicting inserts to same position
+			ASTNode other = insertSets.get(parentID).get(position).getChild();
+			ASTNode local = isLocal ? child : other;
+			ASTNode remote = isLocal ? other : child;
+			ASTNode base = NodeMerger.merge(null, local, remote);
+			
+			insertSets.get(parentID).put(position, new Insert(parent, base, position));
+		} else {
+			insertSets.get(parentID).put(position, new Insert(parent, child, position));
+		}
+		
+		// TODO: counts as resolved conflict?
 		if (deletes.containsKey(parentID)) {
 			deletes.remove(parentID);
 		}
@@ -171,7 +183,7 @@ public class ActionSet {
 		// remove implicit shifts
 		for (int parentID : shiftSets.keySet()) {
 			Set<Shift> shiftSet = shiftSets.get(parentID);
-			Set<Insert> insertSet= insertSets.get(parentID);
+			Map<Integer, Insert> insertSet= insertSets.get(parentID);
 			Set<Delete> deleteSet = deleteSets.get(parentID);
 			
 			Set<Shift> unecessaryShifts = new HashSet<>();
@@ -179,9 +191,9 @@ public class ActionSet {
 			
 			
 			//  adjust shifts for each insert
-			for (Insert insert : insertSet) {
+			for (int position : insertSet.keySet()) {
 				for (Shift shift : shiftSet) {
-					if (shift.oldPosition >= insert.getPosition()) {
+					if (shift.oldPosition >= position) {
 						shift.oldPosition++;
 					}
 				}

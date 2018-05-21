@@ -30,10 +30,7 @@ public class Update implements Action {
 	// swap before with after
 	public void apply() {
 		if (local != null && remote != null) {
-			Merger.totalConflicts++;
-			boolean solved = NodeMerger.merge(base, local, remote);
-			if (solved) Merger.solvedConflicts++;
-			
+			NodeMerger.merge(base, local, remote);
 		} else if (local != null) {
 			base.setContent(local.getContent());
 			base.setIndentation(local.getIndentation());

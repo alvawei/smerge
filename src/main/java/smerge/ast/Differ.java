@@ -51,7 +51,7 @@ public class Differ {
 					// base parent equivalent doesn't exist, parent must also be an insert
 					parent = edit.getParent();
 				}
-				actions.addInsert(parent, edit, edit.getParent().children().indexOf(edit));
+				actions.addInsert(parent, edit, edit.getParent().children().indexOf(edit), isLocal);
 			}
 		} else if (edit == null) {
 			// node was deleted from base

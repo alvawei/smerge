@@ -32,6 +32,10 @@ public class Insert implements Action {
 		return parent.getID();
 	}
 	
+	public ASTNode getChild() {
+		return child;
+	}
+	
 	public String toString() {
 		return "Insert " + child.getID() + 
 				"->" + parent.getID() + 
