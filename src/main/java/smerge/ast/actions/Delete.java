@@ -10,6 +10,10 @@ public class Delete implements Action {
 		this.child = child;
 	}
 	
+	public int getPosition() {
+		return child.getParent().children().indexOf(child);
+	}
+	
 
 	public void apply() {
 		child.getParent().children().remove(child);

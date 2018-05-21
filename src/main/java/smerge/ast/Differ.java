@@ -63,20 +63,17 @@ public class Differ {
 				int baseNodeIndex = base.getParent().children().indexOf(base);
 				int editNodeIndex = edit.getParent().children().indexOf(edit);
 				
-				if (baseParentID != editParentID || (baseNodeIndex != editNodeIndex)) {
+				ASTNode parent = matchList.get(editParentID).getBaseNode();				
+				if (baseParentID != editParentID) {
 					
-					ASTNode parent = matchList.get(editParentID).getBaseNode();
 					if (parent == null) {
 						// base parent equivalent doesn't exist, parent must also be an insert
 						parent = edit.getParent();
 					}
-					actions.addMove(parent, base, editNodeIndex);
+					actions.addMove(parent, base, editNodeIndex);	
 					
-					// also update indentation
-					if (parent.getID() != editParentID) {
-						actions.addUpdate(base, edit, isLocal);
-					}
-				
+				} else if (baseNodeIndex != editNodeIndex) {
+					actions.addShift(parent, edit, baseNodeIndex, editNodeIndex);
 				}
 			}
 			if (!base.getContent().equals(edit.getContent())) {

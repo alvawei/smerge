@@ -16,6 +16,7 @@ public class Move implements Action {
 	public void apply() {
 		delete.apply();
 		insert.apply();
+		// TODO: update indentation
 	}
 	
 	public Insert getInsert() {

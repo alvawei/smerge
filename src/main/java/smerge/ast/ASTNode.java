@@ -119,6 +119,7 @@ public abstract class ASTNode {
 		@Override
 		public ASTNode next() {
 			ASTNode node = stack.pop();
+			// must add children in reverse order
 			for (int i = node.children().size() - 1; i >= 0; i--) {
 				stack.push(node.children().get(i));
 			}

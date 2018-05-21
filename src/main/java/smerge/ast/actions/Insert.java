@@ -23,10 +23,15 @@ public class Insert implements Action {
 
 	}
 	
+	public int getPosition() {
+		return position;
+	}
+	
 	// returns the id of the parent
 	public int getParentID() {
 		return parent.getID();
 	}
+	
 	public String toString() {
 		return "Insert " + child.getID() + 
 				"->" + parent.getID() + 

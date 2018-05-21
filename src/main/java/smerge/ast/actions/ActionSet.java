@@ -24,6 +24,11 @@ public class ActionSet {
 	private Map<Integer, Update> updates;
 	
 	private SortedSet<Action> sortedActions;
+	
+	private Map<Integer, Set<Insert>> insertSets;
+	private Map<Integer, Set<Delete>> deleteSets;
+	private Map<Integer, Set<Shift>> shiftSets;
+
 		
 	private Set<Integer> noDeletes; // set of base nodes that cant be deleted
 	
@@ -32,6 +37,10 @@ public class ActionSet {
 		deletes = new HashMap<>();
 		moves = new HashMap<>();
 		updates = new HashMap<>();
+		
+		insertSets = new HashMap<>();
+		deleteSets = new HashMap<>();
+		shiftSets = new HashMap<>();
 		
 		noDeletes = new HashSet<>();
 	}
@@ -133,6 +142,15 @@ public class ActionSet {
 		moves.put(id, new Move(destParent, base, position));
 	}
 	
+	public void addShift(ASTNode parent, ASTNode edit, int oldPos, int newPos) {
+		if (!shiftSets.containsKey(parent.getID())) {
+			shiftSets.put(parent.getID(), new HashSet<>());
+		}
+		shiftSets.get(parent.getID()).add(new Shift(parent, edit, oldPos, newPos));
+		
+	}
+
+	
 	public void addUpdate(ASTNode base, ASTNode edit, boolean isLocal) {
 		int id = base.getID();
 		if (updates.containsKey(id)) {
@@ -146,6 +164,48 @@ public class ActionSet {
 			noDeletes.add(id);
 			updates.put(id, new Update(base, edit, isLocal));
 		}		
+	}
+	
+	// minimizes actions
+	public void minimize() {
+		// remove implicit shifts
+		for (int parentID : shiftSets.keySet()) {
+			Set<Shift> shiftSet = shiftSets.get(parentID);
+			Set<Insert> insertSet= insertSets.get(parentID);
+			Set<Delete> deleteSet = deleteSets.get(parentID);
+			
+			Set<Shift> unecessaryShifts = new HashSet<>();
+			
+			
+			
+			//  adjust shifts for each insert
+			for (Insert insert : insertSet) {
+				for (Shift shift : shiftSet) {
+					if (shift.oldPosition >= insert.getPosition()) {
+						shift.oldPosition++;
+					}
+				}
+			}
+			
+			// adjust shifts for each delete
+			for (Delete delete : deleteSet) {
+				for (Shift shift : shiftSet) {
+					if (shift.oldPosition >= delete.getPosition()) {
+						shift.oldPosition--;
+					}
+				}
+			}
+			
+			// remove unnecessary shifts
+			for (Shift shift : shiftSet) {
+				if (shift.oldPosition == shift.newPosition) {
+					unecessaryShifts.add(shift);
+				}
+			}
+			shiftSet.removeAll(unecessaryShifts);
+			
+
+		}
 	}
 	
 	/*
