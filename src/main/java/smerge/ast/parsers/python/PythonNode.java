@@ -52,8 +52,12 @@ public class PythonNode extends ASTNode {
 		} else if (type == Type.COMMENT || type == Type.BLOCK_COMMENT) {
 			// keep base comment for now
 			return true; 
-		}
-		if (indentation == n1.indentation && indentation != n2.indentation &&
+		} 
+		if (n1.getContent().equals(n2.getContent()) && n1.indentation == n2.indentation) {
+			setContent(n1.getContent());
+			indentation = n1.indentation;
+			return true;
+		} else if (indentation == n1.indentation && indentation != n2.indentation &&
 				!content.equals(n1.getContent()) && content.equals(n2.getContent())) {
 			content = n1.getContent();
 			indentation = n2.indentation;
