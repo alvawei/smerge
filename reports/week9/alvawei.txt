@@ -1,0 +1,15 @@
+Alva Wei
+alvawei
+
+Last week's goals:
+    - Give presentation.
+    - Optimize matching algorithm.
+
+This week's progress:
+    - Gave presentation.
+    - Tested Matcher on larger test files, found and fixed bugs.
+    - Matcher now finds the optimal match, not the first one.
+
+Next week's goals:
+    - Start getting positive test results.
+    - Prepare final presentation.
