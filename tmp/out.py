@@ -22,11 +22,7 @@ def raise_duplicate_arg_error(old_arg, new_arg):
                     '`' + old_arg + '` and the Keras 2 keyword argument '
                     '`' + new_arg + '`. Stick with the latter!')
 
-<<<<<<< REMOTE
 legacy_prelu_support = generate_legacy_interface(
-=======
-legacy_prelu_support = generate_legacy_interface(
->>>>>>> LOCAL
     allowed_positional_args=['units'],
     conversions=[('output_dim', 'units'),
                  ('init', 'kernel_initializer'),
@@ -36,29 +32,17 @@ legacy_prelu_support = generate_legacy_interface(
                  ('b_constraint', 'bias_constraint'),
                  ('bias', 'use_bias')])
 
-<<<<<<< REMOTE
 legacy_pooling1d_support = generate_legacy_interface(
-=======
-legacy_pooling1d_support = generate_legacy_interface(
->>>>>>> LOCAL
     allowed_positional_args=['rate', 'noise_shape', 'seed'],
     conversions=[('p', 'rate')])
 
-<<<<<<< REMOTE
 legacy_dropout_support = generate_legacy_interface(
-=======
-legacy_dropout_support = generate_legacy_interface(
->>>>>>> LOCAL
     allowed_positional_args=['pool_size', 'strides', 'padding'],
     conversions=[('pool_length', 'pool_size'),
                  ('stride', 'strides'),
                  ('border_mode', 'padding')])
 
-<<<<<<< REMOTE
 legacy_dense_support = generate_legacy_interface(
-=======
-legacy_dense_support = generate_legacy_interface(
->>>>>>> LOCAL
     allowed_positional_args=['alpha_initializer'],
 
 legacy_gaussiannoise_support = generate_legacy_interface(

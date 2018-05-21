@@ -25,10 +25,11 @@ public class Test {
 		String local = "scripts/test_results/keras_test_results/conflicts/16_test_recurrent_local.py";
 		String remote = "scripts/test_results/keras_test_results/conflicts/16_test_recurrent_remote.py";
 		String merged = "tmp/temp_out.py";
+		
+
         
         // get the correct parser (pass in filename for file extension/type?)
         Parser parser = Parser.getInstance(null);
-        
         
         // parse files into ASTs
         System.out.println("Parsing base file...");
