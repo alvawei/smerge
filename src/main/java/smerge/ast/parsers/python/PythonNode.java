@@ -67,8 +67,10 @@ public class PythonNode extends ASTNode {
 			String conflict = "<<<<<<< REMOTE\n" + 
 					n2.getContent() + "\n" +
 					"=======\n" + 
+					getContent() + "\n" +
+					"=======\n" + 
 					n1.getContent() + "\n" +
-					">>>>>>> REMOTE";
+					">>>>>>> LOCAL";
 			setContent(conflict);
 			indentation = 0;
 			return false;
