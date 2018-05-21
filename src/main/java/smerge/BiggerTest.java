@@ -7,14 +7,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import smerge.ast.MergeException;
 
 public class BiggerTest {
 	
 	public static final String DIR = "scripts/test_results/keras_test_results/conflicts";
 
 	
-	public static void main(String[] args) throws IOException, MergeException {
+	public static void main(String[] args) throws IOException {
 		Set<String> filenames = new HashSet<>();
 		
 		

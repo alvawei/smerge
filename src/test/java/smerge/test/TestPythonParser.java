@@ -8,8 +8,8 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-import smerge.ast.parsers.python.PythonParser;
 import smerge.ast.AST;
+import smerge.ast.parsers.PythonParser;
 
 public class TestPythonParser {
 	

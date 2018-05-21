@@ -14,7 +14,7 @@ public class Matcher {
 	private List<Match> matches;
 	private int nextID; // the next id to be given to a new matching
 
-	public Matcher(AST baseTree, AST localTree, AST remoteTree) throws MergeException {	
+	public Matcher(AST baseTree, AST localTree, AST remoteTree) {	
 		matches = new ArrayList<>();
 		
 		labelBaseTree(baseTree);
@@ -24,7 +24,7 @@ public class Matcher {
 	
 	// match editTree's nodes to baseTree's
 	// editTree is localTree if isLocal, otherwise editTree is remoteTree
-	public void match(AST baseTree, AST editTree, boolean isLocal) throws MergeException {
+	public void match(AST baseTree, AST editTree, boolean isLocal) {
 		Set<Integer> matchedIDs = new HashSet<Integer>();
 		matches.get(0).setEditNode(editTree.getRoot(), isLocal);
 		matchedIDs.add(0);

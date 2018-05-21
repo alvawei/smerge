@@ -2,7 +2,6 @@ package smerge;
 
 import smerge.ast.AST;
 import smerge.ast.Differ;
-import smerge.ast.MergeException;
 import smerge.ast.actions.ActionSet;
 import smerge.ast.parsers.Parser;
 
@@ -25,7 +24,7 @@ public class Merger {
      * @throws MergeException 
      * @throws DiffException 
      */
-    public static void main(String[] args) throws IOException, MergeException {
+    public static void main(String[] args) throws IOException {
     	
     	if (args.length != 4) {
     		throw new RuntimeException("Expected arguments: $BASE, $LOCAL, $REMOTE, $MERGED");

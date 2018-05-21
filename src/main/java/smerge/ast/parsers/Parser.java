@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.Scanner;
 
 import smerge.ast.AST;
-import smerge.ast.parsers.python.PythonParser;
 
 public abstract class Parser {
 	

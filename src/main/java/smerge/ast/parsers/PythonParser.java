@@ -1,8 +1,7 @@
-package smerge.ast.parsers.python;
+package smerge.ast.parsers;
 
 import smerge.ast.AST;
 import smerge.ast.ASTNode;
-import smerge.ast.parsers.Parser;
 
 import java.io.BufferedReader;
 import java.io.File;
