@@ -47,12 +47,12 @@ public class Matcher {
 					break;
 				}
 				
-				if (base.isLeafNode() && compareLeafNodes(base, edit) <= SIM_THRESHOLD) {
+				if (base.isLeafNode() && compareLeafNodes(base, edit) < minSimilarity) {
 					minSimilarity = compareLeafNodes(base, edit);
 					bestMatch = base;
 				}
 				
-				if (!base.isLeafNode() && compareInnerNodes(base, edit) <= SIM_THRESHOLD) {
+				if (!base.isLeafNode() && compareInnerNodes(base, edit) < minSimilarity) {
 					minSimilarity = compareInnerNodes(base, edit);
 					bestMatch = base;
 				}
