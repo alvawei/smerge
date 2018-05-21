@@ -68,7 +68,6 @@ public class PythonNode extends ASTNode {
 	}
 	
 	public void update(ASTNode edit) {
-		
 		this.content = edit.getContent();
 		this.indentation = edit.indentation;
 	}

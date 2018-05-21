@@ -82,7 +82,7 @@ public class ActionSet {
 		return true;
 	}
 	
-	public void addInsert(ASTNode parent, ASTNode child, double position) {
+	public void addInsert(ASTNode parent, ASTNode child, int position) {
 		int id = child.getID();
 		if (parent == null) {
 		}
@@ -113,7 +113,7 @@ public class ActionSet {
 		moves.put(id, move);
 	}
 	
-	public void addMove(ASTNode destParent, ASTNode base, double editNodePosition) {
+	public void addMove(ASTNode destParent, ASTNode base, int position) {
 		int id = base.getID();
 		if (moves.containsKey(id)) {
 			int baseParentID = base.getParent().getID();
@@ -130,7 +130,7 @@ public class ActionSet {
 				return;
 			}
 		}
-		moves.put(id, new Move(destParent, base, editNodePosition));
+		moves.put(id, new Move(destParent, base, position));
 	}
 	
 	public void addUpdate(ASTNode base, ASTNode edit, boolean isLocal) {

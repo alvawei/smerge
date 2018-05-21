@@ -51,19 +51,7 @@ public class Differ {
 					// base parent equivalent doesn't exist, parent must also be an insert
 					parent = edit.getParent();
 				}
-				// TODO: Inserting here will require averaging the index of the two surrounding
-				// nodes. Edge cases:
-				// 1. adding to the front of the list -- could possibly just do index
-				// of 1st element -1.
-				// 2. adding to the end of the list -- just do index of last element + 1.
-				
-				// get the previous nodes index, get the next nodes index, average the two,
-				// pass it in as the third parameter
-				double position = 0;
-				edit.setPosition(position);
-				actions.addInsert(parent, edit, position);
-				// previous insert statement:
-				// actions.addInsert(parent, edit, edit.getParent().children().indexOf(edit));
+				actions.addInsert(parent, edit, edit.getParent().children().indexOf(edit));
 			}
 		} else if (edit == null) {
 			// node was deleted from base
@@ -72,18 +60,17 @@ public class Differ {
 			if (base.parent != null && edit.parent != null) {
 				int baseParentID = base.getParent().getID();
 				int editParentID = edit.getParent().getID();
-				double baseNodePosition = base.getPosition();
-				double editNodePosition = edit.getPosition();
+				int baseNodeIndex = base.getParent().children().indexOf(base);
+				int editNodeIndex = edit.getParent().children().indexOf(edit);
 				
-				// TODO: not sure if this is correct to compare these doubles directly?
-				if (baseParentID != editParentID || (baseNodePosition != editNodePosition)) {
+				if (baseParentID != editParentID || (baseNodeIndex != editNodeIndex)) {
 					
 					ASTNode parent = matchList.get(editParentID).getBaseNode();
 					if (parent == null) {
 						// base parent equivalent doesn't exist, parent must also be an insert
 						parent = edit.getParent();
 					}
-					actions.addMove(parent, base, editNodePosition);
+					actions.addMove(parent, base, editNodeIndex);
 					
 					// also update indentation
 					if (parent.getID() != editParentID) {

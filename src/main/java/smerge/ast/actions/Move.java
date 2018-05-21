@@ -7,9 +7,9 @@ public class Move implements Action {
 	private Insert insert;
 	private Delete delete;
 	
-	public Move(ASTNode destParent, ASTNode base, double editNodePosition) {
+	public Move(ASTNode destParent, ASTNode base, int position) {
 		delete = new Delete(base);
-		insert = new Insert(destParent, base, editNodePosition);
+		insert = new Insert(destParent, base, position);
 	}
 	
 	
