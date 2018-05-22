@@ -17,6 +17,10 @@ public class Insert implements Action {
 	
 	// inserts the sutree with root node under the given parent at the given position
 	public void apply() {
+		// add placeholder nodes to increase array size and avoid out of bounds exceptions
+		while (parent.children().size() < position) {
+			parent.children().add(new ASTNode(ASTNode.Type.PLACEHOLDER));
+		}
 		parent.children().add(position, child);
 		child.setParent(parent);
 

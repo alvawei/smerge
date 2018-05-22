@@ -20,12 +20,12 @@ public class ASTNode {
 		CLASS, METHOD,
 		IF_STATEMENT, WHILE_LOOP, FOR_LOOP,
 		ASSIGNMENT, RETURN,
-		COMMENT, BLOCK_COMMENT
+		COMMENT, BLOCK_COMMENT, PLACEHOLDER
 	}
 	
 	protected Type type;
 	protected String content;
-	protected int indentation; 
+	protected int indentation;
 	
 	protected ASTNode parent;
 	protected List<ASTNode> children;
@@ -36,7 +36,6 @@ public class ASTNode {
 		this.type = type;
 		this.content = content;
 		this.indentation = indentation;
-		
 		this.children = new ArrayList<>();
 		this.id = -1;
 	}
@@ -44,6 +43,12 @@ public class ASTNode {
 	// creates a root node
 	public ASTNode() {
 		this(Type.ROOT, "@root", -1);
+	}
+	
+	public ASTNode(Type type) {
+		if (type != Type.PLACEHOLDER)
+			throw new RuntimeException("Incorrect number of args for non-placeholder ASTNode");
+		this.type = Type.PLACEHOLDER;
 	}
 	
 	// returns the direct list of this node's children
@@ -96,6 +101,9 @@ public class ASTNode {
 		return children.isEmpty();
 	}
 	
+	public boolean isPlaceHolder() {
+		return this.type == Type.PLACEHOLDER;
+	}
 	
 	public int getID() {
 		return id;
