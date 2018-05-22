@@ -20,9 +20,9 @@ public class Test {
         String merged = "conflicts/test/test_merged.py"; // args[3];
         */
 		
-		String base = "scripts/test_results/keras_test_results/conflicts/16_test_recurrent_base.py";
-		String local = "scripts/test_results/keras_test_results/conflicts/16_test_recurrent_local.py";
-		String remote = "scripts/test_results/keras_test_results/conflicts/16_test_recurrent_remote.py";
+		String base = "scripts/test_results/keras_test_results/conflicts/1_image_test_base.py";
+		String local = "scripts/test_results/keras_test_results/conflicts/1_image_test_local.py";
+		String remote = "scripts/test_results/keras_test_results/conflicts/1_image_test_remote.py";
 		String merged = "tmp/temp_out.py";
         
         // get the correct parser (pass in filename for file extension/type?)

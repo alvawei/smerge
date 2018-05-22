@@ -9,6 +9,7 @@ public class Insert implements Action {
 	private int position;
 	
 	public Insert(ASTNode parent, ASTNode child, int position) {
+		if (child == null) throw new RuntimeException("null");
 		this.parent = parent;
 		this.child = child;
 		this.position = position;

@@ -53,7 +53,15 @@ public class NodeMerger {
 				Merger.solvedConflicts++;
 				return base;
 			}
+		} else {
+			if (local.getContent().equals(remote.getContent())) {
+				base = new ASTNode(local.getType(), local.getContent(), local.getIndentation());
+				Merger.solvedConflicts++;
+				return base;
+			}
 		}
+		
+
 		String baseContent = base == null ? "" : base.getContent();
 		
 		// this happens if:

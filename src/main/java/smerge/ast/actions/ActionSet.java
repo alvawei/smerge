@@ -101,7 +101,9 @@ public class ActionSet {
 			ASTNode local = isLocal ? child : other;
 			ASTNode remote = isLocal ? other : child;
 			ASTNode base = NodeMerger.merge(null, local, remote);
-			
+			System.out.println(base);
+			System.out.println(local);
+			System.out.println(remote);
 			insertSets.get(parentID).put(position, new Insert(parent, base, position));
 		} else {
 			insertSets.get(parentID).put(position, new Insert(parent, child, position));
