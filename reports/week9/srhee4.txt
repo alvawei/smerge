@@ -1,0 +1,17 @@
+Sungmin Rhee
+srhee4@uw.edu
+CSE403 Software Engineering
+Individual Status Report Week#8
+
+1. Previous week's plan
+   - Finish presentation slides
+   - Review and debug evaluation scripts
+   - Review smerge tool implementation
+
+2. This week's progress
+   - Done presentation
+   - Debugging evaluation script
+
+3. Next week's goal
+   - Continue debugging evaluation script
+   - Get positive results
