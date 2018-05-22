@@ -1,0 +1,23 @@
+Last week’s goals:
+    - Work on implementation so it can handle the more complicated cases present in the sampled repositories.
+    - Work on ensuring correctness of evaluation scripts to ensure that the data collection isn’t causing messed up results.
+    - Address feedback on report by possibly adding a definitions section and using a real world example. Also gather more results.
+    - Give feedback to verigames via a code review
+
+This week’s progress:
+    - We gave feedback to the Verigames repository
+    - Responded to feedback given by TA
+    - Added an approach section that addressed our implementation of a generic AST
+    - Looked at different ways to handle evaluation, a complete match to the developer’s merged resolution is not very realistic unless if it was a small fix. We are considering providing users with partial resolutions and counting the number of conflicts solved in each file. 
+    - Extended testing to repository examples.
+
+Next week’s goals:
+    - Continue testing and debugging
+    - Complete final draft of report
+    - Respond to feedback given by TA and the presentation
+    - Remove any lingering hypotheticals in the report and clean things up
+    - Complete evaluation results/get scripts working on at least 8 repositories
+    - Manually check unresolved conflicts to categorize them as false or true positives.
+
+TA Meeting Agenda:
+Go over given feedback, ask for suggestions/guidelines to consider for the final draft.
