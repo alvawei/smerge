@@ -3,9 +3,11 @@ package smerge.ast.actions;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import smerge.ast.ASTNode;
+import smerge.ast.ASTNode.Type;
 import smerge.ast.NodeMerger;
 
 import java.util.Comparator;
@@ -39,7 +41,7 @@ public class ActionSet {
 		moves = new HashMap<>();
 		updates = new HashMap<>();
 		
-		insertSets = new HashMap<>();
+		insertSets = new TreeMap<>();
 		deleteSets = new HashMap<>();
 		shiftSets = new HashMap<>();
 		
@@ -56,24 +58,18 @@ public class ActionSet {
 			deletes.put(id, moves.get(id).getDelete());
 		} */
 		
-		// apply inserts by inserting parent nodes first
-		while (!inserts.isEmpty()) {
-			Set<Integer> inserted = new HashSet<>();
-			for (int id : inserts.keySet()) {
-				Insert ins = inserts.get(id);
-				// don't insert if it's parent hasn't been inserted yet
-				if (!inserts.containsKey(ins.getParentID())) {
-					ins.apply();
-					inserted.add(id);
-				}
+		// applies inserts by order of parentID and then position
+		for (int parentID : insertSets.keySet()) {
+			for (Insert ins : insertSets.get(parentID).values()) {
+				ins.apply();
 			}
-			for (int id : inserted) inserts.remove(id);
-		}
+		}	
 		
+		/*
 		for (Delete delete : deletes.values()) delete.apply(); 
 		
 		for (Move m : moves.values()) m.apply();
-		
+		*/
 		for (Update update : updates.values()) update.apply();
 		
 		
@@ -97,9 +93,9 @@ public class ActionSet {
 		int parentID = parent.getID();
 		
 		if (!insertSets.containsKey(parentID)) {
-			insertSets.put(parentID, new HashMap<>());
+			insertSets.put(parentID, new TreeMap<>());
 		}
-		if (insertSets.get(parentID).containsKey(position)) {
+		if (insertSets.get(parentID).containsKey(position) && child.getType() != Type.WHITESPACE) {
 			// conflicting inserts to same position
 			ASTNode other = insertSets.get(parentID).get(position).getChild();
 			ASTNode local = isLocal ? child : other;

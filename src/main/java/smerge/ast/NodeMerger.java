@@ -1,5 +1,6 @@
 package smerge.ast;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import smerge.Merger;
@@ -12,33 +13,44 @@ public class NodeMerger {
 	public static ASTNode merge(ASTNode base, ASTNode local, ASTNode remote) {
 		Merger.totalConflicts++;
 		
-		if (base != null) {
-			Type type = base.getType();
-			// merge imports
-			if (type == Type.IMPORT) {
-				// merge imports
+		Type type = base != null ? base.getType() : local.getType();
+		
+		// merge imports
+		if (type == Type.IMPORT) {
+			if (base != null) {
 				String[] imports = {base.getContent(), local.getContent(), remote.getContent()};
 				Arrays.sort(imports);
 				base.setContent(imports[0] + "\n" + imports[1] + "\n" + imports[2]);
-				return base;
+			} else {
+				String[] imports = {local.getContent(), remote.getContent()};
+				Arrays.sort(imports);
+				base = new ASTNode(local.getType(), imports[0] + "\n" + imports[1], 0);
 			}
-			
-			// if there is a comment conflict, keep the base comment by doing nothing
-			if (type == Type.COMMENT || type == Type.BLOCK_COMMENT) {
-				return base; 
-			} 
-			
+			Merger.solvedConflicts++;
+			return base;
+		}
+		
+		// if there is a comment conflict, keep the base comment by doing nothing
+		if (type == Type.COMMENT || type == Type.BLOCK_COMMENT) {
+			Merger.solvedConflicts++;
+			return base; 
+		} 
+		
+		
+		if (base != null) {
 			// merge getIndentation() if content if getIndentation() is from one tree's change
 			// and content is from the other's
 			if (base.getIndentation() == local.getIndentation() && base.getIndentation() != remote.getIndentation() &&
 					!base.getContent().equals(local.getContent()) && base.getContent().equals(remote.getContent())) {
 				base.setContent(local.getContent());
 				base.setIndentation(remote.getIndentation());
+				Merger.solvedConflicts++;
 				return base;
 			} else if (base.getIndentation() == remote.getIndentation() && base.getIndentation() != local.getIndentation() &&
 					base.getContent().equals(local.getContent()) && !base.getContent().equals(remote.getContent())) {
 				base.setContent(remote.getContent());
 				base.setIndentation(local.getIndentation());
+				Merger.solvedConflicts++;
 				return base;
 			}
 		}
@@ -56,6 +68,7 @@ public class NodeMerger {
 				local.getContent() + "\n" +
 				">>>>>>> LOCAL";
 		if (base == null) base = new ASTNode(local.getType(), conflict, 0);
+		base.setID(local.getID());
 		return base;
 	}
 }
