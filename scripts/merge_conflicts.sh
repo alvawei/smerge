@@ -10,7 +10,9 @@ else
     touch $RESULTS_DIR/result.txt
     rm $RESULTS_DIR/result.txt
     touch $RESULTS_DIR/result.txt
-    
+
+    DEFAULT_BRANCH=$(git -C $1 rev-parse --abbrev-ref HEAD)    
+
     while read line; do
 	COMMITS=($line)
         LOCAL=${COMMITS[0]}
@@ -67,11 +69,11 @@ else
 	done <<< $(grep CONFLICT $RESULTS_DIR/merge.txt)
 
 	git -C $REPO_DIR reset --merge			
-	git -C $REPO_DIR checkout master
+	git -C $REPO_DIR checkout $DEFAULT_BRANCH
 	git -C $REPO_DIR branch -D local
 	git -C $REPO_DIR branch -D remote
 	git -C $REPO_DIR branch -D merged
-	git -C $REPO_DIR reset --hard master
+	git -C $REPO_DIR reset --hard $DEFAULT_BRANCH
 
     done < $RESULTS_DIR/merge_conflicts.txt
 fi
