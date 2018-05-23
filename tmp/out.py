@@ -1,221 +1,154 @@
-"""Interface converters for Keras 1 support in Keras 2.
-"""
-import six
-import warnings
+import pytest
+import numpy as np
+from numpy.testing import assert_allclose
+
+from keras.layers import recurrent, embeddings
+from keras import backend as K
+from keras.layers.core import Masking
+from keras.models import Sequential, model_from_json
+from keras.models import Sequential
+
+from keras.models import Sequential
+nb_samples, timesteps, embedding_dim, output_dim = 3, 5, 10, 5
+embedding_num = 12
 
 
-def generate_legacy_interface(allowed_positional_args=None,
-                              conversions=None,
-                              value_conversions=None):
-    allowed_positional_args = allowed_positional_args or []
-    conversions = conversions or []
-    value_conversions = value_conversions or []
-    value_conversions = value_conversions or []
-    def legacy_support(func):
-        @six.wraps(func)
-        def wrapper(*args, **kwargs):
-            layer_name = args[0].__class__.__name__
-            converted = []
-            if len(args) > len(allowed_positional_args) + 1:
-                raise TypeError('Layer `' + layer_name +
-                                '` can accept only ' +
-                                str(len(allowed_positional_args)) +
-                                ' positional arguments (' +
-                                str(allowed_positional_args) + '), but '
-                                'you passed the following '
-                                'positional arguments: ' +
-                                str(args[1:]))
-            for key in list(value_conversions.keys()):
-                if key in kwargs:
-                    for old_value, new_value in value_conversions[key].items():
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-                    for old_value, new_value in value_conversions[key].items():
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-                if key in kwargs:
-                    for old_value, new_value in value_conversions[key].items():
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-                    for old_value, new_value in value_conversions[key].items():
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-            for old_name, new_name in conversions:
-                if old_name in kwargs:
-                    value = kwargs.pop(old_name)
-                    if new_name in kwargs:
-                        raise_duplicate_arg_error(old_name, new_name)
-                    kwargs[new_name] = value
-                    converted.append((new_name, old_name))
-            if converted:
-                signature = '`' + layer_name + '('
-                for value in args[1:]:
-                    if isinstance(value, six.string_types):
-                        signature += '"' + value + '"'
-                    else:
-                        signature += str(value)
-                    signature += ', '
-                for i, (name, value) in enumerate(kwargs.items()):
-                    signature += name + '='
-                    if isinstance(value, six.string_types):
-                        signature += '"' + value + '"'
-                    else:
-                        signature += str(value)
-                    if i < len(kwargs) - 1:
-                        signature += ', '
-                signature += ')`'
-                warnings.warn('Update your `' + layer_name +
-                              '` layer call to the Keras 2 API: ' + signature)
-            return func(*args, **kwargs)
-        return wrapper
-    return legacy_support
-def generate_legacy_interface(allowed_positional_args=None,
-                              conversions=None):
-    allowed_positional_args = allowed_positional_args or []
-    conversions = conversions or []
-    def legacy_support(func):
-        @six.wraps(func)
-        def wrapper(*args, **kwargs):
-            layer_name = args[0].__class__.__name__
-            converted = []
-            if len(args) > len(allowed_positional_args) + 1:
-                raise TypeError('Layer `' + layer_name +
-                                '` can accept only ' +
-                                str(len(allowed_positional_args)) +
-                                ' positional arguments (' +
-                                str(allowed_positional_args) + '), but '
-                                'you passed the following '
-                                'positional arguments: ' +
-                                str(args[1:]))
-            for key in list(value_conversions.keys()):
-                if key in kwargs:
-                    for old_value, new_value in value_conversions[key].items():
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-                    for old_value, new_value in value_conversions[key].items():
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-                if key in kwargs:
-                    for old_value, new_value in value_conversions[key].items():
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-                    for old_value, new_value in value_conversions[key].items():
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-                        if kwargs[key] == old_value:
-                            kwargs[key] = new_value
-                            kwargs[key] = new_value
-            for old_name, new_name in conversions:
-                if old_name in kwargs:
-                    value = kwargs.pop(old_name)
-                    if new_name in kwargs:
-                        raise_duplicate_arg_error(old_name, new_name)
-                    kwargs[new_name] = value
-                    converted.append((new_name, old_name))
-            if converted:
-                signature = '`' + layer_name + '('
-                for value in args[1:]:
-                    if isinstance(value, six.string_types):
-                        signature += '"' + value + '"'
-                    else:
-                        signature += str(value)
-                    signature += ', '
-                for i, (name, value) in enumerate(kwargs.items()):
-                    signature += name + '='
-                    if isinstance(value, six.string_types):
-                        signature += '"' + value + '"'
-                    else:
-                        signature += str(value)
-                    if i < len(kwargs) - 1:
-                        signature += ', '
-                signature += ')`'
-                warnings.warn('Update your `' + layer_name +
-                              '` layer call to the Keras 2 API: ' + signature)
-            return func(*args, **kwargs)
-        return wrapper
-    return legacy_support
+def _runner(layer_class):
+    """
+    All the recurrent layers share the same interface,
+    so we can run through them with a single function.
+    """
+    for ret_seq in [True, False]:
+        layer = layer_class(output_dim, return_sequences=ret_seq,
+                            weights=None, input_shape=(timesteps, embedding_dim))
+        layer.input = K.variable(np.ones((nb_samples, timesteps, embedding_dim)))
+        layer.get_config()
+        for train in [True, False]:
+            out = K.eval(layer.get_output(train))
+            # Make sure the output has the desired shape
+            if ret_seq:
+                assert(out.shape == (nb_samples, timesteps, output_dim))
+            else:
+                assert(out.shape == (nb_samples, output_dim))
+            mask = layer.get_output_mask(train)
+    # check statefulness
+    model = Sequential()
+    model.add(embeddings.Embedding(embedding_num, embedding_dim,
+                                   mask_zero=True,
+                                   input_length=timesteps,
+                                   batch_input_shape=(nb_samples, timesteps)))
+    layer = layer_class(output_dim, return_sequences=False,
+                        stateful=True,
+                        weights=None)
+    model.add(layer)
+    model.compile(optimizer='sgd', loss='mse')
+    out1 = model.predict(np.ones((nb_samples, timesteps)))
+    assert(out1.shape == (nb_samples, output_dim))
+    # train once so that the states change
+    model.train_on_batch(np.ones((nb_samples, timesteps)),
+                         np.ones((nb_samples, output_dim)))
+    out2 = model.predict(np.ones((nb_samples, timesteps)))
+    # if the state is not reset, output should be different
+    assert(out1.max() != out2.max())
+    # check that output changes after states are reset
+    # (even though the model itself didn't change)
+    layer.reset_states()
+    out3 = model.predict(np.ones((nb_samples, timesteps)))
+    assert(out2.max() != out3.max())
+    # check that container-level reset_states() works
+    model.reset_states()
+    out4 = model.predict(np.ones((nb_samples, timesteps)))
+    assert_allclose(out3, out4, atol=1e-5)
+    # check that the call to `predict` updated the states
+    out5 = model.predict(np.ones((nb_samples, timesteps)))
+    assert(out4.max() != out5.max())
+    # Check masking
+    layer.reset_states()
+    left_padded_input = np.ones((nb_samples, timesteps))
+    left_padded_input[0, :1] = 0
+    left_padded_input[1, :2] = 0
+    left_padded_input[2, :3] = 0
+    out6 = model.predict(left_padded_input)
+    layer.reset_states()
+    right_padded_input = np.ones((nb_samples, timesteps))
+    right_padded_input[0, -1:] = 0
+    right_padded_input[1, -2:] = 0
+    right_padded_input[2, -3:] = 0
+    out7 = model.predict(right_padded_input)
+    assert_allclose(out7, out6, atol=1e-5)
 
 
 
-def raise_duplicate_arg_error(old_arg, new_arg):
-    raise TypeError('For the `' + new_arg + '` argument, '
-                    'the layer received both '
-                    'the legacy keyword argument '
-                    '`' + old_arg + '` and the Keras 2 keyword argument '
-                    '`' + new_arg + '`. Stick with the latter!')
 
-legacy_dense_support = generate_legacy_interface(
-    allowed_positional_args=['units'],
-    conversions=[('output_dim', 'units'),
-                 ('init', 'kernel_initializer'),
-                 ('W_regularizer', 'kernel_regularizer'),
-                 ('b_regularizer', 'bias_regularizer'),
-                 ('W_constraint', 'kernel_constraint'),
-                 ('b_constraint', 'bias_constraint'),
-                 ('bias', 'use_bias')])
 
-legacy_dropout_support = generate_legacy_interface(
-    allowed_positional_args=['rate', 'noise_shape', 'seed'],
-    conversions=[('p', 'rate')])
 
-legacy_pooling1d_support = generate_legacy_interface(
-    allowed_positional_args=['pool_size', 'strides', 'padding'],
 
-<<<<<<< REMOTE
-legacy_prelu_support = generate_legacy_interface(
-=======
 
-=======
-legacy_pooling2d_support = generate_legacy_interface(
->>>>>>> LOCAL
-<<<<<<< REMOTE
-allowed_positional_args=['alpha_initializer'],
-=======
 
-=======
-allowed_positional_args=['pool_size', 'strides', 'padding'],
->>>>>>> LOCAL
-<<<<<<< REMOTE
-conversions=[('init', 'alpha_initializer')])
-=======
 
-=======
-conversions=[('pool_length', 'pool_size'),
-                 ('stride', 'strides'),
-                 ('border_mode', 'padding'),
-                 ('dim_ordering', 'data_format')],
->>>>>>> LOCAL
-    value_conversions={'dim_ordering': {'tf': 'channels_last', 'th': 'channels_first', 'default': None}})
-    conversions=[('pool_length', 'pool_size'),
-                 ('stride', 'strides'),
-                 ('border_mode', 'padding')])
+
+
+
+
+
+def test_SimpleRNN():
+    _runner(recurrent.SimpleRNN)
+
+
+def test_GRU():
+    _runner(recurrent.GRU)
+
+
+def test_LSTM():
+    _runner(recurrent.LSTM)
+def test_batch_input_shape_serialization():
+    model = Sequential()
+    model.add(embeddings.Embedding(2, 2,
+                                   mask_zero=True,
+                                   input_length=2,
+                                   batch_input_shape=(2, 2)))
+    json_data = model.to_json()
+    reconstructed_model = model_from_json(json_data)
+    assert(reconstructed_model.input_shape == (2, 2))
+    model = Sequential()
+    model.add(embeddings.Embedding(2, 2,
+                                   mask_zero=True,
+                                   input_length=2,
+                                   batch_input_shape=(2, 2)))
+    json_data = model.to_json()
+    reconstructed_model = model_from_json(json_data)
+    assert(reconstructed_model.input_shape == (2, 2))
+
+
+def test_masking_layer():
+    ''' This test based on a previously failing issue here:
+    https://github.com/fchollet/keras/issues/1567
+
+    '''
+    model = Sequential()
+    model.add(Masking(input_shape=(3, 4)))
+    model.add(recurrent.LSTM(output_dim=5, return_sequences=True))
+    model.compile(loss='categorical_crossentropy', optimizer='adam')
+    I = np.random.random((6, 3, 4))
+    V = np.abs(np.random.random((6, 3, 5)))
+    V /= V.sum(axis=-1, keepdims=True)
+    model.fit(I, V, nb_epoch=1, batch_size=100, verbose=1)
+    ''' This test based on a previously failing issue here:
+    https://github.com/fchollet/keras/issues/1567
+
+    '''
+    model = Sequential()
+    model.add(Masking(input_shape=(3, 4)))
+    model.add(recurrent.LSTM(output_dim=5, return_sequences=True))
+    model.compile(loss='categorical_crossentropy', optimizer='adam')
+    I = np.random.random((6, 3, 4))
+    V = np.abs(np.random.random((6, 3, 5)))
+    V /= V.sum(axis=-1, keepdims=True)
+    model.fit(I, V, nb_epoch=1, batch_size=100, verbose=1)
+
+
+
+
+if __name__ == '__main__':
+    pytest.main([__file__])
 

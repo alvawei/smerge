@@ -52,11 +52,11 @@ public class ActionSet {
 	public boolean apply() {
 		
 		/*
-		System.out.println(moves);
 		for (int id : moves.keySet()) {
 			inserts.put(id, moves.get(id).getInsert());
 			deletes.put(id, moves.get(id).getDelete());
-		} */
+		}
+		*/
 		
 		// applies inserts by order of parentID and then position
 		for (int parentID : insertSets.keySet()) {
@@ -65,25 +65,11 @@ public class ActionSet {
 			}
 		}	
 		
-		/*
-		for (Delete delete : deletes.values()) delete.apply(); 
+		//for (Delete delete : deletes.values()) delete.apply(); 
 		
 		for (Move m : moves.values()) m.apply();
-		*/
+		
 		for (Update update : updates.values()) update.apply();
-		
-		
-		/*
-		// sort actions
-		sortedActions = new TreeSet<>(new ActionSort());
-		sortedActions.addAll(inserts.values());
-		sortedActions.addAll(deletes.values());
-		sortedActions.addAll(updates.values());
-		
-		System.out.println(sortedActions);
-		// apply actions
-		for (Action a : sortedActions) a.apply();
-		*/
 		
 		return true;
 	}
@@ -95,7 +81,8 @@ public class ActionSet {
 		if (!insertSets.containsKey(parentID)) {
 			insertSets.put(parentID, new TreeMap<>());
 		}
-		if (insertSets.get(parentID).containsKey(position) && child.getType() != Type.WHITESPACE) {
+		if (insertSets.get(parentID).containsKey(position) && 
+				!child.getContent().equals(insertSets.get(parentID).get(position).getChild().getContent())) {
 			// conflicting inserts to same position
 			ASTNode other = insertSets.get(parentID).get(position).getChild();
 			ASTNode local = isLocal ? child : other;
@@ -217,37 +204,6 @@ public class ActionSet {
 
 		}
 	}
-	
-	/*
-	public class ActionSort implements Comparator<Action> {
-		
-		// order by action type: delete -> insert -> update
-
-		@Override
-		public int compare(Action o1, Action o2) {
-			if (o1 instanceof Insert && o2 instanceof Insert) {
-				Insert ins1 = (Insert) o1;
-				Insert ins2 = (Insert) o2;
-				
-				if ()
-				
-				
-			}
-			
-			// DO NOT EVER RETURN 0
-			// otherwise actions are considered equal and rewrite each other when being sorted in the set
-			
-			// do all updates last
-			if (o1 instanceof Update) return 1;
-			if (o2 instanceof Update) return 1;
-			
-			// then do deletes
-			if (o1 instanceof Delete) return -1;
-			if (o2 instanceof Delete) return 1;
-				
-			return -1;
-		}
-	} */
 	
 	// note this returns different strings before and after running apply()
 	public String toString() {
