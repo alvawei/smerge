@@ -27,7 +27,6 @@ public class NodeMerger {
 				base = new ASTNode(local.getType(), imports[0] + "\n" + imports[1], 0);
 			}
 			Merger.solvedConflicts++;
-			if (base == null) throw new RuntimeException("null");
 			return base;
 		}
 		
@@ -35,8 +34,10 @@ public class NodeMerger {
 		// keep remote comment if base doesn't exist
 		if (type == Type.COMMENT || type == Type.BLOCK_COMMENT) {
 			Merger.solvedConflicts++;
-			if (base == null)
+			if (base == null) {
 				base = new ASTNode(local.getType(), remote.getContent(), remote.getIndentation());
+				base.setID(local.getID());
+			}
 			return base;
 		} 
 		
@@ -60,9 +61,9 @@ public class NodeMerger {
 		} else {
 			if (local.getContent().equals(remote.getContent())) {
 				base = new ASTNode(local.getType(), local.getContent(), local.getIndentation());
-				Merger.solvedConflicts++;
-				if (base == null) throw new RuntimeException("null");
+				base.setID(local.getID());
 
+				Merger.solvedConflicts++;
 				return base;
 			}
 		}
@@ -83,7 +84,6 @@ public class NodeMerger {
 				">>>>>>> LOCAL";
 		if (base == null) base = new ASTNode(local.getType(), conflict, 0);
 		base.setID(local.getID());
-		if (base == null) throw new RuntimeException("null");
 		return base;
 	}
 }

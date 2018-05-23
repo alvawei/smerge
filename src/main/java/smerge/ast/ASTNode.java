@@ -156,6 +156,11 @@ public class ASTNode {
 		for (int i = 0; i < 15 - idString.length(); i++) idString += " ";
 
 		sb.append(idString + indent + content + "\n");
+		if (children == null) {
+			System.out.println(debugNode());
+			System.out.println(parent.debugNode());
+			throw new RuntimeException("why u null");
+		}
 		for (ASTNode child : children) {
 			child.debugTree(sb, indent + "    ");
 		}
