@@ -1,3 +1,8 @@
+https://github.com/sdispater/poetry
+https://github.com/pypa/pipenv
 https://github.com/tensorflow/models
-https://github.com/pallets/flask
 https://github.com/keras-team/keras
+https://github.com/pallets/flask
+https://github.com/XX-net/XX-Net
+https://github.com/ansible/ansible
+https://github.com/scikit-learn/scikit-learn
