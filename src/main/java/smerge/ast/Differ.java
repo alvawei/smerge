@@ -9,13 +9,11 @@ import smerge.ast.actions.ActionSet;
 public class Differ {
 	
 	private Matcher matcher;
-	private ActionSet actions;
 	private List<Match> matchList;
 	
 	public Differ(AST base, AST local, AST remote)  {
 		this.matcher = new Matcher(base, local, remote);
 		this.matchList = matcher.matches();
-		actions = new ActionSet();
 	}
 	
 	public List<Match> getMatches() {
@@ -25,18 +23,19 @@ public class Differ {
 	// match the nodes between the three trees
 	// note the matcher constructor indirectly calls detectActions()
 	// we could combine this class with the Matcher class easily if we wanted	
-	public ActionSet diff() {
+	public void diff(ActionSet localActions, ActionSet remoteActions) {
 		// for each match in matches, all detect actions on base/local, base/remote
 		for (Match m : matchList) {
-			detectActions(m, true);
-			detectActions(m, false);
+			detectActions(m, localActions, true);
+			detectActions(m, remoteActions, false);
 		}
-		return actions;
+		localActions.minimize();
+		remoteActions.minimize();
 	}
 	
 	// edit node is either local or remote node
 	// this is called from Matcher while matching
-	public void detectActions(Match m, boolean isLocal) {
+	public void detectActions(Match m, ActionSet actions, boolean isLocal) {
 		int id = m.getID();
 		if (id == 0) return; // don't do it with root
 		ASTNode base = m.getBaseNode();

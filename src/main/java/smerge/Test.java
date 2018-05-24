@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 
 import smerge.ast.AST;
+import smerge.ast.ActionMerger;
 import smerge.ast.Differ;
 import smerge.ast.actions.ActionSet;
 import smerge.ast.parsers.Parser;
@@ -29,7 +30,7 @@ public class Test {
         Parser parser = Parser.getInstance(null);
         
         
-        // parse files into ASTs
+        // PARSING
         System.out.println("Parsing base file...");
         AST baseTree = parser.parse(base);
         
@@ -39,30 +40,31 @@ public class Test {
         System.out.println("Parsing remote file...");
         AST remoteTree = parser.parse(remote);
         
-
-        
-        // merge trees
+        // TREE DIFFING
         System.out.println("Generating tree diffs...");
         Differ differ = new Differ(baseTree, localTree, remoteTree);
+        ActionSet localActions = new ActionSet();
+        ActionSet remoteActions = new ActionSet();
+        differ.diff(localActions, remoteActions);
         
         System.out.println(baseTree.debugTree());
         System.out.println(localTree.debugTree());
         System.out.println(remoteTree.debugTree());
         
+        // MERGING
         System.out.println("Merging changes...");
-        ActionSet actions = differ.diff();
-        System.out.println(actions);
-        actions.apply();
+        ActionMerger.merge(localActions, remoteActions);
         
         System.out.println(baseTree.debugTree());
+        
+        // OUTPUT
         System.out.println("Writing result to " + merged);
         String result = baseTree.toString();
-        
-        // write result -> merged
         PrintWriter out = new PrintWriter(merged);
         out.println(result);
         out.close();
         
+        // CONFLICTS
         System.out.print("Merge conflicts resolved: ");
         System.out.println(Merger.solvedConflicts + "/" + Merger.totalConflicts);
 	}

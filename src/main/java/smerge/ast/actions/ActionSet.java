@@ -20,24 +20,19 @@ import java.util.HashSet;
 // sorts the actions and applies them to the base tree
 
 public class ActionSet {
-	
-	private Map<Integer, Insert> inserts;
-	private Map<Integer, Delete> deletes;
 	private Map<Integer, Move> moves;
 	private Map<Integer, Update> updates;
 	
 	private SortedSet<Action> sortedActions;
 	
 	private Map<Integer, Map<Integer, Insert>> insertSets;
-	private Map<Integer, Set<Delete>> deleteSets;
+	private Map<Integer, Map<Integer, Delete>> deleteSets;
 	private Map<Integer, Set<Shift>> shiftSets;
 
 		
 	private Set<Integer> noDeletes; // set of base nodes that cant be deleted
 	
 	public ActionSet() {
-		inserts = new HashMap<>();
-		deletes = new HashMap<>();
 		moves = new HashMap<>();
 		updates = new HashMap<>();
 		
@@ -75,39 +70,19 @@ public class ActionSet {
 	}
 	
 	public void addInsert(ASTNode parent, ASTNode child, int position, boolean isLocal) {
-		int id = child.getID();
 		int parentID = parent.getID();
-		
 		if (!insertSets.containsKey(parentID)) {
 			insertSets.put(parentID, new TreeMap<>());
 		}
-		if (insertSets.get(parentID).containsKey(position) && 
-				!child.getContent().equals(insertSets.get(parentID).get(position).getChild().getContent())) {
-			// conflicting inserts to same position
-			ASTNode other = insertSets.get(parentID).get(position).getChild();
-			ASTNode local = isLocal ? child : other;
-			ASTNode remote = isLocal ? other : child;
-			ASTNode base = NodeMerger.merge(null, local, remote);
-			System.out.println(base);
-			System.out.println(local);
-			System.out.println(remote);
-			insertSets.get(parentID).put(position, new Insert(parent, base, position));
-		} else {
-			insertSets.get(parentID).put(position, new Insert(parent, child, position));
-		}
-		
-		// TODO: counts as resolved conflict?
-		if (deletes.containsKey(parentID)) {
-			deletes.remove(parentID);
-		}
-		inserts.put(id, new Insert(parent, child, position));
+		insertSets.get(parentID).put(position, new Insert(parent, child, position));
 	}
 	
 	// need to not delete a node if the other edit tree inserts/moves a node as a child to the deletion
 	public void addDelete(ASTNode base) {
-		int id = base.getID();
-		if (!noDeletes.contains(id)) {
-			deletes.put(id, new Delete(base));
+		int parentID = base.getParent().getID();
+		if (!deleteSets.containsKey(parentID)) {
+			// TODO: delete from back, sort by reverse position
+			deleteSets.put(parentID, new TreeMap<>());
 		}
 	}
 	
@@ -144,23 +119,10 @@ public class ActionSet {
 			shiftSets.put(parent.getID(), new HashSet<>());
 		}
 		shiftSets.get(parent.getID()).add(new Shift(parent, edit, oldPos, newPos));
-		
 	}
 
-	
 	public void addUpdate(ASTNode base, ASTNode edit, boolean isLocal) {
-		int id = base.getID();
-		if (updates.containsKey(id)) {
-			// merge updates
-		    updates.get(id).setEdit(edit, isLocal);
-		} else {
-			// remove delete from other edit if it exists
-			if (deletes.containsKey(id)) {
-				deletes.remove(id);
-			}
-			noDeletes.add(id);
-			updates.put(id, new Update(base, edit, isLocal));
-		}		
+		updates.put(base.getID(), new Update(base, edit, isLocal));	
 	}
 	
 	// minimizes actions
@@ -169,11 +131,9 @@ public class ActionSet {
 		for (int parentID : shiftSets.keySet()) {
 			Set<Shift> shiftSet = shiftSets.get(parentID);
 			Map<Integer, Insert> insertSet= insertSets.get(parentID);
-			Set<Delete> deleteSet = deleteSets.get(parentID);
+			Map<Integer, Delete> deleteSet = deleteSets.get(parentID);
 			
 			Set<Shift> unecessaryShifts = new HashSet<>();
-			
-			
 			
 			//  adjust shifts for each insert
 			for (int position : insertSet.keySet()) {
@@ -185,9 +145,9 @@ public class ActionSet {
 			}
 			
 			// adjust shifts for each delete
-			for (Delete delete : deleteSet) {
+			for (int position : deleteSet.keySet()) {
 				for (Shift shift : shiftSet) {
-					if (shift.oldPosition >= delete.getPosition()) {
+					if (shift.oldPosition >= position) {
 						shift.oldPosition--;
 					}
 				}
@@ -200,19 +160,18 @@ public class ActionSet {
 				}
 			}
 			shiftSet.removeAll(unecessaryShifts);
-			
-
 		}
 	}
 	
 	// note this returns different strings before and after running apply()
 	public String toString() {
 		String result = "Actions:\n";
-		if (sortedActions != null)
-			return result + sortedActions.toString();
-		
-		for (Action a : inserts.values()) result += a.toString() + "\n";
-		for (Action a : deletes.values()) result += a.toString() + "\n";
+		for (Map<Integer, Insert> insertSet : insertSets.values()) {
+			for (Insert insert : insertSet.values()) result += insert.toString() + "\n";
+		}
+		for (Map<Integer, Delete> deleteSet : deleteSets.values()) {
+			for (Delete delete : deleteSet.values()) result += delete.toString() + "\n";
+		}
 		for (Action a : moves.values()) result += a.toString() + "\n";
 		for (Action a : updates.values()) result += a.toString() + "\n";
 		return result;

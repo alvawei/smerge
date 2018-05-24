@@ -158,10 +158,13 @@ public class ASTNode {
 		sb.append(idString + indent + content + "\n");
 		if (children == null) {
 			System.out.println(debugNode());
-			System.out.println(parent.debugNode());
 			throw new RuntimeException("why u null");
 		}
 		for (ASTNode child : children) {
+			if (child.getID() == 0) {
+				System.out.println(id);
+				throw new RuntimeException("why u root");
+			}
 			child.debugTree(sb, indent + "    ");
 		}
 	}
