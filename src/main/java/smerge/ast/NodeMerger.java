@@ -15,20 +15,6 @@ public class NodeMerger {
 		
 		Type type = base != null ? base.getType() : local.getType();
 		
-		// merge imports
-		if (type == Type.IMPORT) {
-			if (base != null) {
-				String[] imports = {base.getContent(), local.getContent(), remote.getContent()};
-				Arrays.sort(imports);
-				base.setContent(imports[0] + "\n" + imports[1] + "\n" + imports[2]);
-			} else {
-				String[] imports = {local.getContent(), remote.getContent()};
-				Arrays.sort(imports);
-				base = new ASTNode(local.getType(), imports[0] + "\n" + imports[1], 0);
-			}
-			Merger.solvedConflicts++;
-			return base;
-		}
 		
 		// if there is a comment conflict, keep the base comment by doing nothing
 		// keep remote comment if base doesn't exist

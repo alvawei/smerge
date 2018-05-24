@@ -20,16 +20,20 @@ import java.util.HashSet;
 // sorts the actions and applies them to the base tree
 
 public class ActionSet {
+	
+	private Set<Integer> parents;
+	
 	private Map<Integer, Move> moves;
 	private Map<Integer, Update> updates;
 	
 	private SortedSet<Action> sortedActions;
 	
-	private Map<Integer, Map<Integer, Insert>> insertSets;
+	protected Map<Integer, Map<Integer, Insert>> insertSets;
 	private Map<Integer, Map<Integer, Delete>> deleteSets;
 	private Map<Integer, Set<Shift>> shiftSets;
 	
 	public ActionSet() {
+		parents = new HashSet<>();
 		moves = new HashMap<>();
 		updates = new HashMap<>();
 		
@@ -42,6 +46,7 @@ public class ActionSet {
 		int parentID = parent.getID();
 		if (!insertSets.containsKey(parentID)) {
 			insertSets.put(parentID, new TreeMap<>());
+			parents.add(parentID);
 		}
 		insertSets.get(parentID).put(position, new Insert(parent, child, position));
 	}
@@ -51,6 +56,7 @@ public class ActionSet {
 		int parentID = base.getParent().getID();
 		if (!deleteSets.containsKey(parentID)) {
 			deleteSets.put(parentID, new TreeMap<>((a, b) -> b.compareTo(a)));
+			parents.add(parentID);
 		}
 	}
 	
@@ -106,6 +112,18 @@ public class ActionSet {
 			}
 			shiftSet.removeAll(unecessaryShifts);
 		}
+	}
+	
+	public Set<Integer> parents() {
+		return parents;
+	}
+	
+	public Map<Integer, Delete> getDeleteMap(int parentID) {
+		return deleteSets.get(parentID);
+	}
+	
+	public Map<Integer, Insert> getInsertMap(int parentID) {
+		return insertSets.get(parentID);
 	}
 	
 	// note this returns different strings before and after running apply()
