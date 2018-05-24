@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import smerge.Merger;
 import smerge.ast.ASTNode;
 import smerge.ast.ASTNode.Type;
 
@@ -105,10 +106,26 @@ public class ActionMerger {
 		
 		ASTNode.Type type = base.getType();
 		if (type == Type.IMPORT) {
-			
+			mergeImports(base, local, remote);
+		} else if (type == Type.COMMENT || type == Type.BLOCK_COMMENT) {
+			// keep base comment - don't apply any update
+		} else {
+			if (local.getContent().equals(remote.getContent())) {
+				// yes this happens in some cases
+				remoteUpdate.apply();
+			} else if (base.getContent().equals(local.getContent()) || 
+					base.getContent().equals(remote.getContent())) {
+				// in this case one tree updated indentation and the other updated content
+				// update.apply() only changes things that are actually changed
+				localUpdate.apply();
+				remoteUpdate.apply();
+			} else {
+				// unmergable
+				wrapConflict(base, local, remote);
+				return; // don't increase solved conflict count
+			}
 		}
-		
-		
+		solvedConflicts++;
 	}
 	
 	// applies non-conflicting updates 
