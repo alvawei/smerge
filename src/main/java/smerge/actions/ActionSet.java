@@ -23,7 +23,6 @@ public class ActionSet {
 	
 	private Set<Integer> parents;
 	
-	private Map<Integer, Move> moves;
 	private Map<Integer, Update> updates;
 	
 	private SortedSet<Action> sortedActions;
@@ -34,7 +33,6 @@ public class ActionSet {
 	
 	public ActionSet() {
 		parents = new HashSet<>();
-		moves = new HashMap<>();
 		updates = new HashMap<>();
 		
 		insertSets = new TreeMap<>();
@@ -58,11 +56,6 @@ public class ActionSet {
 			deleteSets.put(parentID, new TreeMap<>((a, b) -> b.compareTo(a)));
 			parents.add(parentID);
 		}
-	}
-	
-	public void addMove(ASTNode destParent, ASTNode base, int position) {
-		int id = base.getID();
-		moves.put(id, new Move(destParent, base, position));
 	}
 	
 	public void addShift(ASTNode parent, ASTNode edit, int oldPos, int newPos) {
@@ -139,7 +132,6 @@ public class ActionSet {
 		for (Map<Integer, Delete> deleteSet : deleteSets.values()) {
 			for (Delete delete : deleteSet.values()) result += delete.toString() + "\n";
 		}
-		for (Action a : moves.values()) result += a.toString() + "\n";
 		for (Action a : updates.values()) result += a.toString() + "\n";
 		return result;
 	}

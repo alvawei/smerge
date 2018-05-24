@@ -57,6 +57,7 @@ public class Differ {
 			// node was deleted from base
 			actions.addDelete(base);
 		} else {
+			// node was moved
 			if (base.getParent() != null && edit.getParent() != null) {
 				int baseParentID = base.getParent().getID();
 				int editParentID = edit.getParent().getID();
@@ -70,7 +71,8 @@ public class Differ {
 						// base parent equivalent doesn't exist, parent must also be an insert
 						parent = edit.getParent();
 					}
-					actions.addMove(parent, base, editNodeIndex);	
+					actions.addDelete(base);
+					actions.addInsert(parent, base, editNodeIndex, isLocal);
 					
 				} else if (baseNodeIndex != editNodeIndex) {
 					actions.addShift(parent, edit, baseNodeIndex, editNodeIndex);
