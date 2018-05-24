@@ -14,10 +14,6 @@ import java.io.PrintWriter;
  * Runs Smerge
  */
 public class Merger {
-	
-	public static int totalConflicts = 0;
-	public static int solvedConflicts = 0;
-	
     
     /**
      * @param args [BASE, LOCAL, REMOTE, MERGED] files

@@ -50,8 +50,7 @@ public class ActionSet {
 	public void addDelete(ASTNode base) {
 		int parentID = base.getParent().getID();
 		if (!deleteSets.containsKey(parentID)) {
-			// TODO: delete from back, sort by reverse position
-			deleteSets.put(parentID, new TreeMap<>());
+			deleteSets.put(parentID, new TreeMap<>((a, b) -> b.compareTo(a)));
 		}
 	}
 	
