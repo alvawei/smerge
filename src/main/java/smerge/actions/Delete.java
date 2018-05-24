@@ -14,6 +14,10 @@ public class Delete implements Action {
 		return child.getParent().children().indexOf(child);
 	}
 	
+	public int getParentID() {
+		return child.getParent().getID();
+	}
+	
 
 	public void apply() {
 		child.getParent().children().remove(child);

@@ -27,8 +27,12 @@ public class ActionSet {
 	
 	private SortedSet<Action> sortedActions;
 	
+	// <parent ID <position of insert, Insert object>>
 	protected Map<Integer, Map<Integer, Insert>> insertSets;
+	
+	// <parent ID <position of delete, Delete object>>
 	private Map<Integer, Map<Integer, Delete>> deleteSets;
+	
 	private Map<Integer, Set<Shift>> shiftSets;
 	
 	public ActionSet() {
@@ -71,6 +75,50 @@ public class ActionSet {
 	
 	// minimizes actions
 	public void minimize() {
+		minimizeInserts();
+		minimizeDeletes();
+		minimizeShifts();
+	}
+	
+	// minimizes inserts by removing all but the root of a subtree -- avoids
+	// adding an entire subtree to the insertSets
+	public void minimizeInserts() {
+		Set<Integer> removalSet = new HashSet<Integer>();
+		// for each parent ID in the insertSets, we should remove any of its
+		// children that also exist in the insertSets to avoid unnecessary inserts
+		for (int parentID : insertSets.keySet()) {
+			Map<Integer, Insert> insert = insertSets.get(parentID);
+			for (int index : insert.keySet()) {
+				if (insertSets.containsKey(insert.get(index).getParentID())) {
+					removalSet.add(index);
+				}
+			}
+		}
+		for (int i : removalSet) {
+			insertSets.remove(i);
+		}
+	}
+	
+	// minimizes deletes by removing all but the root of a subtree -- avoids
+	// adding an entire subtree to the deleteSets
+	public void minimizeDeletes() {
+		Set<Integer> removalSet = new HashSet<Integer>();
+		// for each parent ID in the deleteSets, we should remove any of its
+		// children that also exist in the deleteSets to avoid unnecessary deletes
+		for (int parentID : deleteSets.keySet()) {
+			Map<Integer, Delete> delete = deleteSets.get(parentID);
+			for (int index : delete.keySet()) {
+				if (insertSets.containsKey(delete.get(index).getParentID())) {
+					removalSet.add(index);
+				}
+			}
+		}
+		for (int i : removalSet) {
+			insertSets.remove(i);
+		}
+	}
+	
+	public void minimizeShifts() {
 		// remove implicit shifts
 		for (int parentID : shiftSets.keySet()) {
 			Set<Shift> shiftSet = shiftSets.get(parentID);
