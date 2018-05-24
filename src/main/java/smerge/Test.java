@@ -53,7 +53,8 @@ public class Test {
         
         // MERGING
         System.out.println("Merging changes...");
-        ActionMerger.merge(localActions, remoteActions);
+        ActionMerger merger = new ActionMerger(localActions, remoteActions);
+        merger.merge();
         
         System.out.println(baseTree.debugTree());
         
@@ -66,7 +67,7 @@ public class Test {
         
         // CONFLICTS
         System.out.print("Merge conflicts resolved: ");
-        System.out.println(Merger.solvedConflicts + "/" + Merger.totalConflicts);
+        System.out.println(merger.solvedConflicts + "/" + merger.totalConflicts);
 	}
 
 }

@@ -1,6 +1,7 @@
 package smerge;
 
 import smerge.ast.AST;
+import smerge.ast.ActionMerger;
 import smerge.ast.Differ;
 import smerge.ast.actions.ActionSet;
 import smerge.ast.parsers.Parser;
@@ -35,10 +36,10 @@ public class Merger {
         String remote = args[2];
         String merged = args[3];
         
-        // get the correct parser (pass in filename for file extension/type?)
+        // PARSING
+        // TODO: get the correct parser (pass in filename for file extension/type?), change "null"
         Parser parser = Parser.getInstance(null);
         
-        // parse files into ASTs
         System.out.println("Parsing base file...");
         AST baseTree = parser.parse(base);
         
@@ -49,22 +50,30 @@ public class Merger {
         AST remoteTree = parser.parse(remote);
         
         
-        // merge trees
+        // TREE DIFFING
         System.out.println("Generating tree diffs...");
         Differ differ = new Differ(baseTree, localTree, remoteTree);
+        ActionSet localActions = new ActionSet();
+        ActionSet remoteActions = new ActionSet();
+        differ.diff(localActions, remoteActions);
+           
         
+        // MERGING
         System.out.println("Merging changes...");
-        ActionSet actions = differ.diff();
-        actions.apply();
+        ActionMerger merger = new ActionMerger(localActions, remoteActions);
+        merger.merge();
         
+        
+        // OUTPUT
         System.out.println("Writing result to " + merged);
         String result = baseTree.toString();
-        
-        // write result -> merged
         PrintWriter out = new PrintWriter(merged);
         out.println(result);
         out.close();
         
-        System.out.println("Merge conflicts resolved: " + solvedConflicts + "/" + totalConflicts);
+        
+        // CONFLICT COUNTS
+        System.out.print("Merge conflicts resolved: ");
+        System.out.println(merger.solvedConflicts + "/" + merger.totalConflicts);
     }
 }

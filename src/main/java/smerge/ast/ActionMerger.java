@@ -3,7 +3,19 @@ package smerge.ast;
 import smerge.ast.actions.ActionSet;
 
 // this class merges two action sets and applys the merged actions onto the base tree
+// also counts conflicts
 public class ActionMerger {
+	
+	public int totalConflicts;
+	public int solvedConflicts;
+	
+	private ActionSet localActions;
+	private ActionSet remoteActions;
+	
+	public ActionMerger(ActionSet localActions, ActionSet remoteActions) {
+		this.localActions = localActions;
+		this.remoteActions = remoteActions;
+	}
 	
 	// TODO: conflict definitions here:
 	// TODO: we need to handle all of these in merge()
@@ -32,11 +44,11 @@ public class ActionMerger {
 	
 	
 	
-	public static void merge(ActionSet localActions, ActionSet remoteActions) {
+	public void merge() {
 		
 	}
 	
-	private static void mergeImports() {
+	private void mergeImports() {
 		
 	}
 }
