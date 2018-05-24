@@ -26,7 +26,7 @@ else
 	# read the merge results line by line and find line with CONFLICT
 	while read conflict; do
 	    # handle if content CONFLICT in python file
-	    if [[ $conflict =~ .*[[:space:]]([^\.]*\.py) ]]; then
+	    if [[ $conflict =~ .*[[:space:]]([^\.]*\.py$) ]]; then
 		if [[ $conflict == *"content"* ]]; then
 		    FILEPATH=$REPO_DIR/${BASH_REMATCH[1]}
 		    FILENAME=${FILEPATH##*/}
