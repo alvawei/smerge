@@ -1,9 +1,9 @@
 package smerge;
 
+import smerge.actions.ActionMerger;
 import smerge.actions.ActionSet;
 import smerge.ast.AST;
-import smerge.ast.ActionMerger;
-import smerge.ast.Differ;
+import smerge.diff.Differ;
 import smerge.parsers.Parser;
 
 import java.io.IOException;

@@ -1,8 +1,8 @@
-package smerge.ast;
+package smerge.actions;
 
 import java.util.Arrays;
 
-import smerge.actions.ActionSet;
+import smerge.ast.ASTNode;
 
 // this class merges two action sets and applys the merged actions onto the base tree
 // also counts conflicts

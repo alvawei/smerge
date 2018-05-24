@@ -1,9 +1,13 @@
-package smerge.ast;
+package smerge.diff;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import smerge.ast.AST;
+import smerge.ast.ASTNode;
+import smerge.ast.ASTNode.Type;
 
 public class Matcher {
 	

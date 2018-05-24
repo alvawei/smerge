@@ -1,12 +1,12 @@
-package smerge;
+package temp;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import smerge.actions.ActionMerger;
 import smerge.actions.ActionSet;
 import smerge.ast.AST;
-import smerge.ast.ActionMerger;
-import smerge.ast.Differ;
+import smerge.diff.Differ;
 import smerge.parsers.Parser;
 
 public class Test {

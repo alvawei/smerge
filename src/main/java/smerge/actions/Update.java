@@ -1,6 +1,5 @@
 package smerge.actions;
 
-import smerge.Merger;
 import smerge.ast.ASTNode;
 import smerge.ast.NodeMerger;
 

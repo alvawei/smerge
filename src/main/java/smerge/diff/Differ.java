@@ -1,9 +1,10 @@
-package smerge.ast;
+package smerge.diff;
 
 import java.util.List;
 
 import smerge.actions.ActionSet;
-import smerge.ast.Match;
+import smerge.ast.AST;
+import smerge.ast.ASTNode;
 
 // produces an ActionSet given 3 trees
 public class Differ {
@@ -56,7 +57,7 @@ public class Differ {
 			// node was deleted from base
 			actions.addDelete(base);
 		} else {
-			if (base.parent != null && edit.parent != null) {
+			if (base.getParent() != null && edit.getParent() != null) {
 				int baseParentID = base.getParent().getID();
 				int editParentID = edit.getParent().getID();
 				int baseNodeIndex = base.getParent().children().indexOf(base);
