@@ -28,9 +28,6 @@ public class ActionSet {
 	private Map<Integer, Map<Integer, Insert>> insertSets;
 	private Map<Integer, Map<Integer, Delete>> deleteSets;
 	private Map<Integer, Set<Shift>> shiftSets;
-
-		
-	private Set<Integer> noDeletes; // set of base nodes that cant be deleted
 	
 	public ActionSet() {
 		moves = new HashMap<>();
@@ -39,34 +36,6 @@ public class ActionSet {
 		insertSets = new TreeMap<>();
 		deleteSets = new HashMap<>();
 		shiftSets = new HashMap<>();
-		
-		noDeletes = new HashSet<>();
-	}
-	
-	// returns true iff actions are merged into base tree
-	public boolean apply() {
-		
-		/*
-		for (int id : moves.keySet()) {
-			inserts.put(id, moves.get(id).getInsert());
-			deletes.put(id, moves.get(id).getDelete());
-		}
-		*/
-		
-		// applies inserts by order of parentID and then position
-		for (int parentID : insertSets.keySet()) {
-			for (Insert ins : insertSets.get(parentID).values()) {
-				ins.apply();
-			}
-		}	
-		
-		//for (Delete delete : deletes.values()) delete.apply(); 
-		
-		for (Move m : moves.values()) m.apply();
-		
-		for (Update update : updates.values()) update.apply();
-		
-		return true;
 	}
 	
 	public void addInsert(ASTNode parent, ASTNode child, int position, boolean isLocal) {
@@ -86,31 +55,8 @@ public class ActionSet {
 		}
 	}
 	
-	// this may be complicated?
-	// possibly just implement as an insert and a delete,
-	// but what if both trees move it to different locations:
-	// conflicting inserts, which could be determined in addInsert()
-	public void addMove(int id, Move move) {
-		moves.put(id, move);
-	}
-	
 	public void addMove(ASTNode destParent, ASTNode base, int position) {
 		int id = base.getID();
-		if (moves.containsKey(id)) {
-			int baseParentID = base.getParent().getID();
-			int otherDestParentID = moves.get(id).getInsert().getParentID();
-			int thisDestParentID = destParent.getID();
-			if (thisDestParentID != baseParentID && otherDestParentID != baseParentID && 
-					thisDestParentID != otherDestParentID) {
-				// need to duplicate it? or not move it?
-				moves.remove(id);
-				return;
-				//throw new RuntimeException("conflicting moves");
-			} else if (otherDestParentID != baseParentID){
-				// use existing move over this one
-				return;
-			}
-		}
 		moves.put(id, new Move(destParent, base, position));
 	}
 	
