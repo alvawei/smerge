@@ -9,20 +9,18 @@ import smerge.parsers.Parser;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-
 /**
- * Runs Smerge
+ * This class provides the main method to run our tool.
+ * 
+ * @author Jediah Conachan
  */
 public class Merger {
     
     /**
-     * @param args [BASE, LOCAL, REMOTE, MERGED] files
-     * @throws IOException 
-     * @throws MergeException 
-     * @throws DiffException 
+     * @param args [BASE, LOCAL, REMOTE, MERGED] filenames
+     * @throws IOException if there is a problem reading files
      */
     public static void main(String[] args) throws IOException {
-    	
     	if (args.length != 4) {
     		throw new RuntimeException("Expected arguments: $BASE, $LOCAL, $REMOTE, $MERGED");
     	}
@@ -33,21 +31,17 @@ public class Merger {
         String merged = args[3];
         
         // PARSING
-        // TODO: get the correct parser (pass in filename for file extension/type?), change "null"
+        // get the correct parser
+        // TODO: change "null", see Parser.getInstance()
         Parser parser = Parser.getInstance(null);
         
-        System.out.println("Parsing base file...");
+        System.out.println("Parsing merge conflict files...");
         AST baseTree = parser.parse(base);
-        
-        System.out.println("Parsing local file...");
         AST localTree = parser.parse(local);
-        
-        System.out.println("Parsing remote file...");
-        AST remoteTree = parser.parse(remote);
-        
+        AST remoteTree = parser.parse(remote);        
         
         // TREE DIFFING
-        System.out.println("Generating tree diffs...");
+        System.out.println("Generating AST diffs...");
         Differ differ = new Differ(baseTree, localTree, remoteTree);
         ActionSet localActions = new ActionSet();
         ActionSet remoteActions = new ActionSet();
@@ -66,10 +60,11 @@ public class Merger {
         PrintWriter out = new PrintWriter(merged);
         out.println(result);
         out.close();
+        System.out.println();
         
         
         // CONFLICT COUNTS
-        System.out.print("Merge conflicts resolved: ");
-        System.out.println(merger.solvedConflicts + "/" + merger.totalConflicts);
+        System.out.println("Merge conflicts resolved: " + 
+        		merger.solvedConflicts + "/" + merger.totalConflicts);
     }
 }

@@ -111,12 +111,12 @@ public class ActionMerger {
 			// keep base comment - don't apply any update
 		} else {
 			if (local.getContent().equals(remote.getContent())) {
-				// yes this happens in some cases
+				// just apply one update
 				remoteUpdate.apply();
 			} else if (base.getContent().equals(local.getContent()) || 
 					base.getContent().equals(remote.getContent())) {
 				// in this case one tree updated indentation and the other updated content
-				// update.apply() only changes things that are actually changed
+				// update.apply() will update only changed fields, so the following works
 				localUpdate.apply();
 				remoteUpdate.apply();
 			} else {
@@ -149,7 +149,7 @@ public class ActionMerger {
 	}
 	
 	// wraps an unsolvable conflict with conflict identifiable text
-	// returns a new base node if it doesn't exist
+	// returns a new base node if the given base node is null
 	private ASTNode wrapConflict(ASTNode base, ASTNode local, ASTNode remote) {
 		String baseContent = base == null ? "" : base.getContent() + "\n=======\n";	
 		String conflict = 
