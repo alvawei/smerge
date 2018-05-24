@@ -2,8 +2,8 @@ package smerge.ast;
 
 import java.util.List;
 
+import smerge.actions.ActionSet;
 import smerge.ast.Match;
-import smerge.ast.actions.ActionSet;
 
 // produces an ActionSet given 3 trees
 public class Differ {

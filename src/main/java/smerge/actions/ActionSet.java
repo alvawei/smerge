@@ -1,4 +1,4 @@
-package smerge.ast.actions;
+package smerge.actions;
 
 import java.util.Map;
 import java.util.Set;

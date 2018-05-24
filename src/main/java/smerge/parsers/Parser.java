@@ -1,4 +1,4 @@
-package smerge.ast.parsers;
+package smerge.parsers;
 
 import java.io.BufferedReader;
 import java.io.IOException;

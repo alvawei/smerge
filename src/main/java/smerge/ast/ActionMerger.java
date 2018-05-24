@@ -1,6 +1,8 @@
 package smerge.ast;
 
-import smerge.ast.actions.ActionSet;
+import java.util.Arrays;
+
+import smerge.actions.ActionSet;
 
 // this class merges two action sets and applys the merged actions onto the base tree
 // also counts conflicts
@@ -45,10 +47,22 @@ public class ActionMerger {
 	
 	
 	public void merge() {
+		// TODO: add getter methods in ActionSet
 		
 	}
 	
-	private void mergeImports() {
-		
+	// merges all imports into a base node (returns a new base node if its a two-insert conflict)
+	// this method may be simplified if we choose not to include the base import
+	private ASTNode mergeImports(ASTNode base, ASTNode local, ASTNode remote) {
+		if (base != null) {
+			String[] imports = {base.getContent(), local.getContent(), remote.getContent()};
+			Arrays.sort(imports);
+			base.setContent(imports[0] + "\n" + imports[1] + "\n" + imports[2]);
+		} else {
+			String[] imports = {local.getContent(), remote.getContent()};
+			Arrays.sort(imports);
+			base = new ASTNode(local.getType(), imports[0] + "\n" + imports[1], 0);
+		}
+		return base;
 	}
 }

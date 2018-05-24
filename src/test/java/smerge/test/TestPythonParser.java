@@ -9,7 +9,7 @@ import java.io.IOException;
 import org.junit.Test;
 
 import smerge.ast.AST;
-import smerge.ast.parsers.PythonParser;
+import smerge.parsers.PythonParser;
 
 public class TestPythonParser {
 	

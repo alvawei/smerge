@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import smerge.ast.parsers.Parser;
+import smerge.parsers.Parser;
 
 /*
  * This class represents a generic Abstract Syntax Tree. It is a wrapper

@@ -3,11 +3,11 @@ package smerge;
 import java.io.IOException;
 import java.io.PrintWriter;
 
+import smerge.actions.ActionSet;
 import smerge.ast.AST;
 import smerge.ast.ActionMerger;
 import smerge.ast.Differ;
-import smerge.ast.actions.ActionSet;
-import smerge.ast.parsers.Parser;
+import smerge.parsers.Parser;
 
 public class Test {
 	

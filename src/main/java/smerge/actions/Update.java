@@ -1,4 +1,4 @@
-package smerge.ast.actions;
+package smerge.actions;
 
 import smerge.Merger;
 import smerge.ast.ASTNode;

@@ -33,10 +33,5 @@ public class BiggerTest {
 					"tmp/out.py"});
 			System.out.println();
 		}
-		
-		
-		
 	}
-	
-
 }

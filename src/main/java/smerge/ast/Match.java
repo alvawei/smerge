@@ -1,10 +1,10 @@
 package smerge.ast;
 
-import smerge.ast.actions.Action;
-import smerge.ast.actions.Delete;
-import smerge.ast.actions.Insert;
-import smerge.ast.actions.Move;
-import smerge.ast.actions.Update;
+import smerge.actions.Action;
+import smerge.actions.Delete;
+import smerge.actions.Insert;
+import smerge.actions.Move;
+import smerge.actions.Update;
 
 
 // a match object contains up to three versions of an ASTNode (base, local, and remote versions)
