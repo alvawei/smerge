@@ -10,31 +10,26 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Stack;
 
-
+/**
+ * This class is responsible for parsing Python 3 files (note it may work with Python 2, 
+ * but it is not guaranteed).
+ * See the Parser abstract class.
+ * 
+ * @author Jediah Conachan
+ *
+ */
 public class PythonParser extends Parser {
+	
+	// these are used to complete tokens
 	public static final String[] opens = {"\"\"\"", "'''", "\"", "'", "(", "[", "{"};
 	public static final String[] closes = {"\"\"\"", "'''", "\"", "'", ")", "]", "}"};	
-		
-	// main method used for quick testing
-	public static void main(String[] args) throws IOException {
-		
-		PythonParser p = new PythonParser();
-		String s = "conflicts/test/test_base.py";
-		System.out.println(p.parse(s).debugTree());
-		
-		
-		/*
-		File[] files = new File("scripts/test_results/keras_test_results/conflicts").listFiles();
-	    
-		for (File f : files) {
-			System.out.println(f);
-			p.parse(f.toString());
-		} */
-		
-		
-	}
 	
-	// parses the given python file into a PythonTree
+	/**
+	 * Parses the given file into an AST
+	 * @param filename - the filename of the file to parse
+	 * @return an AST representation of the file's source code
+	 * @throws IOException if there is an error reading the file
+	 */
 	public AST parse(String filename) throws IOException {
 		BufferedReader br = new BufferedReader(new FileReader(new File(filename)));
 		
@@ -77,7 +72,11 @@ public class PythonParser extends Parser {
 		return new AST(root, this);
 	}
 	
-	// unparses the given tree back into source code
+	/**
+	 * Unparses the given AST back into source code
+	 * @param tree - the AST to be unparsed
+	 * @return a String representation of source code
+	 */
 	public String unparse(AST tree) {
 		StringBuilder sb = new StringBuilder();
 		for (ASTNode child : tree.getRoot().children()) {
@@ -98,6 +97,7 @@ public class PythonParser extends Parser {
 		}
 	}
 	
+	// read the next token
 	private String getNextToken(BufferedReader br) throws IOException {
 		String token = br.readLine();
 		if (token == null || token.trim().startsWith("#")) return token;
@@ -107,13 +107,9 @@ public class PythonParser extends Parser {
 		
 		outerloop:
 		while (index < token.length()) {
-			
-			// append next line if needed
-			
-			
 			String part = token.substring(index);
 			
-			// check for a closing
+			// check for a closing character
 			if (!subtokens.isEmpty()) {
 				String close = closing(subtokens.peek());
 				if (part.startsWith(close)) {
@@ -123,7 +119,7 @@ public class PythonParser extends Parser {
 				}
 			}
 			
-			// check for an opening if not in a string currently
+			// check for an opening character if not in a string currently
 			if (subtokens.isEmpty() || !isString(subtokens.peek())) {
 				for (int i = 0; i < opens.length; i++) {
 					if (part.startsWith(opens[i])) {
@@ -186,10 +182,13 @@ public class PythonParser extends Parser {
 		return null;
 	}
 	
+	// returns the closing character that matches the given opening character
+	// example: "(" -> ")"
 	private static String closing(String open) {
 		return closes[Arrays.asList(opens).indexOf(open)];
 	}
 	
+	// returns if the given opening/closing character is a string type
 	private static boolean isString(String s) {
 		return s.equals("\"\"\"") || s.equals("'''") || s.equals("\"") || s.equals("'");
 	}

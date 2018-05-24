@@ -11,7 +11,7 @@ import smerge.parsers.Parser;
 
 public class Test {
 	
-	// i just run this main method for easy testing
+	// this is a temporary class for testing
 
 	public static void main(String[] args) throws IOException {
 		/*

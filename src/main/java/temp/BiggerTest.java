@@ -14,6 +14,7 @@ public class BiggerTest {
 	
 	public static final String DIR = "scripts/test_results/keras_test_results/conflicts";
 
+	// this is a temporary class for testing
 	
 	public static void main(String[] args) throws IOException {
 		Set<String> filenames = new HashSet<>();

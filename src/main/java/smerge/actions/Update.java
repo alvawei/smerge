@@ -1,7 +1,6 @@
 package smerge.actions;
 
 import smerge.ast.ASTNode;
-import smerge.ast.NodeMerger;
 
 public class Update implements Action {
 	
@@ -23,7 +22,10 @@ public class Update implements Action {
 	}
 	// swap before with after
 	public void apply() {
-		// TODO
+		if (base.getIndentation() != edit.getIndentation())
+			base.setIndentation(edit.getIndentation());
+		if (!base.getContent().equals(edit.getContent()))
+			base.setContent(edit.getContent());
 	}
 	
 	public String toString() {

@@ -8,7 +8,6 @@ import java.util.TreeSet;
 
 import smerge.ast.ASTNode;
 import smerge.ast.ASTNode.Type;
-import smerge.ast.NodeMerger;
 
 import java.util.Comparator;
 import java.util.HashMap;
