@@ -25,5 +25,5 @@ else
     ./merge_conflicts.sh ${REPO_DIR} ${RESULTS_DIR}
 
     # Output <repositoryname>.csv file
-    ./make_csv.sh ${REPO_NAME} ${RESULTS_DIR}
+    #./make_csv.sh ${REPO_NAME} ${RESULTS_DIR}
 fi

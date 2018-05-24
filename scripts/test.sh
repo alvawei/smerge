@@ -15,5 +15,5 @@ cat repos.txt | while read line; do
 done
 
 # create a final table with all of the csv's included
-echo "Repo,Conflicts,Unresolved,Correct,CorrectNC,Incorrect,%Correct,%CorrectCW,%Unresolved,%Incorrect" > table.csv
-cat *.csv >> table.csv
+#echo "Repo,Conflicts,Unresolved,Correct,CorrectNC,Incorrect,%Correct,%CorrectCW,%Unresolved,%Incorrect" > table.csv
+#cat *.csv >> table.csv
