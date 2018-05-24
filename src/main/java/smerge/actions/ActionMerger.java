@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import smerge.ast.ASTNode;
+import smerge.ast.ASTNode.Type;
 
 // this class merges two action sets and applys the merged actions onto the base tree
 // also counts conflicts
@@ -51,7 +52,12 @@ public class ActionMerger {
 	
 	public void merge() {
 		// TODO: add getter methods in ActionSet
-		
+		mergeInsertsAndDeleteActions();
+		mergeUpdateActions();
+	}
+	
+	// merge all inserts and deletes onto the base tree
+	private void mergeInsertsAndDeleteActions() {
 		// separate parents into three sets that don't share any common parent IDs
 		Set<Integer> parentsIntersection = new HashSet<>();
 		parentsIntersection.addAll(localActions.parents());
@@ -60,21 +66,62 @@ public class ActionMerger {
 		remoteActions.parents().removeAll(parentsIntersection);
 		
 		// apply local-only ande remote-only insert/delete actions
-		applyActions(localActions);
-		applyActions(remoteActions);		
+		applyDeletesAndInserts(localActions);
+		applyDeletesAndInserts(remoteActions);		
 		
 		// apply the rest of the insert/delete actions
 		for (int parentID : parentsIntersection) {
 			throw new RuntimeException("not yet implemented");
 		}
+				
+	}
+	
+	// merge all updates onto the base tree
+	private void mergeUpdateActions() {
+		Map<Integer, Update> localUpdates = localActions.getUpdateMap();
+		Map<Integer, Update> remoteUpdates = remoteActions.getUpdateMap();
+
+		Set<Integer> updatesIntersection = new HashSet<>();
+		updatesIntersection.addAll(localUpdates.keySet());
+		updatesIntersection.retainAll(remoteUpdates.keySet());
 		
-		// TODO: apply all update actions
+		// apply non-intersecting updates
+		applyUpdates(localUpdates, updatesIntersection);
+		applyUpdates(remoteUpdates, updatesIntersection);
+		
+		// apply intersecting updates
+		for (int id : updatesIntersection) {
+			totalConflicts++;
+			mergeUpdate(localUpdates.get(id), remoteUpdates.get(id));
+		}
+	}
+	
+	// TODO: indentation + content updates in same tree
+	// merges two conflicting updates if possible
+	private void mergeUpdate(Update localUpdate, Update remoteUpdate) {
+		ASTNode base = localUpdate.getBase();
+		ASTNode local = localUpdate.getEdit();
+		ASTNode remote = remoteUpdate.getEdit();
+		
+		ASTNode.Type type = base.getType();
+		if (type == Type.IMPORT) {
+			
+		}
 		
 		
 	}
 	
+	// applies non-conflicting updates 
+	private void applyUpdates(Map<Integer, Update> updates, Set<Integer> intersection) {
+		for (int id : updates.keySet()) {
+			if (!intersection.contains(id)) {
+				updates.get(id).apply();
+			}
+		}
+	}
+	
 	// applys actions from one action set that doesn't interfere with the other action set
-	private void applyActions(ActionSet actions) {
+	private void applyDeletesAndInserts(ActionSet actions) {
 		for (int parentID : actions.parents()) {
 			// apply deletes then inserts
 			for (Delete delete : actions.getDeleteMap(parentID).values())

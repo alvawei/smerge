@@ -73,7 +73,7 @@ public class ActionSet {
 	}
 
 	public void addUpdate(ASTNode base, ASTNode edit, boolean isLocal) {
-		updates.put(base.getID(), new Update(base, edit, isLocal));	
+		updates.put(base.getID(), new Update(base, edit));	
 	}
 	
 	// minimizes actions
@@ -124,6 +124,10 @@ public class ActionSet {
 	
 	public Map<Integer, Insert> getInsertMap(int parentID) {
 		return insertSets.get(parentID);
+	}
+	
+	public Map<Integer, Update> getUpdateMap() {
+		return updates;
 	}
 	
 	// note this returns different strings before and after running apply()

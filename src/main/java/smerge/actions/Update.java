@@ -6,37 +6,24 @@ import smerge.ast.NodeMerger;
 public class Update implements Action {
 	
 	private ASTNode base;
-	private ASTNode local;
-	private ASTNode remote;
+	private ASTNode edit;
 	
-	public Update(ASTNode base, ASTNode edit, boolean isLocal) {
+	public Update(ASTNode base, ASTNode edit) {
 		this.base = base;
-		setEdit(edit, isLocal);
+		this.edit = edit;
 		
 	}
 	
-	public void setEdit(ASTNode edit, boolean isLocal) {
-		if (isLocal) {
-			this.local = edit;
-		} else {
-			this.remote = edit;
-		}
+	public ASTNode getBase() {
+		return base;
 	}
 	
-	public ASTNode getEdit(boolean isLocal) {
-		return isLocal ? local : remote;
+	public ASTNode getEdit() {
+		return edit;
 	}
 	// swap before with after
 	public void apply() {
-		if (local != null && remote != null) {
-			NodeMerger.merge(base, local, remote);
-		} else if (local != null) {
-			base.setContent(local.getContent());
-			base.setIndentation(local.getIndentation());
-		} else if (remote != null) {
-			base.setContent(remote.getContent());
-			base.setIndentation(remote.getIndentation());
-		}
+		// TODO
 	}
 	
 	public String toString() {
