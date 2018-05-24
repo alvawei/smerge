@@ -1,4 +1,3 @@
-https://github.com/sdispater/poetry
 https://github.com/pypa/pipenv
 https://github.com/tensorflow/models
 https://github.com/keras-team/keras
