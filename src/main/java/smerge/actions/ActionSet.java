@@ -142,10 +142,12 @@ public class ActionSet {
 			}
 			
 			// adjust shifts for each delete
-			for (int position : deleteSet.keySet()) {
-				for (Shift shift : shiftSet) {
-					if (shift.oldPosition >= position) {
-						shift.oldPosition--;
+			if (deleteSet != null) {
+				for (int position : deleteSet.keySet()) {
+					for (Shift shift : shiftSet) {
+						if (shift.oldPosition >= position) {
+							shift.oldPosition--;
+						}
 					}
 				}
 			}
