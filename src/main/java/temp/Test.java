@@ -27,7 +27,7 @@ public class Test {
 		String merged = "tmp/temp_out.py";
         
         // get the correct parser (pass in filename for file extension/type?)
-        Parser parser = Parser.getInstance(null);
+        Parser parser = Parser.getInstance(merged);
         
         
         // PARSING

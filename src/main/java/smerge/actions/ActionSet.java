@@ -170,7 +170,8 @@ public class ActionSet {
 	}
 	
 	public Map<Integer, Insert> getInsertMap(int parentID) {
-		return insertSets.get(parentID);
+		Map<Integer, Insert> map = insertSets.get(parentID);
+		return map != null ? map : new TreeMap<>();
 	}
 	
 	public Collection<Insert> getInserts(int parentID) {

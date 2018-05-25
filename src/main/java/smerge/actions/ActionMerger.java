@@ -34,7 +34,7 @@ public class ActionMerger {
 	
 	// TODO: conflict definitions here:
 	// TODO: we need to handle all of these in merge()
-	// TODO: copy stuff over from NodeMerger
+	// TODO: not delete nodes that have inserts under them
 	
 	// note "two" means one from local and one from remote
 	
@@ -86,6 +86,10 @@ public class ActionMerger {
 			
 			Map<Integer, Insert> localInserts = localActions.getInsertMap(parentID);
 			Map<Integer, Insert> remoteInserts = remoteActions.getInsertMap(parentID);
+			
+			if (localDeletes == null && remoteInserts != null) {
+				
+			}
 
 			// ignore all deletes at first by adjusting inserts
 			for (Delete delete : localDeletes) {
