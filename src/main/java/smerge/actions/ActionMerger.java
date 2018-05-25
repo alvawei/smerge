@@ -72,7 +72,7 @@ public class ActionMerger {
 		
 		// apply the rest of the insert/delete actions
 		for (int parentID : parentsIntersection) {
-			throw new RuntimeException("not yet implemented");
+			
 		}
 				
 	}
