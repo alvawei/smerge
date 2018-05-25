@@ -14,8 +14,8 @@ it compares the output file of our tool with the manual merge that the repositor
 
 For reference, the categories on the table are defined below:
 * **Conflicts:** The number of merge conflicts (found in conflicting files, not commits) found in the repository’s history with exactly two parents. Here, we define a conflict as a portion of the two parent files that conflict. This means that files can contain multiple conflicts, and If multiple conflicts are found between the two parents, all of those conflicts are counted. This does not include conflicts that result from adding or deleting files in the repository.
-* **Modified:** The percentage of conflicts that Smerge modified because it deemed the conflict as trivial enough to automatically merge. 
-* **Unresolved:** The percentage of conflicts that Smerge aborted because it deemed attempting to merge would result in possibly undesired behavior. These conflicts would require manual resolution. 
+* **Modified:** The conflicts that Smerge modified because it deemed the conflict as trivial enough to automatically merge. 
+* **Unresolved:** The conflicts that Smerge aborted because it deemed attempting to merge would result in possibly undesired behavior. These conflicts would require manual resolution. 
 
 ## References
 This evaluation technique is inspired by a predecessor tool: Conflerge.
