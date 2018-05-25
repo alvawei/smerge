@@ -29,9 +29,17 @@ public class Insert implements Action {
 		return position;
 	}
 	
+	public void setPosition(int position) {
+		this.position = position;
+	}
+	
 	// returns the id of the parent
 	public int getParentID() {
 		return parent.getID();
+	}
+	
+	public ASTNode getParent() {
+		return parent;
 	}
 	
 	public ASTNode getChild() {

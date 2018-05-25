@@ -19,6 +19,8 @@ import java.util.HashSet;
 // actively merges actions as they are detected in both local and remote trees
 // sorts the actions and applies them to the base tree
 
+// TODO: deletes don't have to be sorted, just use Map<Integer, Set<Delete>>
+
 public class ActionSet {
 	
 	private Set<Integer> parents;
@@ -165,6 +167,10 @@ public class ActionSet {
 	public Collection<Delete> getDeletes(int parentID) {
 		Map<Integer, Delete> map = deleteSets.get(parentID);
 		return map != null ? map.values() : new TreeSet<>();
+	}
+	
+	public Map<Integer, Insert> getInsertMap(int parentID) {
+		return insertSets.get(parentID);
 	}
 	
 	public Collection<Insert> getInserts(int parentID) {

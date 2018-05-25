@@ -32,8 +32,7 @@ public class Merger {
         
         // PARSING
         // get the correct parser
-        // TODO: change "null", see Parser.getInstance()
-        Parser parser = Parser.getInstance(null);
+        Parser parser = Parser.getInstance(merged);
         
         System.out.println("Parsing merge conflict files...");
         AST baseTree = parser.parse(base);

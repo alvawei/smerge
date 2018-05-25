@@ -19,8 +19,8 @@ public abstract class Parser {
 	 * @return the correct parser
 	 */
 	public static Parser getInstance(String filename) {
-		// TODO: actually choose a parser based on the given filename?
-		return new PythonParser();
+		if (filename.endsWith(".py")) return new PythonParser();
+		throw new IllegalArgumentException("Parsing is not supported for this file type: " + filename);
 	}
 	
 	/**

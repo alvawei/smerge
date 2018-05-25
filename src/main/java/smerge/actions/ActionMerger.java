@@ -4,15 +4,23 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
-import smerge.Merger;
 import smerge.ast.ASTNode;
 import smerge.ast.ASTNode.Type;
 
 // this class merges two action sets and applys the merged actions onto the base tree
 // also counts conflicts
+
+/**
+ * This class is responsible for applying the two ActionSets (base->local and base->remote) back onto
+ * the base AST. This class also counts merge conflicts and how many of them are solvable for evaluation purposes.
+ * 
+ * @author Jediah Conachan
+ */
 public class ActionMerger {
 	
+	// these integers are for evaluation purposes
 	public int totalConflicts;
 	public int solvedConflicts;
 	
@@ -50,15 +58,16 @@ public class ActionMerger {
 	//   - idk
 	
 	
-	
+	/**
+	 * Applies both local actions and remote actions, merging changes as necessary.
+	 */
 	public void merge() {
-		// TODO: add getter methods in ActionSet
-		mergeInsertsAndDeleteActions();
+		mergeInsertAndDeleteActions();
 		mergeUpdateActions();
 	}
 	
 	// merge all inserts and deletes onto the base tree
-	private void mergeInsertsAndDeleteActions() {
+	private void mergeInsertAndDeleteActions() {
 		// separate parents into three sets that don't share any common parent IDs
 		Set<Integer> parentsIntersection = new HashSet<>();
 		parentsIntersection.addAll(localActions.parents());
@@ -66,15 +75,72 @@ public class ActionMerger {
 		localActions.parents().removeAll(parentsIntersection);
 		remoteActions.parents().removeAll(parentsIntersection);
 		
-		// apply local-only ande remote-only insert/delete actions
+		// apply local-only and remote-only insert/delete actions
 		applyDeletesAndInserts(localActions);
 		applyDeletesAndInserts(remoteActions);		
 		
 		// apply the rest of the insert/delete actions
 		for (int parentID : parentsIntersection) {
+			Set<Delete> localDeletes = new HashSet<>(localActions.getDeletes(parentID));
+			Set<Delete> remoteDeletes = new HashSet<>(remoteActions.getDeletes(parentID));
 			
+			Map<Integer, Insert> localInserts = localActions.getInsertMap(parentID);
+			Map<Integer, Insert> remoteInserts = remoteActions.getInsertMap(parentID);
+
+			// ignore all deletes at first by adjusting inserts
+			for (Delete delete : localDeletes) {
+				for (int position : localInserts.keySet()) {
+					if (position >= delete.getPosition()) {
+						// note the mapping will become unsynced
+						localInserts.get(position).setPosition(position++);
+					}
+				}
+			}
+			for (Delete delete : remoteDeletes) {
+				for (int position : remoteInserts.keySet()) {
+					if (position >= delete.getPosition()) {
+						// note the mapping will become unsynced
+						remoteInserts.get(position).setPosition(position++);
+					}
+				}
+			}
+			// merge inserts
+			Map<Integer, Insert> inserts = new TreeMap<>();
+			for (Insert insert : localInserts.values()) inserts.put(insert.getPosition(), insert);
+			for (Insert insert : remoteInserts.values()) {
+				int position = insert.getPosition();
+				if (inserts.containsKey(position)) {
+					totalConflicts++;
+					inserts.put(position, mergeInserts(inserts.get(position), insert));
+				} else {
+					inserts.put(insert.getPosition(), insert);
+				}
+			}
+			
+			// apply all inserts
+			for (Insert insert : inserts.values()) insert.apply();
+			
+			// now apply all deletes
+			for (Delete delete : localDeletes) delete.apply();
+			for (Delete delete : remoteDeletes) delete.apply();
 		}
 				
+	}
+	
+	// similar to mergeUpdates()
+	private Insert mergeInserts(Insert localInsert, Insert remoteInsert) {
+		ASTNode local = localInsert.getChild();
+		ASTNode remote = remoteInsert.getChild();
+
+		ASTNode.Type type = local.getType();
+		ASTNode mergedNode;
+		if (type == Type.IMPORT) {
+			mergedNode = mergeImports(null, local, remote);
+			solvedConflicts++;
+		} else {
+			mergedNode = wrapConflict(null, local, remote);
+		}
+		return new Insert(localInsert.getParent(), mergedNode, localInsert.getPosition());
 	}
 	
 	// merge all updates onto the base tree
@@ -92,8 +158,8 @@ public class ActionMerger {
 		
 		// apply intersecting updates
 		for (int id : updatesIntersection) {
-			totalConflicts++;
 			mergeUpdate(localUpdates.get(id), remoteUpdates.get(id));
+			totalConflicts++;
 		}
 	}
 	
