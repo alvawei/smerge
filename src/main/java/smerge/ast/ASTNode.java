@@ -2,19 +2,21 @@ package smerge.ast;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 import java.util.Stack;
 import java.util.Iterator;
-import java.util.LinkedList;
 
-/*
- * This abstract class is extended by language specific nodes (see smerge.ast.parsers)
- * Language specific nodes may be unecessary if unparsing is not done per node
+/**
+ * An ASTNode object represents a node of an abstract syntax tree.
+ * Each ASTNode encapsulates a type, source code content, and source code indentation.
+ * 
+ * @author Jediah Conachan
  */
 
 public class ASTNode {
 	
-	// two nodes can be matched only if they share the same type
+	/**
+	 * Enum Type for representing the type of an ASTNode.
+	 */
 	public enum Type {
 		ROOT, IMPORT, WHITESPACE,
 		CLASS, METHOD,
@@ -23,15 +25,22 @@ public class ASTNode {
 		COMMENT, BLOCK_COMMENT, PLACEHOLDER
 	}
 	
-	protected Type type;
-	protected String content;
-	protected int indentation;
+	private Type type;
+	private String content;
+	private int indentation;
+
+	private ASTNode parent;
+	private List<ASTNode> children;
 	
-	protected ASTNode parent;
-	protected List<ASTNode> children;
-	
+	// id used for matching/diffing purposes
 	private int id;
 	
+	/**
+	 * Constructs an ASTNode with the given type, content, and indentation
+	 * @param type ASTNode.Type of the node
+	 * @param content from the source file
+	 * @param indentation from the source file
+	 */
 	public ASTNode(Type type, String content, int indentation) {
 		this.type = type;
 		this.content = content;
@@ -40,7 +49,9 @@ public class ASTNode {
 		this.id = -1;
 	}
 
-	// creates a root node
+	/**
+	 * Constructs an empty root ASTNode
+	 */
 	public ASTNode() {
 		this(Type.ROOT, "@root", -1);
 	}
@@ -51,19 +62,29 @@ public class ASTNode {
 		this.type = Type.PLACEHOLDER;
 	}
 	
-	// returns the direct list of this node's children
+	/**
+	 * Returns a direct list of this node's children. 
+	 * Modifying the returned list also modifies the children of this node.
+	 * @return a List of ASTNode objects
+	 */
 	public List<ASTNode> children() {
 		return children;
 	}
 	
-	// adds the given child to this node ands sets this node as its parent
-	// removes the child node from its original parent
+	/**
+	 * Adds the given child as the last child of this node.
+	 * @param child to be added
+	 */
 	public void addChild(ASTNode child) {
 		if (child.parent != null) child.parent.children.remove(child);
 		children.add(child);
 		child.parent = this;
 	}
 	
+	/**
+	 * Returns the parent of this node (null if root)
+	 * @return ASTNode parent
+	 */
 	public ASTNode getParent() {
 		return parent;
 	}
@@ -72,14 +93,12 @@ public class ASTNode {
 		return indentation;
 	}
 	
-	public void setParent(ASTNode parent) {
-		this.parent = parent;
-	}
-	
-
-	
 	public String getContent() {
 		return content;
+	}
+	
+	public void setParent(ASTNode parent) {
+		this.parent = parent;
 	}
 	
 	public void setContent(String content) {
@@ -117,9 +136,28 @@ public class ASTNode {
 		return new NodeIterator(this);
 	}
 	
+	public int getPosition() {
+		return parent.children.indexOf(this);
+	}
+	
+	
+	
+
+	
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof ASTNode) {
+			return id == ((ASTNode) o).getID();
+		}
+		return false;
+	}
+	
+	public String toString() {
+		return "" + id;
+	}
+	
 	// pre-order iterator starting with the given root
 	private class NodeIterator implements Iterator<ASTNode> {
-		
 		private Stack<ASTNode> stack;
 		
 		public NodeIterator(ASTNode node) {
@@ -143,10 +181,12 @@ public class ASTNode {
 		}
 	}
 	
+	// debugging method
 	public String debugNode() {
 		return "(" + id + ")" + indentation + content;
 	}
 	
+	// debugging method
 	public void debugTree(StringBuilder sb, String indent) {
 		String idString = "(" + id;
 		if (parent != null) {
@@ -167,17 +207,5 @@ public class ASTNode {
 			}
 			child.debugTree(sb, indent + "    ");
 		}
-	}
-	
-	@Override
-	public boolean equals(Object o) {
-		if (o instanceof ASTNode) {
-			return id == ((ASTNode) o).getID();
-		}
-		return false;
-	}
-	
-	public String toString() {
-		return "" + id;
 	}
 }

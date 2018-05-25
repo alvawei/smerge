@@ -1,48 +1,57 @@
 package smerge.ast;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 import smerge.parsers.Parser;
 
-/*
+/**
  * This class represents a generic Abstract Syntax Tree. It is a wrapper
  * around a root ASTNode.
  * 
+ * @author Jediah Conachan
  */
-
 public class AST implements Iterable<ASTNode> {
 	
-	private Parser p;
+	// this is held onto for the toString() method
+	private Parser parser;
 	private ASTNode root;
 	
-	public AST(ASTNode root, Parser p) {
+	/**
+	 * Constructs an AST
+	 * @param root ASTNode
+	 * @param parser used to parse this AST
+	 */
+	public AST(ASTNode root, Parser parser) {
 		this.root = root;
-		this.p = p;
+		this.parser = parser;
 	}
 	
+	/**
+	 * Returns the root node of this tree
+	 * @return ASTNode root
+	 */
 	public ASTNode getRoot() {
 		return root;
 	}	
 	
-	// returns an iterator that performs a preorder traversal of the tree
+	/**
+	 * Returns a pre-order iterator over the nodes of this tree
+	 * @return ASTNode Iterator
+	 */
 	public Iterator<ASTNode> iterator() {
 		return root.preOrder();
 	}
-	
-	public List<ASTNode> preOrderList() {
-		List<ASTNode> list = new ArrayList<>();
-		for (ASTNode n : this) {
-			list.add(n);
-		}
-		return list;
-	}
-	
+
+	/**
+	 * Unparses this tree into a String representation of source code.
+	 * Equivalent to Parser.unparse()
+	 * @return String representation of this AST's source code
+	 */
 	public String toString() {
-		return p.unparse(this);
+		return parser.unparse(this);
 	}
 	
+	// used for debugging purposes
 	public String debugTree() {
 		StringBuilder sb = new StringBuilder();
 		root.debugTree(sb, "");

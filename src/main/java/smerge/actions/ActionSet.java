@@ -9,6 +9,7 @@ import java.util.TreeSet;
 import smerge.ast.ASTNode;
 import smerge.ast.ASTNode.Type;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,12 +54,13 @@ public class ActionSet {
 	}
 	
 	// need to not delete a node if the other edit tree inserts/moves a node as a child to the deletion
-	public void addDelete(ASTNode base) {
-		int parentID = base.getParent().getID();
+	public void addDelete(ASTNode child) {
+		int parentID = child.getParent().getID();
 		if (!deleteSets.containsKey(parentID)) {
 			deleteSets.put(parentID, new TreeMap<>((a, b) -> b.compareTo(a)));
 			parents.add(parentID);
 		}
+		deleteSets.get(parentID).put(child.getPosition(), new Delete(child));
 	}
 	
 	public void addShift(ASTNode parent, ASTNode edit, int oldPos, int newPos) {
@@ -127,10 +129,12 @@ public class ActionSet {
 			Set<Shift> unecessaryShifts = new HashSet<>();
 			
 			//  adjust shifts for each insert
-			for (int position : insertSet.keySet()) {
-				for (Shift shift : shiftSet) {
-					if (shift.oldPosition >= position) {
-						shift.oldPosition++;
+			if (insertSet != null) {
+				for (int position : insertSet.keySet()) {
+					for (Shift shift : shiftSet) {
+						if (shift.oldPosition >= position) {
+							shift.oldPosition++;
+						}
 					}
 				}
 			}
@@ -158,12 +162,14 @@ public class ActionSet {
 		return parents;
 	}
 	
-	public Map<Integer, Delete> getDeleteMap(int parentID) {
-		return deleteSets.get(parentID);
+	public Collection<Delete> getDeletes(int parentID) {
+		Map<Integer, Delete> map = deleteSets.get(parentID);
+		return map != null ? map.values() : new TreeSet<>();
 	}
 	
-	public Map<Integer, Insert> getInsertMap(int parentID) {
-		return insertSets.get(parentID);
+	public Collection<Insert> getInserts(int parentID) {
+		Map<Integer, Insert> map = insertSets.get(parentID);
+		return map != null ? map.values() : new TreeSet<>();
 	}
 	
 	public Map<Integer, Update> getUpdateMap() {

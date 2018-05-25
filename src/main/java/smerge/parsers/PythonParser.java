@@ -16,7 +16,6 @@ import java.util.Stack;
  * See the Parser abstract class.
  * 
  * @author Jediah Conachan
- *
  */
 public class PythonParser extends Parser {
 	
