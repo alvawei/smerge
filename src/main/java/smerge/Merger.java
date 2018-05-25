@@ -31,7 +31,6 @@ public class Merger {
         String merged = args[3];
         
         // PARSING
-        // get the correct parser
         Parser parser = Parser.getInstance(merged);
         
         System.out.println("Parsing merge conflict files...");

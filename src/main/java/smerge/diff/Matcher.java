@@ -7,7 +7,6 @@ import java.util.Set;
 
 import smerge.ast.AST;
 import smerge.ast.ASTNode;
-import smerge.ast.ASTNode.Type;
 
 public class Matcher {
 	

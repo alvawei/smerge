@@ -32,7 +32,6 @@ public class ASTNode {
 	private ASTNode parent;
 	private List<ASTNode> children;
 	
-	// id used for matching/diffing purposes
 	private int id;
 	
 	/**
@@ -54,12 +53,6 @@ public class ASTNode {
 	 */
 	public ASTNode() {
 		this(Type.ROOT, "@root", -1);
-	}
-	
-	public ASTNode(Type type) {
-		if (type != Type.PLACEHOLDER)
-			throw new RuntimeException("Incorrect number of args for non-placeholder ASTNode");
-		this.type = Type.PLACEHOLDER;
 	}
 	
 	/**

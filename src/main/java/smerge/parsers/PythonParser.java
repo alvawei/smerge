@@ -11,17 +11,18 @@ import java.util.Arrays;
 import java.util.Stack;
 
 /**
- * This class is responsible for parsing Python 3 files (note it may work with Python 2, 
- * but it is not guaranteed).
- * See the Parser abstract class.
+ * This class is responsible for parsing Python 3 files 
+ * (note it may work with Python 2, but it is not guaranteed).
+ * 
+ * See abstract class Parser.
  * 
  * @author Jediah Conachan
  */
 public class PythonParser extends Parser {
 	
 	// these are used to complete tokens
-	public static final String[] opens = {"\"\"\"", "'''", "\"", "'", "(", "[", "{"};
-	public static final String[] closes = {"\"\"\"", "'''", "\"", "'", ")", "]", "}"};	
+	private static final String[] opens = {"\"\"\"", "'''", "\"", "'", "(", "[", "{"};
+	private static final String[] closes = {"\"\"\"", "'''", "\"", "'", ")", "]", "}"};	
 	
 	/**
 	 * Parses the given file into an AST
