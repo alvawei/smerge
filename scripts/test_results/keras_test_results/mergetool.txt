@@ -1,0 +1,12 @@
+Merging:
+keras/layers/recurrent.py
+
+Normal merge conflict for 'keras/layers/recurrent.py':
+  {local}: modified file
+  {remote}: modified file
+Parsing merge conflict files...
+Generating AST diffs...
+Merging changes...
+Writing result to keras/layers/recurrent.py
+
+Merge conflicts resolved: 2/28

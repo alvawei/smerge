@@ -1,0 +1,14 @@
+Merging:
+scikits/learn/glm/coordinate_descent.py
+
+Normal merge conflict for 'scikits/learn/glm/coordinate_descent.py':
+  {local}: modified file
+  {remote}: modified file
+Parsing merge conflict files...
+Generating AST diffs...
+Merging changes...
+Writing result to scikits/learn/glm/coordinate_descent.py
+
+Merge conflicts resolved: 6/10
+scikits/learn/glm/coordinate_descent.py seems unchanged.
+Was the merge successful [y/n]? 

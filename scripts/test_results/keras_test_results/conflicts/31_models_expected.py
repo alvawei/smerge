@@ -87,11 +87,7 @@ class Model(object):
             raise Exception("Invalid class mode:" + str(class_mode))
         self.class_mode = class_mode
 
-        if hasattr(self, 'cost_updates'):
-            for u in self.cost_updates:
-                train_loss += u()
-
-        updates = self.optimizer.get_updates(self.params, self.regularizers, self.constraints,  train_loss)
+        updates = self.optimizer.get_updates(self.params, self.regularizers, self.constraints, train_loss)
 
         if type(self.X_train) == list:
             train_ins = self.X_train + [self.y, self.class_weights]
@@ -115,6 +111,11 @@ class Model(object):
 
 
     def train(self, X, y, accuracy=False, class_weight=None):
+        if class_weight is not None and (self.loss is objectives.get('mean_absolute_error') or self.loss is objectives.get('mean_squared_error')):
+            import warnings
+            warnings.warn("Using class_weight with incompatible loss, ignoring class_weight parameter", RuntimeWarning)
+            class_weight = None
+
         X = standardize_X(X)
         y = standardize_y(y)
         # calculate the weight vector for the loss function
@@ -138,6 +139,11 @@ class Model(object):
 
     def fit(self, X, y, batch_size=128, nb_epoch=100, verbose=1, callbacks=[],
             validation_split=0., validation_data=None, shuffle=True, show_accuracy=False, class_weight=None):
+
+        if class_weight is not None and (self.loss is objectives.get('mean_absolute_error') or self.loss is objectives.get('mean_squared_error')):
+            import warnings
+            warnings.warn("Using class_weight with incompatible loss, ignoring class_weight parameter", RuntimeWarning)
+            class_weight = None
 
         X = standardize_X(X)
         y = standardize_y(y)
@@ -325,7 +331,6 @@ class Sequential(Model, containers.Sequential):
         self.params = [] # learnable
         self.regularizers = [] # same size as params
         self.constraints = [] # same size as params
-        self.cost_updates = [] # NOT the same size as params
 
 
     def get_config(self, verbose=0):
@@ -377,3 +382,5 @@ class Sequential(Model, containers.Sequential):
             weights = [g['param_{}'.format(p)] for p in range(g.attrs['nb_params'])]
             self.layers[k].set_weights(weights)
         f.close()
+
+

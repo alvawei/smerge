@@ -7,11 +7,15 @@ import warnings, time, copy
 
 from . import optimizers
 from . import objectives
+<<<<<<< HEAD
 from . import regularizers
 from . import constraints
 from .layers.core import Merge
 
 import time, copy
+=======
+from . import callbacks as cbks
+>>>>>>> remote
 from .utils.generic_utils import Progbar, printv
 from .layers import containers
 from six.moves import range
@@ -93,11 +97,7 @@ class Model(object):
             raise Exception("Invalid class mode:" + str(class_mode))
         self.class_mode = class_mode
 
-        if hasattr(self, 'cost_updates'):
-            for u in self.loss_updates:
-                train_loss = u.update_loss(train_loss)
-
-        updates = self.optimizer.get_updates(self.params, self.regularizers, self.constraints,  train_loss)
+        updates = self.optimizer.get_updates(self.params, self.regularizers, self.constraints, train_loss)
 
         if type(self.X_train) == list:
             train_ins = self.X_train + [self.y]
@@ -328,7 +328,6 @@ class Sequential(Model, containers.Sequential):
         self.params = [] # learnable
         self.regularizers = [] # same size as params
         self.constraints = [] # same size as params
-        self.loss_updates = [] # size can vary, no 1-to-1 mapping to params
 
 
     def get_config(self, verbose=0):
@@ -379,9 +378,8 @@ class Sequential(Model, containers.Sequential):
             g = f['layer_{}'.format(k)]
             weights = [g['param_{}'.format(p)] for p in range(g.attrs['nb_params'])]
             self.layers[k].set_weights(weights)
-        f.close()
 <<<<<<< HEAD
-=======
+        f.close()
 
 
 class Autoencoder(Sequential):
@@ -407,4 +405,6 @@ class Autoencoder(Sequential):
         def zero_grad(g, p):
             return 0.
         self.encoder.regularizers = [zero_grad for r in self.encoder.regularizers]
+=======
+        f.close()
 >>>>>>> remote

@@ -13,7 +13,7 @@
 <<<<<<< HEAD
 __version__ = '0.13-dev'
 =======
-__version__ = '0.12.2-dev'
+__version__ = '0.12.1-dev'
 >>>>>>> remote
 
 # utilities we import from Werkzeug and Jinja2 that are unused

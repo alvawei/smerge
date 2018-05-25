@@ -1,0 +1,8 @@
+Auto-merging scikits/learn/glm/tests/test_coordinate_descent.py
+CONFLICT (content): Merge conflict in scikits/learn/glm/tests/test_coordinate_descent.py
+Auto-merging scikits/learn/glm/src/cd_fast.pyx
+CONFLICT (add/add): Merge conflict in scikits/learn/glm/src/cd_fast.pyx
+CONFLICT (rename/delete): scikits/learn/glm/src/enet_cd_fast.c deleted in HEAD and renamed to scikits/learn/glm/src/cd_fast.c in remote. Version remote of scikits/learn/glm/src/cd_fast.c left in tree.
+Auto-merging scikits/learn/glm/coordinate_descent.py
+CONFLICT (content): Merge conflict in scikits/learn/glm/coordinate_descent.py
+Automatic merge failed; fix conflicts and then commit the result.

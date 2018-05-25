@@ -1,0 +1,12 @@
+Merging:
+autoencoder/VariationalAutoencoderRunner.py
+
+Normal merge conflict for 'autoencoder/VariationalAutoencoderRunner.py':
+  {local}: modified file
+  {remote}: modified file
+Parsing merge conflict files...
+Generating AST diffs...
+Merging changes...
+Writing result to autoencoder/VariationalAutoencoderRunner.py
+
+Merge conflicts resolved: 0/2

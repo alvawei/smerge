@@ -7,11 +7,7 @@ import warnings, time, copy
 
 from . import optimizers
 from . import objectives
-from . import regularizers
-from . import constraints
-from .layers.core import Merge
-
-import time, copy
+from . import callbacks as cbks
 from .utils.generic_utils import Progbar, printv
 from .layers import containers
 from six.moves import range
@@ -93,7 +89,11 @@ class Model(object):
             raise Exception("Invalid class mode:" + str(class_mode))
         self.class_mode = class_mode
 
-        updates = self.optimizer.get_updates(self.params, self.regularizers, self.constraints, train_loss)
+        if hasattr(self, 'cost_updates'):
+            for u in self.cost_updates:
+                train_loss += u()
+
+        updates = self.optimizer.get_updates(self.params, self.regularizers, self.constraints,  train_loss)
 
         if type(self.X_train) == list:
             train_ins = self.X_train + [self.y]
@@ -324,6 +324,7 @@ class Sequential(Model, containers.Sequential):
         self.params = [] # learnable
         self.regularizers = [] # same size as params
         self.constraints = [] # same size as params
+        self.cost_updates = [] # size can vary, no 1-to-1 mapping to params
 
 
     def get_config(self, verbose=0):
@@ -375,28 +376,3 @@ class Sequential(Model, containers.Sequential):
             weights = [g['param_{}'.format(p)] for p in range(g.attrs['nb_params'])]
             self.layers[k].set_weights(weights)
         f.close()
-
-
-class Autoencoder(Sequential):
-
-    def __init__(self, encoder, decoder):
-        super(Autoencoder,self).__init__()
-        self.encoder = encoder
-        self.decoder = decoder
-
-        self.add(Merge([self.encoder]))
-        self.add(Merge([self.decoder]))
-
-    def train(self, X, **kwargs):
-        super(Autoencoder,self).train(X,X,**kwargs)
-
-    def test(self, X, **kwargs):
-        super(Autoencoder,self).test(X,X,**kwargs)
-
-    def fit(self, X, **kwargs):
-        super(Autoencoder,self).fit(X,X,**kwargs)
-
-    def freeze_encoder(self):
-        def zero_grad(g, p):
-            return 0.
-        self.encoder.regularizers = [zero_grad for r in self.encoder.regularizers]

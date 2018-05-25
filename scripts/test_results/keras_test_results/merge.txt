@@ -1,0 +1,6 @@
+Auto-merging tests/keras/backend/backend_test.py
+Auto-merging keras/engine/topology.py
+CONFLICT (content): Merge conflict in keras/engine/topology.py
+Auto-merging keras/backend/theano_backend.py
+Auto-merging keras/backend/tensorflow_backend.py
+Automatic merge failed; fix conflicts and then commit the result.

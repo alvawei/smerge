@@ -1,0 +1,12 @@
+Merging:
+code/default/gae_proxy/local/gae_handler.py
+
+Normal merge conflict for 'code/default/gae_proxy/local/gae_handler.py':
+  {local}: modified file
+  {remote}: modified file
+Parsing merge conflict files...
+Generating AST diffs...
+Merging changes...
+Writing result to code/default/gae_proxy/local/gae_handler.py
+
+Merge conflicts resolved: 0/0

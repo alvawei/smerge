@@ -1,0 +1,12 @@
+Merging:
+flask.py
+
+Normal merge conflict for 'flask.py':
+  {local}: modified file
+  {remote}: modified file
+Parsing merge conflict files...
+Generating AST diffs...
+Merging changes...
+Writing result to flask.py
+
+Merge conflicts resolved: 0/1

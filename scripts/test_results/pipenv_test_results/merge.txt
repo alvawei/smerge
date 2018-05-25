@@ -1,0 +1,3 @@
+Auto-merging pipenv/cli.py
+CONFLICT (content): Merge conflict in pipenv/cli.py
+Automatic merge failed; fix conflicts and then commit the result.

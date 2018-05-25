@@ -87,11 +87,7 @@ class Model(object):
             raise Exception("Invalid class mode:" + str(class_mode))
         self.class_mode = class_mode
 
-        if hasattr(self, 'cost_updates'):
-            for u in self.cost_updates:
-                train_loss += u()
-
-        updates = self.optimizer.get_updates(self.params, self.regularizers, self.constraints,  train_loss)
+        updates = self.optimizer.get_updates(self.params, self.regularizers, self.constraints, train_loss)
 
         if type(self.X_train) == list:
             train_ins = self.X_train + [self.y, self.class_weights]
@@ -114,11 +110,72 @@ class Model(object):
             allow_input_downcast=True, mode=theano_mode)
 
 
+<<<<<<< HEAD
+class Sequential(Model):
+    def __init__(self):
+        self.layers = []
+        self.params = [] # learnable
+        self.regularizers = [] # same size as params
+        self.constraints = [] # same size as params
+
+
+    def add(self, layer):
+        self.layers.append(layer)
+        if len(self.layers) > 1:
+            self.layers[-1].connect(self.layers[-2])
+        self.params += [p for p in layer.params]
+        
+        if hasattr(layer, 'regularizers') and len(layer.regularizers) == len(layer.params):
+            for r in layer.regularizers:
+                if r:
+                    self.regularizers.append(r)
+                else:
+                    self.regularizers.append(regularizers.identity)
+        elif hasattr(layer, 'regularizer') and layer.regularizer:
+            self.regularizers += [layer.regularizer for _ in range(len(layer.params))]
+        else:
+            self.regularizers += [regularizers.identity for _ in range(len(layer.params))]
+
+        if hasattr(layer, 'constraints') and len(layer.constraints) == len(layer.params):
+            for c in layer.constraints:
+                if c:
+                    self.constraints.append(c)
+                else:
+                    self.constraints.append(constraints.identity)
+        elif hasattr(layer, 'constraint') and layer.constraint:
+            self.constraints += [layer.constraint for _ in range(len(layer.params))]
+        else:
+            self.constraints += [constraints.identity for _ in range(len(layer.params))]
+
+
+    def get_output(self, train=False):
+        return self.layers[-1].get_output(train)
+
+
+    def get_input(self, train=False):
+        if not hasattr(self.layers[0], 'input'):
+            for l in self.layers:
+                if hasattr(l, 'input'):
+                    break
+            ndim = l.input.ndim 
+            self.layers[0].input = ndim_tensor(ndim)
+        return self.layers[0].get_input(train)
+
     def train(self, X, y, accuracy=False, class_weight=None):
+        if class_weight is not None and (self.loss is objectives.get('mean_absolute_error') or self.loss is objectives.get('mean_squared_error')):
+            import warnings
+            warnings.warn("Using class_weight with incompatible loss, ignoring class_weight parameter", RuntimeWarning)
+            class_weight = None
+
+=======
+    def train(self, X, y, accuracy=False):
+>>>>>>> remote
         X = standardize_X(X)
         y = standardize_y(y)
+
         # calculate the weight vector for the loss function
         w = calculate_class_weights(y, class_weight)
+
         ins = X + [y, w]
         if accuracy:
             return self._train_with_acc(*ins)
@@ -138,6 +195,11 @@ class Model(object):
 
     def fit(self, X, y, batch_size=128, nb_epoch=100, verbose=1, callbacks=[],
             validation_split=0., validation_data=None, shuffle=True, show_accuracy=False, class_weight=None):
+
+        if class_weight is not None and (self.loss is objectives.get('mean_absolute_error') or self.loss is objectives.get('mean_squared_error')):
+            import warnings
+            warnings.warn("Using class_weight with incompatible loss, ignoring class_weight parameter", RuntimeWarning)
+            class_weight = None
 
         X = standardize_X(X)
         y = standardize_y(y)
@@ -194,7 +256,6 @@ class Model(object):
                 batch_ids = index_array[batch_start:batch_end]
                 X_batch = slice_X(X, batch_ids)
                 y_batch = y[batch_ids]
-
                 # calculate weight vector for current batch
                 w = calculate_class_weights(y_batch, class_weight)
 
@@ -313,6 +374,7 @@ class Sequential(Model, containers.Sequential):
             - predict
             - predict_proba
             - predict_classes
+
         Inherits from containers.Sequential the following methods:
             - add 
             - get_output
@@ -325,7 +387,6 @@ class Sequential(Model, containers.Sequential):
         self.params = [] # learnable
         self.regularizers = [] # same size as params
         self.constraints = [] # same size as params
-        self.cost_updates = [] # NOT the same size as params
 
 
     def get_config(self, verbose=0):
@@ -344,13 +405,9 @@ class Sequential(Model, containers.Sequential):
         import os.path
         # if file exists and should not be overwritten
         if not overwrite and os.path.isfile(filepath):
-            import sys
-            get_input = input
-            if sys.version_info[:2] <= (2, 7):
-                get_input = raw_input
-            overwrite = get_input('[WARNING] %s already exists - overwrite? [y/n]' % (filepath))
+            overwrite = input('[WARNING] %s already exists - overwrite? [y/n]' % (filepath))
             while overwrite not in ['y', 'n']:
-                overwrite = get_input('Enter "y" (overwrite) or "n" (cancel).')
+                overwrite = input('Enter "y" (overwrite) or "n" (cancel).')
             if overwrite == 'n':
                 return
             print('[TIP] Next time specify overwrite=True in save_weights!')
@@ -377,8 +434,4 @@ class Sequential(Model, containers.Sequential):
             weights = [g['param_{}'.format(p)] for p in range(g.attrs['nb_params'])]
             self.layers[k].set_weights(weights)
         f.close()
-<<<<<<< HEAD
-=======
-
-
->>>>>>> remote
+        

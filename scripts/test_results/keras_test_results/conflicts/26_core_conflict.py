@@ -19,45 +19,24 @@ class Layer(object):
     def __init__(self):
         self.params = []
 
-<<<<<<< HEAD
-    def set_previous(self, layer):
-        if not hasattr(self, "get_output_mask") and layer.get_output_mask() is not None:
-=======
     def connect(self, layer):
-        if not self.supports_masked_input() and layer.get_output_mask() is not None:
->>>>>>> remote
+        if layer.get_output_mask() is not None and not self.supports_masked_input():
             raise Exception("Attached non-masking layer to layer with masked output")
         self.previous = layer
 
-    def get_output(self, train=False):
-        return self.get_input(train)
+    def get_output(self, train):
+        raise NotImplementedError
 
-    def get_input(self, train=False):
+    def get_input(self, train):
         if hasattr(self, 'previous'):
             return self.previous.get_output(train=train)
         else:
             return self.input
 
     def supports_masked_input(self):
-        ''' Whether or not this layer respects the output mask of its previous layer in its calculations. If you try
-        to attach a layer that does *not* support masked_input to a layer that gives a non-None output_mask() that is
-        an error'''
         return False
 
     def get_output_mask(self, train=None):
-        '''
-        For some models (such as RNNs) you want a way of being able to mark some output data-points as
-        "masked", so they are not used in future calculations. In such a model, get_output_mask() should return a mask
-        of one less dimension than get_output() (so if get_output is (nb_samples, nb_timesteps, nb_dimensions), then the mask
-        is (nb_samples, nb_timesteps), with a one for every unmasked datapoint, and a zero for every masked one.
-
-        If there is *no* masking then it shall return None. For instance if you attach an Activation layer (they support masking)
-        to a layer with an output_mask, then that Activation shall also have an output_mask. If you attach it to a layer with no
-        such mask, then the Activation's get_output_mask shall return None.
-
-        Some layers have an output_mask even if their input is unmasked, notably Embedding which can turn the entry "0" into
-        a mask.
-        '''
         return None
 
     def set_weights(self, weights):
@@ -96,22 +75,17 @@ class Layer(object):
 
         return self.params, regularizers, consts
 
-
 class MaskedLayer(Layer):
-    '''
-    If your layer trivially supports masking (by simply copying the input mask to the output), then subclass MaskedLayer
-    instead of Layer, and make sure that you incorporate the input mask into your calculation of get_output()
-    '''
     def supports_masked_input(self):
         return True
 
-    def get_input_mask(self, train=False):
+    def get_input_mask(self, train=None):
         if hasattr(self, 'previous'):
             return self.previous.get_output_mask(train)
         else:
             return None
 
-    def get_output_mask(self, train=False):
+    def get_output_mask(self, train=None):
         ''' The default output mask is just the input mask unchanged. Override this in your own
         implementations if, for instance, you are reshaping the input'''
         return self.get_input_mask(train)
@@ -166,12 +140,6 @@ class Merge(object):
     def input(self):
         return self.get_input()
 
-    def supports_masked_input(self):
-        return False
-
-    def get_output_mask(self, train=None):
-        return None
-
     def get_weights(self):
         weights = []
         for m in self.models:
@@ -195,10 +163,10 @@ class Dropout(MaskedLayer):
         Hinton's dropout.
     '''
     def __init__(self, p):
-        super(Dropout, self).__init__()
+        super(Dropout,self).__init__()
         self.p = p
 
-    def get_output(self, train=False):
+    def get_output(self, train):
         X = self.get_input(train)
         if self.p > 0.:
             retain_prob = 1. - self.p
@@ -218,12 +186,12 @@ class Activation(MaskedLayer):
         Apply an activation function to an output.
     '''
     def __init__(self, activation, target=0, beta=0.1):
-        super(Activation, self).__init__()
+        super(Activation,self).__init__()
         self.activation = activations.get(activation)
         self.target = target
         self.beta = beta
 
-    def get_output(self, train=False):
+    def get_output(self, train):
         X = self.get_input(train)
         return self.activation(X)
 
@@ -241,10 +209,10 @@ class Reshape(Layer):
         First dimension is assumed to be nb_samples.
     '''
     def __init__(self, *dims):
-        super(Reshape, self).__init__()
+        super(Reshape,self).__init__()
         self.dims = dims
 
-    def get_output(self, train=False):
+    def get_output(self, train):
         X = self.get_input(train)
         nshape = make_tuple(X.shape[0], *self.dims)
         return theano.tensor.reshape(X, nshape)
@@ -260,9 +228,9 @@ class Flatten(Layer):
         First dimension is assumed to be nb_samples.
     '''
     def __init__(self):
-        super(Flatten, self).__init__()
+        super(Flatten,self).__init__()
 
-    def get_output(self, train=False):
+    def get_output(self, train):
         X = self.get_input(train)
         size = theano.tensor.prod(X.shape) // X.shape[0]
         nshape = (X.shape[0], size)
@@ -277,10 +245,10 @@ class RepeatVector(Layer):
         Return tensor of shape (nb_samples, n, dim).
     '''
     def __init__(self, n):
-        super(RepeatVector, self).__init__()
+        super(RepeatVector,self).__init__()
         self.n = n
 
-    def get_output(self, train=False):
+    def get_output(self, train):
         X = self.get_input(train)
         tensors = [X]*self.n
         stacked = theano.tensor.stack(*tensors)
@@ -295,10 +263,10 @@ class Dense(Layer):
     '''
         Just your regular fully connected NN layer.
     '''
-    def __init__(self, input_dim, output_dim, init='glorot_uniform', activation='linear', weights=None, name=None,
+    def __init__(self, input_dim, output_dim, init='glorot_uniform', activation='linear', weights=None, 
         W_regularizer=None, b_regularizer=None, activity_regularizer=None, W_constraint=None, b_constraint=None):
 
-        super(Dense, self).__init__()
+        super(Dense,self).__init__()
         self.init = initializations.get(init)
         self.activation = activations.get(activation)
         self.input_dim = input_dim
@@ -326,14 +294,7 @@ class Dense(Layer):
         if weights is not None:
             self.set_weights(weights)
 
-        if name is not None:
-            self.set_name(name)
-
-    def set_name(self, name):
-        self.W.name = '%s_W' % name
-        self.b.name = '%s_b' % name
-
-    def get_output(self, train=False):
+    def get_output(self, train):
         X = self.get_input(train)
         output = self.activation(T.dot(X, self.W) + self.b)
         return output
@@ -346,6 +307,7 @@ class Dense(Layer):
             "activation":self.activation.__name__}
 
 
+<<<<<<< HEAD
 class ActivityRegularization(Layer):
     '''
         Layer that passes through its input unchanged, but applies an update
@@ -360,7 +322,7 @@ class ActivityRegularization(Layer):
         activity_regularizer.set_layer(self)
         self.regularizers = [activity_regularizer]
 
-    def get_output(self, train=False):
+    def get_output(self, train):
         return self.get_input(train)
 
     def get_config(self):
@@ -369,7 +331,10 @@ class ActivityRegularization(Layer):
             "l2":self.l2}
 
 
+class TimeDistributedDense(Layer):
+=======
 class TimeDistributedDense(MaskedLayer):
+>>>>>>> remote
     '''
        Apply a same DenseLayer for each dimension[1] (shared_dimension) input
        Especially useful after a recurrent network with 'return_sequence=True'
@@ -378,9 +343,13 @@ class TimeDistributedDense(MaskedLayer):
 
     '''
     def __init__(self, input_dim, output_dim, init='glorot_uniform', activation='linear', weights=None, 
+<<<<<<< HEAD
         W_regularizer=None, b_regularizer=None, activity_regularizer=None, W_constraint=None, b_constraint=None):
+=======
+            W_regularizer=None, b_regularizer=None, W_constraint=None, b_constraint=None):
+>>>>>>> remote
 
-        super(TimeDistributedDense, self).__init__()
+        super(TimeDistributedDense,self).__init__()
         self.init = initializations.get(init)
         self.activation = activations.get(activation)
         self.input_dim = input_dim
@@ -408,11 +377,22 @@ class TimeDistributedDense(MaskedLayer):
         if weights is not None:
             self.set_weights(weights)
 
-    def get_output(self, train=False):
+    def get_output(self, train):
         X = self.get_input(train)
+<<<<<<< HEAD
         output = self.activation(T.dot(X.dimshuffle(1, 0, 2), self.W) + self.b)
         return output.dimshuffle(1, 0, 2)
+=======
+        X = X.dimshuffle(1,0,2)
 
+        def act_func(X):
+            return self.activation(T.dot(X, self.W) + self.b)
+
+        output, _ = theano.scan(fn = act_func,
+                                sequences = X,
+                                outputs_info=None)
+        return output.dimshuffle(1,0,2)
+>>>>>>> remote
 
     def get_config(self):
         return {"name":self.__class__.__name__,
@@ -420,7 +400,6 @@ class TimeDistributedDense(MaskedLayer):
             "output_dim":self.output_dim,
             "init":self.init.__name__,
             "activation":self.activation.__name__}
-
 
 class AutoEncoder(Layer):
     '''
@@ -430,14 +409,14 @@ class AutoEncoder(Layer):
     '''
     def __init__(self, encoder, decoder, output_reconstruction=True, tie_weights=False, weights=None):
 
-        super(AutoEncoder, self).__init__()
+        super(AutoEncoder,self).__init__()
 
         self.output_reconstruction = output_reconstruction
         self.tie_weights = tie_weights
         self.encoder = encoder
         self.decoder = decoder
 
-        self.decoder.set_previous(self.encoder)
+        self.decoder.connect(self.encoder)
 
         self.params = []
         self.regularizers = []
@@ -452,8 +431,8 @@ class AutoEncoder(Layer):
         if weights is not None:
             self.set_weights(weights)
 
-    def set_previous(self, node):
-        self.encoder.set_previous(node)
+    def connect(self, node):
+        self.encoder.connect(node)
 
     def get_weights(self):
         weights = []
@@ -473,10 +452,10 @@ class AutoEncoder(Layer):
     def input(self):
         return self.encoder.input
 
-    def _get_hidden(self, train=False):
+    def _get_hidden(self, train):
         return self.encoder.get_output(train)
 
-    def get_output(self, train=False):
+    def get_output(self, train):
         if not train and not self.output_reconstruction:
             return self.encoder.get_output(train)
 
@@ -507,17 +486,17 @@ class DenoisingAutoEncoder(AutoEncoder):
         super(DenoisingAutoEncoder, self).__init__(encoder, decoder, output_reconstruction, tie_weights, weights)
         self.corruption_level = corruption_level
 
-    def _corrupt_input(self, X):
+    def _get_corrupted_input(self, input):
         """
             http://deeplearning.net/tutorial/dA.html
         """
-        return X * srng.binomial(size=X.shape, n=1,
+        return srng.binomial(size=(self.input_dim, 1), n=1,
                              p=1-self.corruption_level,
-                             dtype=theano.config.floatX)
+                             dtype=theano.config.floatX) * input
 
     def get_input(self, train=False):
         uncorrupted_input = super(DenoisingAutoEncoder, self).get_input(train)
-        return self._corrupt_input(uncorrupted_input)
+        return self._get_corrupted_input(uncorrupted_input)
 
     def get_config(self):
         return {"name":self.__class__.__name__,
@@ -536,7 +515,7 @@ class MaxoutDense(Layer):
     def __init__(self, input_dim, output_dim, nb_feature=4, init='glorot_uniform', weights=None, 
         W_regularizer=None, b_regularizer=None, activity_regularizer=None, W_constraint=None, b_constraint=None):
 
-        super(MaxoutDense, self).__init__()
+        super(MaxoutDense,self).__init__()
         self.init = initializations.get(init)
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -564,7 +543,7 @@ class MaxoutDense(Layer):
         if weights is not None:
             self.set_weights(weights)
 
-    def get_output(self, train=False):
+    def get_output(self, train):
         X = self.get_input(train)
         # -- don't need activation since it's just linear.
         output = T.max(T.dot(X, self.W) + self.b, axis=1)
