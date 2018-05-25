@@ -1,12 +1,14 @@
 Merging:
-keras/layers/recurrent.py
+keras/models.py
 
-Normal merge conflict for 'keras/layers/recurrent.py':
+Normal merge conflict for 'keras/models.py':
   {local}: modified file
   {remote}: modified file
 Parsing merge conflict files...
 Generating AST diffs...
 Merging changes...
-Writing result to keras/layers/recurrent.py
+Writing result to keras/models.py
 
-Merge conflicts resolved: 2/28
+Merge conflicts resolved: 0/2
+keras/models.py seems unchanged.
+Was the merge successful [y/n]? 
