@@ -10,7 +10,6 @@ import smerge.ast.AST;
  * an abstract class for helper methods.
  * 
  * @author Jediah Conachan
- *
  */
 
 public abstract class Parser {

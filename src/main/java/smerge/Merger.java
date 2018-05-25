@@ -56,7 +56,7 @@ public class Merger {
         
         // OUTPUT
         System.out.println("Writing result to " + merged);
-        String result = baseTree.toString();
+        String result = parser.unparse(baseTree);
         PrintWriter out = new PrintWriter(merged);
         out.println(result);
         out.close();

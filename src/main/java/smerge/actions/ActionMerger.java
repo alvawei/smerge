@@ -141,9 +141,9 @@ public class ActionMerger {
 	private void applyDeletesAndInserts(ActionSet actions) {
 		for (int parentID : actions.parents()) {
 			// apply deletes then inserts
-			for (Delete delete : actions.getDeleteMap(parentID).values())
+			for (Delete delete : actions.getDeletes(parentID))
 				delete.apply();
-			for (Insert insert : actions.getInsertMap(parentID).values())
+			for (Insert insert : actions.getInserts(parentID))
 				insert.apply();
 		}
 	}
