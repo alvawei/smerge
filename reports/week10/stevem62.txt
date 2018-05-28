@@ -1,0 +1,26 @@
+Steven Miller
+stevem62@uw.edu
+CSE 403 Week 8 Individual Report
+5/28/18
+
+1) This coming week I will continut to work on implementation,
+trying to fine tune our action identifying and help with the matching
+of nodes. We definitely need to make some big progress this week so
+that we can deliver a fully working project by the deadline.
+
+2) This week I continued working on implementation, helping clean
+some up of the code for clarity, help with debugging, and to prepare
+it for the code review. I continued working on the diffing. I added
+a couple methods to help minimize the number of actions we detect so
+that our tool would scale better and be easier to debug. For example,
+if a local tree inserts an entire subtree, we don't need to know that
+all of its children are also inserts, because they will not affect
+the merging process. This means that the output will be smaller and
+it will be easier to compare the trees. I also removed the action
+"move" and replaced it with just insert/delete. This makes things
+less complicated for us and keeps the design broken down into more
+basic components.
+
+3) This coming week I will continue to work on implementation. Our
+main focus should be first to resolve any bugs and produce expected
+behavior, and then to try to resolve more conflicts.
