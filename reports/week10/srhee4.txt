@@ -1,0 +1,16 @@
+Sungmin Rhee
+srhee4@uw.edu
+CSE403 Software Engineering
+Individual Status Report Week#10
+
+1. Previous week's plan
+   - Continue debugging evaluation script
+   - Get positive results
+
+2. This week's progress
+   - Debugging evaluation script
+
+3. Next week's goal
+   - Make any necessary debug fix to evaluation script
+   - get final results
+   - finalize reports and prepare presentation
