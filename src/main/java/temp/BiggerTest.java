@@ -12,7 +12,7 @@ import smerge.Merger;
 
 public class BiggerTest {
 	
-	public static final String DIR = "scripts/test_results/keras_test_results/conflicts";
+	public static final String DIR = "scripts/test_results/keras_test_results/files";
 
 	// this is a temporary class for testing
 	
