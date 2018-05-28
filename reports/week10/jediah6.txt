@@ -1,0 +1,32 @@
+Jediah Conachan (jediah6)
+5/28/18
+CSE 403
+Individual Status Report #8 (Week 10)
+
+==================
+Last Week's Goals:
+==================
+
+- continue debugging and clean up messy code
+
+================
+Weekly Progress:
+================
+
+- Cleaned up a lot of the implementation and added lots of documentation
+- Reworked the implementation to make debugging easier
+    - We are no longer running into any errors while testing our tool, but the output is sometimes unexpected
+- Worked with Steven on merging actions
+- Corrected how conflicts are counted
+- Rewrote parts of the report
+
+===========
+Next Steps:
+===========
+
+- Finish cleaning up code and adding documentation
+- Find any final bugs if they exist and fix them
+    - This requires heavy manual testing, as our only problems seem to be with the final output right now
+
+
+

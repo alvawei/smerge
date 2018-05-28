@@ -13,8 +13,9 @@ import smerge.ast.ASTNode.Type;
 // also counts conflicts
 
 /**
- * This class is responsible for applying the two ActionSets (base->local and base->remote) back onto
- * the base AST. This class also counts merge conflicts and how many of them are solvable for evaluation purposes.
+ * This class is responsible for applying the two ActionSets (base->local and base->remote)
+ * back onto the base AST. This class also counts merge conflicts and how many of them are 
+ * solvable for evaluation purposes.
  * 
  * @author Jediah Conachan
  */
