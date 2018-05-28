@@ -1,0 +1,20 @@
+Kenji Nicholson
+kenjilee
+CSE 403 Week 10 Individual Report
+5/28/18
+
+1.) For next week, the central goal is to get evaluation results that suggest our tool is working for its
+purpose. Additionally, we have to analyze the unresolved conflicts and categorize them into true or false positives.
+I will also focus on addressing the feedback and revising the report to get rid of any lingering hypotheticals.
+Additionally, I will focus on editing the eval scripts to reflect our new definition of succcess.
+
+2.) So far, I've helped out with changing our evaluation process to make more sense. Before, we were emulating
+Conflerge's evaluation process, which involved comparing to the user solution to merge conflicts. We found this
+strategy very unrealistic, as we couldn't even reproduce their results following the instructions they gave.
+To that end, we decided on looking at all conflicts presented in a file and categorizing them as either modified
+or unresolved. This helps us narrow down whether they're a positive or a negative. From there, we categorize
+them into true or false manually. I also helped by writing out the lessons learned section for our report, and
+fixing any lingering grammatical errors.
+
+3.) For this week, I plan to help revise the report by again incorporating all previous presentation and TA feedback.
+I will also start working on the presentation for next week by making the slides.
