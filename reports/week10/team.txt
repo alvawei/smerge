@@ -1,0 +1,28 @@
+Last week’s goals:
+	- Continue testing and debugging
+	- Complete final draft of report
+	- Respond to feedback given by TA and the presentation
+	- Remove any lingering hypotheticals in the report and clean things up
+ 	- Complete evaluation results/get scripts working on at least 8 repositories
+	- Manually check unresolved conflicts to categorize them as false or true positives.
+
+This week’s progress:
+	- Elaborated on the main addition of our tool: the Generic AST, also explained 
+	the work needed by the user to use a different parser.
+	- Changed evaluation process to make more sense. Basically, a positive means 
+	the tool performed changes and a negative means it did not. True being the 
+	intended case and false being unintended.
+	- Gathered data for 7 python repositories. This included automatically generating
+	a table of positives and negatives, and then manually categorizing them into 
+	true and false.
+	- Submitted final draft of report
+
+Next week’s goals:
+	- Start and finish presentation slides
+	- Again, remove any lingering hypotheticals in the report
+	- Address lingering presentation and TA feedback and submit final report
+
+TA Meeting Agenda:
+	- Clarify things that we will be graded on regarding the repository review on Friday.
+	- Go over presentation feedback and ask for suggestions to make next week’s 
+	presentation a success
