@@ -92,6 +92,8 @@ public class ActionMerger {
 			// ignore all deletes at first by adjusting inserts
 			for (Delete delete : localDeletes) {
 				for (int position : localInserts.keySet()) {
+					// if the local insert position is >= the position we're
+					// deleting from,
 					if (position >= delete.getPosition()) {
 						// note the mapping will become unsynced
 						localInserts.get(position).setPosition(position++);

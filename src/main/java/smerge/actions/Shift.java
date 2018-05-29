@@ -15,4 +15,12 @@ public class Shift {
 		this.oldPosition = oldPosition;
 		this.newPosition = newPosition;
 	}
+	
+	public ASTNode getParent() {
+		return this.parent;
+	}
+	
+	public ASTNode getChild() {
+		return this.child;
+	}
 }

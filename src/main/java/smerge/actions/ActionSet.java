@@ -4,6 +4,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+
+import javax.swing.text.html.HTMLDocument.Iterator;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -104,9 +107,9 @@ public class ActionSet {
 	 * inserts. Calling this method will reduce all of the separate inserts into a single Insert action. 
 	 */
 	public void minimize() {
+		minimizeShifts();
 		minimizeInserts();
 		minimizeDeletes();
-		minimizeShifts();
 	}
 	
 	// minimizes inserts by removing all but the root of a subtree -- avoids
@@ -153,10 +156,7 @@ public class ActionSet {
 		for (int parentID : shiftSets.keySet()) {
 			Set<Shift> shiftSet = shiftSets.get(parentID);
 			Map<Integer, Insert> insertSet= insertSets.get(parentID);
-			Map<Integer, Delete> deleteSet = deleteSets.get(parentID);
-			
-			Set<Shift> unecessaryShifts = new HashSet<>();
-			
+			Map<Integer, Delete> deleteSet = deleteSets.get(parentID);			
 			//  adjust shifts for each insert
 			if (insertSet != null) {
 				for (int position : insertSet.keySet()) {
@@ -179,16 +179,47 @@ public class ActionSet {
 				}
 			}
 			
-			// remove unnecessary shifts
+			// transform the shifts into a pair of inserts/deletes
 			for (Shift shift : shiftSet) {
-				if (shift.oldPosition == shift.newPosition) {
-					unecessaryShifts.add(shift);
+				if (shift.oldPosition != shift.newPosition) {
+					Insert insert = new Insert(shift.getParent(), shift.getChild(), shift.newPosition);
+					Map<Integer, Insert> positionToInsert = new HashMap<Integer, Insert>();
+					positionToInsert.put(shift.newPosition, insert);
+					insertSets.put(shift.getParent().getID(), positionToInsert);
+					
+					// do the same for deletes
+					Delete delete = new Delete(shift.getChild());
+					Map<Integer, Delete> positionToDelete = new HashMap<Integer, Delete>();
+					positionToDelete.put(shift.oldPosition, delete);
+					deleteSets.put(shift.getParent().getID(), positionToDelete);
 				}
 			}
-			shiftSet.removeAll(unecessaryShifts);
 		}
 	}
 	
+	// transforms all shifts to a pair of inserts and deletes
+//	public void transformShifts() {
+//		// iterate over the parent ID's, get the sets of shifts
+//		Set<Shift> unecessaryShifts = new HashSet<>();
+//		for (int parentID : shiftSets.keySet()) {
+//			Set<Shift> shiftSet = shiftSets.get(parentID);
+//			// for each shift object, create an insert object and map it to the position
+//			// of the insert, then put the insert into insertSets
+//			for (Shift shift : shiftSet) {
+//				Insert insert = new Insert(shift.getParent(), shift.getChild(), shift.newPosition);
+//				Map<Integer, Insert> positionToInsert = new HashMap<Integer, Insert>();
+//				positionToInsert.put(shift.newPosition, insert);
+//				insertSets.put(shift.getParent().getID(), positionToInsert);
+//				
+//				// do the same for deletes
+//				Delete delete = new Delete(shift.getChild());
+//				Map<Integer, Delete> positionToDelete = new HashMap<Integer, Delete>();
+//				positionToDelete.put(shift.oldPosition, delete);
+//				deleteSets.put(shift.getParent().getID(), positionToDelete);
+//			}
+//			shiftSet.removeAll(unecessaryShifts);
+//		}
+//	}
 	
 	// Getter methods
 	
