@@ -10,9 +10,7 @@ import smerge.ast.ASTNode;
  * @author Jediah Conachan
  */
 public class Match {
-	
-	// TODO create a MatchList class to simplify things?
-	
+		
 	private int id;
 	private ASTNode base;
 	private ASTNode local;

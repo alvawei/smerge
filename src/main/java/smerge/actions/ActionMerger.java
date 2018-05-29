@@ -55,9 +55,6 @@ public class ActionMerger {
 	// deletes
 	//   - if there is another insert/delete by other tree under same parent, just ignore?
 	
-	// moves
-	//   - idk
-	
 	
 	/**
 	 * Applies both local actions and remote actions, merging changes as necessary.
@@ -88,7 +85,7 @@ public class ActionMerger {
 			Map<Integer, Insert> localInserts = localActions.getInsertMap(parentID);
 			Map<Integer, Insert> remoteInserts = remoteActions.getInsertMap(parentID);
 			
-			if (localDeletes == null && remoteInserts != null) {
+			if (localDeletes != null && remoteInserts != null) {
 				
 			}
 

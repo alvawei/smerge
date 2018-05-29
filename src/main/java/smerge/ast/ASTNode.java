@@ -22,7 +22,7 @@ public class ASTNode {
 		CLASS, METHOD,
 		IF_STATEMENT, WHILE_LOOP, FOR_LOOP,
 		ASSIGNMENT, RETURN,
-		COMMENT, BLOCK_COMMENT, PLACEHOLDER
+		COMMENT, BLOCK_COMMENT
 	}
 	
 	private Type type;
@@ -75,9 +75,16 @@ public class ASTNode {
 	}
 	
 	/**
-	 * Returns the parent of this node (null if root)
-	 * @return ASTNode parent
+	 * Returns an iterator that traverses this subtree in pre-order
+	 * @return ASTNode iterator
 	 */
+	public Iterator<ASTNode> preOrder() {
+		return new NodeIterator(this);
+	}
+	
+	
+	// Setter/Getter Methods
+	
 	public ASTNode getParent() {
 		return parent;
 	}
@@ -106,17 +113,6 @@ public class ASTNode {
 		return type;
 	}
 
-	public boolean isRoot() {
-		return indentation == -1;
-	}
-	public boolean isLeafNode() {
-		return children.isEmpty();
-	}
-	
-	public boolean isPlaceHolder() {
-		return this.type == Type.PLACEHOLDER;
-	}
-	
 	public int getID() {
 		return id;
 	}
@@ -125,18 +121,23 @@ public class ASTNode {
 		this.id = id;
 	}
 	
-	public Iterator<ASTNode> preOrder() {
-		return new NodeIterator(this);
-	}
-	
 	public int getPosition() {
 		return parent.children.indexOf(this);
 	}
 	
+	public boolean isRoot() {
+		return indentation == -1;
+	}
+	
+	public boolean isLeafNode() {
+		return children.isEmpty();
+	}
 	
 	
 
-	
+	/**
+	 * Two ASTNodes are considered equal if they share the same ID
+	 */
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof ASTNode) {

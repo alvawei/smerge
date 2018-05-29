@@ -9,7 +9,7 @@ package smerge.actions;
  * 		Insert: a node existing in the edit tree does not exist in the base tree
  * 		Update: a node's content differs between the base and edit versions
  * 
- * 		TODO Move/Shifts
+ * 		Shift: a node changed position within its parent's children
  * 
  * @author Jediah Conachan
  */

@@ -27,8 +27,8 @@ public class Differ {
 	public void diff(ActionSet localActions, ActionSet remoteActions) {
 		// for each match in matches, all detect actions on base/local, base/remote
 		for (Match m : matchList) {
-			detectActions(m, localActions, true);
-			detectActions(m, remoteActions, false);
+			detectActions(m.getID(), m.getBaseNode(), m.getLocalNode(), localActions);
+			detectActions(m.getID(), m.getBaseNode(), m.getRemoteNode(), remoteActions);
 		}
 		localActions.minimize();
 		remoteActions.minimize();
@@ -36,11 +36,8 @@ public class Differ {
 	
 	// edit node is either local or remote node
 	// this is called from Matcher while matching
-	public void detectActions(Match m, ActionSet actions, boolean isLocal) {
-		int id = m.getID();
+	public void detectActions(int id, ASTNode base, ASTNode edit, ActionSet actions) {
 		if (id == 0) return; // don't do it with root
-		ASTNode base = m.getBaseNode();
-		ASTNode edit = isLocal ? m.getLocalNode() : m.getRemoteNode();
 		if (base == null){
 			if (edit != null) {
 				// a new node was inserted
@@ -51,7 +48,7 @@ public class Differ {
 					// base parent equivalent doesn't exist, parent must also be an insert
 					parent = edit.getParent();
 				}
-				actions.addInsert(parent, edit, edit.getParent().children().indexOf(edit), isLocal);
+				actions.addInsert(parent, edit, edit.getParent().children().indexOf(edit));
 			}
 		} else if (edit == null) {
 			// node was deleted from base
@@ -72,7 +69,7 @@ public class Differ {
 						parent = edit.getParent();
 					}
 					actions.addDelete(base);
-					actions.addInsert(parent, base, editNodeIndex, isLocal);
+					actions.addInsert(parent, base, editNodeIndex);
 					
 				} else if (baseNodeIndex != editNodeIndex) {
 					actions.addShift(parent, edit, baseNodeIndex, editNodeIndex);
@@ -80,7 +77,7 @@ public class Differ {
 			}
 			if (!base.getContent().equals(edit.getContent())) {
 				// node updated
-				actions.addUpdate(base, edit, isLocal);
+				actions.addUpdate(base, edit);
 			}
 		}
 	}

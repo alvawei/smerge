@@ -2,32 +2,27 @@ package smerge.actions;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
-import smerge.ast.ASTNode;
-import smerge.ast.ASTNode.Type;
-
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 
-
-// basically a merged tree diff
-// actively merges actions as they are detected in both local and remote trees
-// sorts the actions and applies them to the base tree
+import smerge.ast.ASTNode;
 
 // TODO: deletes don't have to be sorted, just use Map<Integer, Set<Delete>>
 
+/**
+ * An ActionSet represents a diff between two ASTs by storing sets of different Actions.
+ * Actions are detected and added to an ActionSet in Differ. Once all actions are detected,
+ * the entire ActionSet is minimized (see ActionSet.minimize()).
+ * 
+ * @author Jediah Conachan
+ */
 public class ActionSet {
 	
 	private Set<Integer> parents;
-	
 	private Map<Integer, Update> updates;
-	
-	private SortedSet<Action> sortedActions;
 	
 	// <parent ID <position of insert, Insert object>>
 	protected Map<Integer, Map<Integer, Insert>> insertSets;
@@ -37,6 +32,9 @@ public class ActionSet {
 	
 	private Map<Integer, Set<Shift>> shiftSets;
 	
+	/**
+	 * Constructs an empty ActionSet.
+	 */
 	public ActionSet() {
 		parents = new HashSet<>();
 		updates = new HashMap<>();
@@ -46,7 +44,13 @@ public class ActionSet {
 		shiftSets = new HashMap<>();
 	}
 	
-	public void addInsert(ASTNode parent, ASTNode child, int position, boolean isLocal) {
+	/**
+	 * Adds an Insert action to this ActionSet.
+	 * @param parent - node that the child node is inserted under
+	 * @param child - node being inserted
+	 * @param position - index where the child should be inserted
+	 */
+	public void addInsert(ASTNode parent, ASTNode child, int position) {
 		int parentID = parent.getID();
 		if (!insertSets.containsKey(parentID)) {
 			insertSets.put(parentID, new TreeMap<>());
@@ -55,7 +59,10 @@ public class ActionSet {
 		insertSets.get(parentID).put(position, new Insert(parent, child, position));
 	}
 	
-	// need to not delete a node if the other edit tree inserts/moves a node as a child to the deletion
+	/**
+	 * Adds a Delete action to this ActionSet.
+	 * @param child - node to be deleted
+	 */
 	public void addDelete(ASTNode child) {
 		int parentID = child.getParent().getID();
 		if (!deleteSets.containsKey(parentID)) {
@@ -64,19 +71,38 @@ public class ActionSet {
 		}
 		deleteSets.get(parentID).put(child.getPosition(), new Delete(child));
 	}
+
+	/**
+	 * Adds an Update action to this ActionSet.
+	 * @param base - the base version of the node
+	 * @param edit - the updated version of the node
+	 */
+	public void addUpdate(ASTNode base, ASTNode edit) {
+		updates.put(base.getID(), new Update(base, edit));	
+	}
 	
+	/**
+	 * Records a temporary Shift action
+	 * @param parent - the parent of the edit node (base version)
+	 * @param edit - the child node that was shifted
+	 * @param oldPos - the position of the child in the base tree
+	 * @param newPos - the position of the child in the edit tree
+	 */
 	public void addShift(ASTNode parent, ASTNode edit, int oldPos, int newPos) {
 		if (!shiftSets.containsKey(parent.getID())) {
 			shiftSets.put(parent.getID(), new HashSet<>());
 		}
 		shiftSets.get(parent.getID()).add(new Shift(parent, edit, oldPos, newPos));
 	}
-
-	public void addUpdate(ASTNode base, ASTNode edit, boolean isLocal) {
-		updates.put(base.getID(), new Update(base, edit));	
-	}
 	
-	// minimizes actions
+	/**
+	 * This method should only be called after all actions have been detected by Differ.
+	 * This method minimizes the action set. 
+	 * 
+	 * For example, if one user inserts a new method,
+	 * then the method header and all lines within the method are initially considered as separate
+	 * inserts. Calling this method will reduce all of the separate inserts into a single Insert action. 
+	 */
 	public void minimize() {
 		minimizeInserts();
 		minimizeDeletes();
@@ -85,7 +111,7 @@ public class ActionSet {
 	
 	// minimizes inserts by removing all but the root of a subtree -- avoids
 	// adding an entire subtree to the insertSets
-	public void minimizeInserts() {
+	private void minimizeInserts() {
 		Set<Integer> removalSet = new HashSet<Integer>();
 		// for each parent ID in the insertSets, we should remove any of its
 		// children that also exist in the insertSets to avoid unnecessary inserts
@@ -104,7 +130,7 @@ public class ActionSet {
 	
 	// minimizes deletes by removing all but the root of a subtree -- avoids
 	// adding an entire subtree to the deleteSets
-	public void minimizeDeletes() {
+	private void minimizeDeletes() {
 		Set<Integer> removalSet = new HashSet<Integer>();
 		// for each parent ID in the deleteSets, we should remove any of its
 		// children that also exist in the deleteSets to avoid unnecessary deletes
@@ -121,7 +147,8 @@ public class ActionSet {
 		}
 	}
 	
-	public void minimizeShifts() {
+	// removes shift actions caused by Insert/Delete actions
+	private void minimizeShifts() {
 		// remove implicit shifts
 		for (int parentID : shiftSets.keySet()) {
 			Set<Shift> shiftSet = shiftSets.get(parentID);
@@ -162,6 +189,9 @@ public class ActionSet {
 		}
 	}
 	
+	
+	// Getter methods
+	
 	public Set<Integer> parents() {
 		return parents;
 	}
@@ -185,7 +215,7 @@ public class ActionSet {
 		return updates;
 	}
 	
-	// note this returns different strings before and after running apply()
+	// debugging method
 	public String toString() {
 		String result = "Actions:\n";
 		for (Map<Integer, Insert> insertSet : insertSets.values()) {

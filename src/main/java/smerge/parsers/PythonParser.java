@@ -88,12 +88,10 @@ public class PythonParser extends Parser {
 	
 	// recursively unparse a subtree
 	private void unparse(ASTNode node, StringBuilder sb) {
-		if (!node.isPlaceHolder()) {
-			sb.append(indent(node.getIndentation()));
-			sb.append(node.getContent() + "\n");
-			for (ASTNode child : node.children()) {
-				unparse(child, sb);
-			}
+		sb.append(indent(node.getIndentation()));
+		sb.append(node.getContent() + "\n");
+		for (ASTNode child : node.children()) {
+			unparse(child, sb);
 		}
 	}
 	
