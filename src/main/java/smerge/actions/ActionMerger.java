@@ -142,6 +142,9 @@ public class ActionMerger {
 		if (type == Type.IMPORT) {
 			mergedNode = mergeImports(null, local, remote);
 			solvedConflicts++;
+		} else if (local.getContent().equals(remote.getContent())) {
+			mergedNode = new ASTNode(type, local.getContent(), local.getIndentation());
+			mergedNode.setID(local.getID());
 		} else {
 			mergedNode = wrapConflict(null, local, remote);
 		}
