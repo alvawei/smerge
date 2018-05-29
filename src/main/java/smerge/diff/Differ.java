@@ -7,11 +7,23 @@ import smerge.ast.AST;
 import smerge.ast.ASTNode;
 
 // produces an ActionSet given 3 trees
+/**
+ * A Differ object generates two different tree diffs (ActionSets), one from the base tree
+ * to the local tree, one from the base tree to the remote tree.
+ * 
+ * @author Jediah Conachan, Steven Miller
+ */
 public class Differ {
 	
 	private Matcher matcher;
 	private List<Match> matchList;
 	
+	/**
+	 * 
+	 * @param base
+	 * @param local
+	 * @param remote
+	 */
 	public Differ(AST base, AST local, AST remote)  {
 		this.matcher = new Matcher(base, local, remote);
 		this.matchList = matcher.matches();
@@ -63,13 +75,13 @@ public class Differ {
 				
 				ASTNode parent = matchList.get(editParentID).getBaseNode();				
 				if (baseParentID != editParentID) {
-					
 					if (parent == null) {
 						// base parent equivalent doesn't exist, parent must also be an insert
 						parent = edit.getParent();
 					}
 					actions.addDelete(base);
-					actions.addInsert(parent, base, editNodeIndex);
+					actions.addInsert(parent, edit, editNodeIndex);
+					actions.addUpdate(base, edit);
 					
 				} else if (baseNodeIndex != editNodeIndex) {
 					actions.addShift(parent, edit, baseNodeIndex, editNodeIndex);

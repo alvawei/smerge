@@ -87,7 +87,7 @@ public class PythonParser extends Parser {
 	}
 	
 	// recursively unparse a subtree
-	private void unparse(ASTNode node, StringBuilder sb) {
+	public void unparse(ASTNode node, StringBuilder sb) {
 		sb.append(indent(node.getIndentation()));
 		sb.append(node.getContent() + "\n");
 		for (ASTNode child : node.children()) {
@@ -104,19 +104,27 @@ public class PythonParser extends Parser {
 		Stack<String> subtokens = new Stack<>();
 		
 		outerloop:
-		while (index < token.length()) {
+		while (index < token.length() || !subtokens.isEmpty()) {
+			// add another line if needed
+			if (index == token.length() && (token.trim().endsWith("\\") || !subtokens.isEmpty())) {
+				String temp = br.readLine();
+				if (temp != null) {
+					token += "\n" + temp;
+				}
+			}
+			
 			String part = token.substring(index);
 			
 			// check for a closing character
 			if (!subtokens.isEmpty()) {
 				String close = closing(subtokens.peek());
-				if (part.startsWith(close)) {
+				if (part.startsWith(close) && token.charAt(index - 1) != '\\') {
 					subtokens.pop();
 					index += close.length();
 					continue;
 				}
 			}
-			
+						
 			// check for an opening character if not in a string currently
 			if (subtokens.isEmpty() || !isString(subtokens.peek())) {
 				for (int i = 0; i < opens.length; i++) {
@@ -127,15 +135,7 @@ public class PythonParser extends Parser {
 					}
 				}
 			}
-			
 			index++;
-			// add another line if needed
-			if (index == token.length() && (token.trim().endsWith("\\") || !subtokens.isEmpty())) {
-				String temp = br.readLine();
-				if (temp != null) {
-					token += "\n" + temp;
-				}
-			}
 		}		
 		return token;
 	}

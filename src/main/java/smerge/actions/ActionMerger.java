@@ -8,6 +8,7 @@ import java.util.TreeMap;
 
 import smerge.ast.ASTNode;
 import smerge.ast.ASTNode.Type;
+import smerge.parsers.Parser;
 
 // this class merges two action sets and applys the merged actions onto the base tree
 // also counts conflicts
@@ -27,37 +28,21 @@ public class ActionMerger {
 	
 	private ActionSet localActions;
 	private ActionSet remoteActions;
-	
-	public ActionMerger(ActionSet localActions, ActionSet remoteActions) {
-		this.localActions = localActions;
-		this.remoteActions = remoteActions;
-	}
-	
-	// TODO: conflict definitions here:
-	// TODO: we need to handle all of these in merge()
-	// TODO: not delete nodes that have inserts under them
-	
-	// note "two" means one from local and one from remote
-	
-	// two updates on same node
-	//   - imports = merge (solvable)
-	//   - comment = ignore (solvable?)
-	//   - otherwise conflict (unsolvable)
-	
-	// two inserts same spot
-	//   - imports = merge (solvable)
-	//   - treat as two-update conflict on empty base node? (unsolvable)
-	//   - both inserts have same content (solvable)
-	
-	// two inserts different spot (same parent)
-	//   - idk
-	
-	// deletes
-	//   - if there is another insert/delete by other tree under same parent, just ignore?
-	
+	private Parser p;
 	
 	/**
-	 * Applies both local actions and remote actions, merging changes as necessary.
+	 * Initializes a new ActionMerger instance.
+	 * @param localActions - set of local changes to be merged
+	 * @param remoteActions - set of remote changes to be merged
+	 */
+	public ActionMerger(ActionSet localActions, ActionSet remoteActions, Parser p) {
+		this.localActions = localActions;
+		this.remoteActions = remoteActions;
+		this.p = p;
+	}
+	
+	/**
+	 * Applies both local and remote actions, merging changes as necessary.
 	 */
 	public void merge() {
 		mergeInsertAndDeleteActions();
@@ -84,6 +69,8 @@ public class ActionMerger {
 			
 			Map<Integer, Insert> localInserts = localActions.getInsertMap(parentID);
 			Map<Integer, Insert> remoteInserts = remoteActions.getInsertMap(parentID);
+			
+			// TODO: ignore certain deletes
 			
 			if (localDeletes != null && remoteInserts != null) {
 				
@@ -170,7 +157,6 @@ public class ActionMerger {
 		}
 	}
 	
-	// TODO: indentation + content updates in same tree
 	// merges two conflicting updates if possible
 	private void mergeUpdate(Update localUpdate, Update remoteUpdate) {
 		ASTNode base = localUpdate.getBase();
@@ -224,13 +210,13 @@ public class ActionMerger {
 	// wraps an unsolvable conflict with conflict identifiable text
 	// returns a new base node if the given base node is null
 	private ASTNode wrapConflict(ASTNode base, ASTNode local, ASTNode remote) {
-		String baseContent = base == null ? "" : base.getContent() + "\n=======\n";	
+		String baseContent = base == null ? "" : base.subtreeContent(p) + "\n=======\n";	
 		String conflict = 
 				"<<<<<<< REMOTE\n" + 
-				remote.getContent() + "\n" +
+				remote.subtreeContent(p) + "\n" +
 				"=======\n" +
 				baseContent +
-				local.getContent() + "\n" +
+				local.subtreeContent(p) + "\n" +
 				">>>>>>> LOCAL";
 		if (base == null) {
 			base = new ASTNode(local.getType(), conflict, 0);

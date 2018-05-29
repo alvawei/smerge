@@ -26,13 +26,18 @@ public class BiggerTest {
 		}
 		
 		for (String f : filenames) {
-			System.out.println("Merging " + f + ".py");
-			Merger.main(new String[]{
-					f + "_base.py",
-					f + "_local.py",
-					f + "_remote.py",
-					"tmp/out.py"});
-			System.out.println();
+			try {
+				System.out.println("Merging " + f + ".py");
+				Merger.main(new String[]{
+						f + "_base.py",
+						f + "_local.py",
+						f + "_remote.py",
+						"tmp/out.py"});
+				System.out.println();
+			} catch (Exception e) {
+				System.out.println("Error: file not found.");
+				System.out.println();
+			}
 		}
 	}
 }

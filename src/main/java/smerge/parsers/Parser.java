@@ -3,6 +3,7 @@ package smerge.parsers;
 import java.io.IOException;
 
 import smerge.ast.AST;
+import smerge.ast.ASTNode;
 
 
 /**
@@ -37,6 +38,13 @@ public abstract class Parser {
 	 * @return a String representation of source code
 	 */
 	public abstract String unparse(AST tree);
+	
+	/**
+	 * Unparses the given ASTNode back into source code
+	 * @param node - the root of the subtree to be unparsed
+	 * @return a String representation of source code
+	 */
+	public abstract void unparse(ASTNode node, StringBuilder sb);
 	
 	
 	/**

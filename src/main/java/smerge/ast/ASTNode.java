@@ -3,6 +3,9 @@ package smerge.ast;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+
+import smerge.parsers.Parser;
+
 import java.util.Iterator;
 
 /**
@@ -80,6 +83,19 @@ public class ASTNode {
 	 */
 	public Iterator<ASTNode> preOrder() {
 		return new NodeIterator(this);
+	}
+	
+	/**
+	 * Returns an unparsed version of this subtree.
+	 * @return
+	 */
+	public String subtreeContent(Parser p) {
+		if (children.isEmpty()) 
+			return content;
+		
+		StringBuilder sb = new StringBuilder();
+		p.unparse(this, sb);
+		return sb.toString();
 	}
 	
 	
