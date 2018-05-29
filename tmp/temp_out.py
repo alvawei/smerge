@@ -57,8 +57,6 @@ class Convolution1D(Layer):
     def output_shape(self):
         length = conv_output_length(self.input_shape[1], self.filter_length, self.border_mode, self.subsample[0])
         return (self.input_shape[0], length, self.nb_filter)
-        length = conv_output_length(self.input_shape[1], self.filter_length, self.border_mode, self.subsample[0])
-        return (self.input_shape[0], length, self.nb_filter)
     def get_output(self, train=False):
         X = self.get_input(train)
         X = T.reshape(X, (X.shape[0], X.shape[1], X.shape[2], 1)).dimshuffle(0, 2, 1, 3)
@@ -166,22 +164,18 @@ class Convolution2D(Layer):
         self.constraints = [self.W_constraint, self.b_constraint]
         if weights is not None:
             self.set_weights(weights)
+    @property
+    def output_shape(self):
+        input_shape = self.input_shape
+        rows = input_shape[2]
+        cols = input_shape[3]
+        rows = conv_output_length(rows, self.nb_row, self.border_mode, self.subsample[0])
+        cols = conv_output_length(cols, self.nb_col, self.border_mode, self.subsample[1])
+        return (input_shape[0], self.nb_filter, rows, cols)
     def get_output(self, train=False):
         X = self.get_input(train)
         border_mode = self.border_mode
         if on_gpu() and dnn.dnn_available():
-            if border_mode == 'same':
-                assert(self.subsample == (1, 1))
-                pad_x = (self.nb_row - self.subsample[0]) // 2
-                pad_y = (self.nb_col - self.subsample[1]) // 2
-                conv_out = dnn.dnn_conv(img=X,
-                                        kerns=self.W,
-                                        border_mode=(pad_x, pad_y))
-            else:
-                conv_out = dnn.dnn_conv(img=X,
-                                        kerns=self.W,
-                                        border_mode=border_mode,
-                                        subsample=self.subsample)
             if border_mode == 'same':
                 assert(self.subsample == (1, 1))
                 pad_x = (self.nb_row - self.subsample[0]) // 2
@@ -231,27 +225,17 @@ class Convolution2D(Layer):
 class MaxPooling1D(Layer):
     def __init__(self, pool_length=2, stride=1, ignore_border=True):
         super(MaxPooling1D, self).__init__()
-        if type(stride) is not int or not stride:
-            raise Exception('"stride" argument in MaxPooling1D should be an int > 0.')
-            raise Exception('"stride" argument in MaxPooling1D should be an int > 0.')
         self.pool_length = pool_length
         self.stride = stride
-<<<<<<< REMOTE
         else:
             self.st = None
-            self.st = None
-
-=======
-self.st = (self.stride, 1)
->>>>>>> LOCAL
+        if self.stride:
+        self.st = (self.stride, 1)
         self.input = T.tensor3()
         self.poolsize = (pool_length, 1)
         self.ignore_border = ignore_border
     @property
     def output_shape(self):
-        input_shape = self.input_shape
-        length = pool_output_length(input_shape[1], self.pool_length, self.ignore_border, self.stride)
-        return (input_shape[0], length, input_shape[2])
         input_shape = self.input_shape
         length = pool_output_length(input_shape[1], self.pool_length, self.ignore_border, self.stride)
         return (input_shape[0], length, input_shape[2])
@@ -271,6 +255,7 @@ self.st = (self.stride, 1)
 
 
 
+
 class MaxPooling2D(Layer):
     def __init__(self, poolsize=(2, 2), stride=(1, 1), ignore_border=True):
         super(MaxPooling2D, self).__init__()
@@ -280,10 +265,6 @@ class MaxPooling2D(Layer):
         self.ignore_border = ignore_border
     @property
     def output_shape(self):
-        input_shape = self.input_shape
-        rows = pool_output_length(input_shape[2], self.poolsize[0], self.ignore_border, self.stride[0])
-        cols = pool_output_length(input_shape[3], self.poolsize[1], self.ignore_border, self.stride[1])
-        return (input_shape[0], input_shape[1], rows, cols)
         input_shape = self.input_shape
         rows = pool_output_length(input_shape[2], self.poolsize[0], self.ignore_border, self.stride[0])
         cols = pool_output_length(input_shape[3], self.poolsize[1], self.ignore_border, self.stride[1])
@@ -310,8 +291,6 @@ class UpSample1D(Layer):
     def output_shape(self):
         input_shape = self.input_shape
         return (input_shape[0], self.length * input_shape[1], input_shape[2])
-        input_shape = self.input_shape
-        return (input_shape[0], self.length * input_shape[1], input_shape[2])
     def get_output(self, train=False):
         X = self.get_input(train)
         output = theano.tensor.extra_ops.repeat(X, self.length, axis=1)
@@ -330,8 +309,6 @@ class UpSample2D(Layer):
         self.size = tuple(size)
     @property
     def output_shape(self):
-        input_shape = self.input_shape
-        return (input_shape[0], input_shape[1], self.size[0] * input_shape[2], self.size[1] * input_shape[3])
         input_shape = self.input_shape
         return (input_shape[0], input_shape[1], self.size[0] * input_shape[2], self.size[1] * input_shape[3])
     def get_output(self, train=False):
@@ -353,8 +330,6 @@ class ZeroPadding2D(Layer):
         self.input = T.tensor4()
     @property
     def output_shape(self):
-        input_shape = self.input_shape
-        return (input_shape[0], input_shape[1], input_shape[2] + 2 * self.pad[0], input_shape[3] + 2 * self.pad[1])
         input_shape = self.input_shape
         return (input_shape[0], input_shape[1], input_shape[2] + 2 * self.pad[0], input_shape[3] + 2 * self.pad[1])
     def get_output(self, train=False):

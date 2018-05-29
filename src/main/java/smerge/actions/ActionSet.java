@@ -5,8 +5,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import javax.swing.text.html.HTMLDocument.Iterator;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,9 +27,11 @@ public class ActionSet {
 	
 	// <parent ID <position of insert, Insert object>>
 	protected Map<Integer, Map<Integer, Insert>> insertSets;
+	private Set<Integer> insertedIDs = new HashSet<>();
 	
 	// <parent ID <position of delete, Delete object>>
 	private Map<Integer, Map<Integer, Delete>> deleteSets;
+	private Set<Integer> deletedIDs = new HashSet<>();
 	
 	private Map<Integer, Set<Shift>> shiftSets;
 	
@@ -55,10 +55,12 @@ public class ActionSet {
 	 */
 	public void addInsert(ASTNode parent, ASTNode child, int position) {
 		int parentID = parent.getID();
+		int id = child.getID();
 		if (!insertSets.containsKey(parentID)) {
 			insertSets.put(parentID, new TreeMap<>());
 			parents.add(parentID);
 		}
+		insertedIDs.add(id);
 		insertSets.get(parentID).put(position, new Insert(parent, child, position));
 	}
 	
@@ -72,6 +74,7 @@ public class ActionSet {
 			deleteSets.put(parentID, new TreeMap<>((a, b) -> b.compareTo(a)));
 			parents.add(parentID);
 		}
+		deletedIDs.add(child.getID());
 		deleteSets.get(parentID).put(child.getPosition(), new Delete(child));
 	}
 
@@ -116,38 +119,18 @@ public class ActionSet {
 	// minimizes inserts by removing all but the root of a subtree -- avoids
 	// adding an entire subtree to the insertSets
 	private void minimizeInserts() {
-		Set<Integer> removalSet = new HashSet<Integer>();
-		// for each parent ID in the insertSets, we should remove any of its
-		// children that also exist in the insertSets to avoid unnecessary inserts
-		for (int parentID : insertSets.keySet()) {
-			Map<Integer, Insert> insert = insertSets.get(parentID);
-			for (int index : insert.keySet()) {
-				if (insertSets.containsKey(insert.get(index).getParentID())) {
-					removalSet.add(index);
-				}
-			}
-		}
-		for (int i : removalSet) {
-			insertSets.remove(i);
+		for (int id : insertedIDs) {
+			if (insertSets.containsKey(id))
+				insertSets.remove(id);
 		}
 	}
 	
 	// minimizes deletes by removing all but the root of a subtree -- avoids
 	// adding an entire subtree to the deleteSets
 	private void minimizeDeletes() {
-		Set<Integer> removalSet = new HashSet<Integer>();
-		// for each parent ID in the deleteSets, we should remove any of its
-		// children that also exist in the deleteSets to avoid unnecessary deletes
-		for (int parentID : deleteSets.keySet()) {
-			Map<Integer, Delete> delete = deleteSets.get(parentID);
-			for (int index : delete.keySet()) {
-				if (insertSets.containsKey(delete.get(index).getParentID())) {
-					removalSet.add(index);
-				}
-			}
-		}
-		for (int i : removalSet) {
-			insertSets.remove(i);
+		for (int id : deletedIDs) {
+			if (deleteSets.containsKey(id))
+				deleteSets.remove(id);
 		}
 	}
 	

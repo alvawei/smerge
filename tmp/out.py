@@ -1414,8 +1414,10 @@ def in_top_k(predictions, targets, k):
 
 # CONVOLUTIONS
 
+def _preprocess_conv2d_input(x, dim_ordering):
 
 
+def _preprocess_conv3d_input(x, dim_ordering):
 
 
 def _preprocess_conv2d_kernel(kernel, data_format):
@@ -1538,10 +1540,39 @@ def _preprocess_conv3d_filter_shape(data_format, filter_shape):
 
 <<<<<<< REMOTE
 def _postprocess_conv2d_output(conv_out, x, border_mode, kernel_shape, strides, dim_ordering):
+    if border_mode == 'same':
+        if kernel_shape[2] % 2 == 0:
+            conv_out = conv_out[:, :, :(x.shape[2] + strides[0] - 1) // strides[0], :]
+        if kernel_shape[3] % 2 == 0:
+            conv_out = conv_out[:, :, :, :(x.shape[3] + strides[1] - 1) // strides[1]]
+    if dim_ordering == 'tf':
+        conv_out = conv_out.dimshuffle((0, 2, 3, 1))
+    return conv_out
+
 =======
 def _postprocess_conv2d_output(conv_out, x, border_mode, np_kernel, strides, dim_ordering):
+    if border_mode == 'same':
+        if kernel_shape[2] % 2 == 0:
+            conv_out = conv_out[:, :, :(x.shape[2] + strides[0] - 1) // strides[0], :]
+        if kernel_shape[3] % 2 == 0:
+            conv_out = conv_out[:, :, :, :(x.shape[3] + strides[1] - 1) // strides[1]]
+    if data_format == 'channels_last':
+        conv_out = conv_out.dimshuffle((0, 2, 3, 1))
+        conv_out = conv_out.dimshuffle((0, 2, 3, 1))
+    return conv_out
+
 =======
 def _postprocess_conv2d_output(conv_out, x, border_mode, np_kernel, strides, data_format):
+    if border_mode == 'same':
+        if np_kernel.shape[2] % 2 == 0:
+            conv_out = conv_out[:, :, :(x.shape[2] + strides[0] - 1) // strides[0], :]
+        if np_kernel.shape[3] % 2 == 0:
+            conv_out = conv_out[:, :, :, :(x.shape[3] + strides[1] - 1) // strides[1]]
+    if data_format == 'channels_last':
+        conv_out = conv_out.dimshuffle((0, 2, 3, 1))
+        conv_out = conv_out.dimshuffle((0, 2, 3, 1))
+    return conv_out
+
 >>>>>>> LOCAL
     if border_mode == 'same':
         if kernel_shape[2] % 2 == 0:
@@ -1556,10 +1587,45 @@ def _postprocess_conv2d_output(conv_out, x, border_mode, np_kernel, strides, dat
 
 <<<<<<< REMOTE
 def _postprocess_conv3d_output(conv_out, x, border_mode, kernel_shape, strides, dim_ordering):
+    if border_mode == 'same':
+        if kernel_shape[2] % 2 == 0:
+            conv_out = conv_out[:, :, :(x.shape[2] + strides[0] - 1) // strides[0], :, :]
+        if kernel_shape[3] % 2 == 0:
+            conv_out = conv_out[:, :, :, :(x.shape[3] + strides[1] - 1) // strides[1], :]
+        if kernel_shape[4] % 2 == 0:
+            conv_out = conv_out[:, :, :, :, :(x.shape[4] + strides[2] - 1) // strides[2]]
+    if dim_ordering == 'tf':
+        conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
+    return conv_out
+
 =======
 def _postprocess_conv3d_output(conv_out, x, border_mode, np_kernel, strides, dim_ordering):
+    if border_mode == 'same':
+        if kernel_shape[2] % 2 == 0:
+            conv_out = conv_out[:, :, :(x.shape[2] + strides[0] - 1) // strides[0], :, :]
+        if kernel_shape[3] % 2 == 0:
+            conv_out = conv_out[:, :, :, :(x.shape[3] + strides[1] - 1) // strides[1], :]
+        if kernel_shape[4] % 2 == 0:
+            conv_out = conv_out[:, :, :, :, :(x.shape[4] + strides[2] - 1) // strides[2]]
+    if data_format == 'channels_last':
+        conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
+        conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
+    return conv_out
+
 =======
 def _postprocess_conv3d_output(conv_out, x, border_mode, np_kernel, strides, data_format):
+    if border_mode == 'same':
+        if np_kernel.shape[2] % 2 == 0:
+            conv_out = conv_out[:, :, :(x.shape[2] + strides[0] - 1) // strides[0], :, :]
+        if np_kernel.shape[3] % 2 == 0:
+            conv_out = conv_out[:, :, :, :(x.shape[3] + strides[1] - 1) // strides[1], :]
+        if np_kernel.shape[4] % 2 == 0:
+            conv_out = conv_out[:, :, :, :, :(x.shape[4] + strides[2] - 1) // strides[2]]
+    if data_format == 'channels_last':
+        conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
+        conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
+    return conv_out
+
 >>>>>>> LOCAL
     if border_mode == 'same':
         if kernel_shape[2] % 2 == 0:
@@ -1606,24 +1672,10 @@ def conv2d(x, kernel, strides=(1, 1), border_mode='valid',
         raise ValueError('Unknown data_format ', data_format)
         raise ValueError('Unknown data_format ', data_format)
     x = _preprocess_conv2d_input(x, data_format)
-    if hasattr(kernel, '_keras_shape'):
-        kernel_shape = kernel._keras_shape
-        kernel_shape = kernel._keras_shape
     kernel = _preprocess_conv2d_kernel(kernel, data_format)
     th_border_mode = _preprocess_border_mode(border_mode)
+    np_kernel = kernel.eval()
     image_shape = _preprocess_conv2d_image_shape(data_format, image_shape)
-    else:
-        # T.nnet.conv2d uses **kwargs, so the filter_dilation parameter will be
-        # ignored by versions that do not support it
-        if 'filter_dilation' not in inspect.getargspec(T.nnet.conv2d).args:
-            raise ValueError('conv2d with filter dilation requires Theano '
-                             '0.9.0dev2 or newer.')
-        conv_out = T.nnet.conv2d(x, kernel,
-                                 border_mode=th_border_mode,
-                                 subsample=strides,
-                                 input_shape=image_shape,
-                                 filter_shape=filter_shape,
-                                 filter_dilation=filter_dilation)
     filter_shape = _preprocess_conv2d_filter_shape(data_format, filter_shape)
     # TODO: remove the if statement when theano with no filter dilation is deprecated.
     if filter_dilation == (1, 1):
