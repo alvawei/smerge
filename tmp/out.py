@@ -261,6 +261,8 @@ class SimpleRNN(Recurrent):
             dropout = self.dropout_W
         else:
             dropout = 0
+        input_shape = self.input_shape
+        input_dim = input_shape[2]
         timesteps = input_shape[1]
         return time_distributed_dense(x, self.W, self.b, dropout,
                                       input_dim, self.output_dim, timesteps)
@@ -279,6 +281,8 @@ class SimpleRNN(Recurrent):
         if len(states) == 2:
             B_U = states[1]
             B_U = states[1]
+        else:
+            B_U = 1.
         output = self.activation(h + K.dot(prev_output * B_U, self.U))
         return output, [output]
     def get_constants(self, x, train=False):
@@ -359,7 +363,6 @@ class GRU(Recurrent):
         self.dropout_W, self.dropout_U = dropout_W, dropout_U
         super(GRU, self).__init__(**kwargs)
     def build(self):
-        input_dim = input_shape[2]
         input_shape = self.input_shape
         input_dim = input_shape[2]
         self.input_dim = input_dim
@@ -391,13 +394,13 @@ class GRU(Recurrent):
         if self.stateful:
             self.reset_states()
         else:
-            B_U = 1.
+            # initial states: all-zero tensor of shape (output_dim)
+            self.states = [None]
         if self.initial_weights is not None:
             self.set_weights(self.initial_weights)
             del self.initial_weights
     def reset_states(self):
         assert self.stateful, 'Layer must be stateful.'
-        input_shape = self.input_shape
         input_shape = self.input_shape
         if not input_shape[0]:
             raise Exception('If a RNN is stateful, a complete ' +
@@ -406,8 +409,6 @@ class GRU(Recurrent):
             K.set_value(self.states[0],
                         np.zeros((input_shape[0], self.output_dim)))
         else:
-            # initial states: all-zero tensor of shape (output_dim)
-            self.states = [None]
             self.states = [K.zeros((input_shape[0], self.output_dim))]
     def preprocess_input(self, x, train=False):
         if train and (0 < self.dropout_W < 1):
@@ -415,6 +416,7 @@ class GRU(Recurrent):
             dropout = self.dropout_W
         else:
             dropout = 0
+        input_shape = self.input_shape
         input_dim = input_shape[2]
         timesteps = input_shape[1]
         x_z = time_distributed_dense(x, self.W_z, self.b_z, dropout,
@@ -443,14 +445,12 @@ class GRU(Recurrent):
         h_tm1 = states[0]  # previous memory
         if len(states) == 2:
             B_U = states[1]  # dropout matrices for recurrent units
+            B_U = states[1]  # dropout matrices for recurrent units
         else:
             B_U = [1., 1., 1.]
-            self.states = [K.zeros((input_shape[0], self.output_dim)),
-                           K.zeros((input_shape[0], self.output_dim))]
         x_z = x[:, :self.output_dim]
         x_r = x[:, self.output_dim: 2 * self.output_dim]
         x_h = x[:, 2 * self.output_dim:]
-            B_U = states[1]  # dropout matrices for recurrent units
         z = self.inner_activation(x_z + K.dot(h_tm1 * B_U[0], self.U_z))
         r = self.inner_activation(x_r + K.dot(h_tm1 * B_U[1], self.U_r))
         hh = self.activation(x_h + K.dot(r * h_tm1 * B_U[2], self.U_h))
@@ -467,7 +467,6 @@ class GRU(Recurrent):
             B_U = [K.dropout(ones, self.dropout_U) for _ in range(3)]
             return [B_U]
         return []
-        else:
     def get_config(self):
         config = {"output_dim": self.output_dim,
                   "init": self.init.__name__,
@@ -556,6 +555,9 @@ class LSTM(Recurrent):
         self.input = K.placeholder(input_shape)
         if self.stateful:
             self.reset_states()
+        else:
+            # initial states: 2 all-zero tensors of shape (output_dim)
+            self.states = [None, None]
         self.W_i = self.init((input_dim, self.output_dim))
         self.U_i = self.inner_init((self.output_dim, self.output_dim))
         self.b_i = K.zeros((self.output_dim,))
@@ -590,18 +592,19 @@ class LSTM(Recurrent):
     def reset_states(self):
         assert self.stateful, 'Layer must be stateful.'
         input_shape = self.input_shape
-        input_shape = self.input_shape
         if not input_shape[0]:
             raise Exception('If a RNN is stateful, a complete ' +
                             'input_shape must be provided (including batch size).')
-        else:
-            self.states = [K.zeros((input_shape[0], self.output_dim)),
-                           K.zeros((input_shape[0], self.output_dim))]
         if hasattr(self, 'states'):
             K.set_value(self.states[0],
                         np.zeros((input_shape[0], self.output_dim)))
             K.set_value(self.states[1],
                         np.zeros((input_shape[0], self.output_dim)))
+        else:
+            self.states = [K.zeros((input_shape[0], self.output_dim)),
+                           K.zeros((input_shape[0], self.output_dim))]
+            self.states = [K.zeros((input_shape[0], self.output_dim)),
+                           K.zeros((input_shape[0], self.output_dim))]
     def preprocess_input(self, x, train=False):
         if train and (0 < self.dropout_W < 1):
             dropout = self.dropout_W
@@ -643,7 +646,7 @@ class LSTM(Recurrent):
         h_tm1 = states[0]
         c_tm1 = states[1]
         if len(states) == 3:
-        B_U = states[2]
+            B_U = states[2]
             B_U = states[2]
         else:
             B_U = [1. for _ in range(4)]
@@ -669,9 +672,6 @@ class LSTM(Recurrent):
             B_U = [K.dropout(ones, self.dropout_U) for _ in range(4)]
             return [B_U]
         return []
-        else:
-            # initial states: 2 all-zero tensors of shape (output_dim)
-            self.states = [None, None]
     def get_config(self):
         config = {"output_dim": self.output_dim,
                   "init": self.init.__name__,

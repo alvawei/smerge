@@ -10,14 +10,14 @@ import java.util.HashSet;
 
 import smerge.ast.ASTNode;
 
-// TODO: deletes don't have to be sorted, just use Map<Integer, Set<Delete>>
+// TODO: deletes don't have to be sorted, just use Map<Integer, Set<Delete>>???
 
 /**
  * An ActionSet represents a diff between two ASTs by storing sets of different Actions.
  * Actions are detected and added to an ActionSet in Differ. Once all actions are detected,
  * the entire ActionSet is minimized (see ActionSet.minimize()).
  * 
- * @author Jediah Conachan
+ * @author Jediah Conachan, Steven Miller
  */
 public class ActionSet {
 	
@@ -148,6 +148,7 @@ public class ActionSet {
 	}
 	
 	// removes shift actions caused by Insert/Delete actions
+	// TODO: Convert remaining shifts to insert/delete actions
 	private void minimizeShifts() {
 		// remove implicit shifts
 		for (int parentID : shiftSets.keySet()) {
@@ -217,7 +218,7 @@ public class ActionSet {
 	
 	// debugging method
 	public String toString() {
-		String result = "Actions:\n";
+		String result = "";
 		for (Map<Integer, Insert> insertSet : insertSets.values()) {
 			for (Insert insert : insertSet.values()) result += insert.toString() + "\n";
 		}

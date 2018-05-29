@@ -8,6 +8,11 @@ import java.util.Set;
 import smerge.ast.AST;
 import smerge.ast.ASTNode;
 
+/**
+ * A Matcher object matches nodes between the given base, local, and remote trees.
+ * 
+ * @author Alva Wei, Jediah Conachan
+ */
 public class Matcher {
 	
 	// smaller similarity = good
@@ -17,6 +22,13 @@ public class Matcher {
 	private List<Match> matches;
 	private int nextID; // the next id to be given to a new matching
 
+	/**
+	 * Constructs a new Matcher object and produces a list of matched nodes.
+	 * 
+	 * @param baseTree
+	 * @param localTree
+	 * @param remoteTree
+	 */
 	public Matcher(AST baseTree, AST localTree, AST remoteTree) {	
 		matches = new ArrayList<>();
 		
@@ -25,9 +37,22 @@ public class Matcher {
 		match(baseTree, remoteTree, false);
 	}
 	
-	// match editTree's nodes to baseTree's
-	// editTree is localTree if isLocal, otherwise editTree is remoteTree
-	public void match(AST baseTree, AST editTree, boolean isLocal) {
+	/**
+	 * Returns a listing of the matched nodes
+	 * @return list of Match objects
+	 */
+	public List<Match> matches() {
+		return matches;
+	}
+	
+	/**
+	 * Matches nodes between two trees, base and edit (which is either local or remote)
+	 * 
+	 * @param baseTree
+	 * @param editTree
+	 * @param isLocal - true iff editTree == localTree, false iff editTree == remoteTree
+	 */
+	private void match(AST baseTree, AST editTree, boolean isLocal) {
 		Set<Integer> matchedIDs = new HashSet<Integer>();
 		matches.get(0).setEditNode(editTree.getRoot(), isLocal);
 		matchedIDs.add(0);
@@ -120,9 +145,5 @@ public class Matcher {
 	        }
 	    }
 	    return costs[b.length()];
-	}
-	
-	public List<Match> matches() {
-		return matches;
 	}
 }
