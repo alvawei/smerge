@@ -8,6 +8,7 @@ import java.util.TreeMap;
 
 import smerge.ast.ASTNode;
 import smerge.ast.ASTNode.Type;
+import smerge.parsers.Parser;
 
 // this class merges two action sets and applys the merged actions onto the base tree
 // also counts conflicts
@@ -27,15 +28,17 @@ public class ActionMerger {
 	
 	private ActionSet localActions;
 	private ActionSet remoteActions;
+	private Parser p;
 	
 	/**
 	 * Initializes a new ActionMerger instance.
 	 * @param localActions - set of local changes to be merged
 	 * @param remoteActions - set of remote changes to be merged
 	 */
-	public ActionMerger(ActionSet localActions, ActionSet remoteActions) {
+	public ActionMerger(ActionSet localActions, ActionSet remoteActions, Parser p) {
 		this.localActions = localActions;
 		this.remoteActions = remoteActions;
+		this.p = p;
 	}
 	
 	/**
@@ -205,13 +208,13 @@ public class ActionMerger {
 	// wraps an unsolvable conflict with conflict identifiable text
 	// returns a new base node if the given base node is null
 	private ASTNode wrapConflict(ASTNode base, ASTNode local, ASTNode remote) {
-		String baseContent = base == null ? "" : base.getContent() + "\n=======\n";	
+		String baseContent = base == null ? "" : base.subtreeContent(p) + "\n=======\n";	
 		String conflict = 
 				"<<<<<<< REMOTE\n" + 
-				remote.getContent() + "\n" +
+				remote.subtreeContent(p) + "\n" +
 				"=======\n" +
 				baseContent +
-				local.getContent() + "\n" +
+				local.subtreeContent(p) + "\n" +
 				">>>>>>> LOCAL";
 		if (base == null) {
 			base = new ASTNode(local.getType(), conflict, 0);

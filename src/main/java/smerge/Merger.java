@@ -48,7 +48,7 @@ public class Merger {
         
         // MERGING
         System.out.println("Merging changes...");
-        ActionMerger merger = new ActionMerger(localActions, remoteActions);
+        ActionMerger merger = new ActionMerger(localActions, remoteActions, parser);
         merger.merge();
         
         

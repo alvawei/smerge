@@ -21,9 +21,9 @@ public class Test {
         String merged = "conflicts/test/test_merged.py"; // args[3];
         */
 		
-		String base = "scripts/test_results/pipenv_test_results/files/2_core_base.py";
-		String local = "scripts/test_results/pipenv_test_results/files/2_core_local.py";
-		String remote = "scripts/test_results/pipenv_test_results/files/2_core_remote.py";
+		String base = "scripts/test_results/keras_test_results/files/22_convolutional_base.py";
+		String local = "scripts/test_results/keras_test_results/files/22_convolutional_local.py";
+		String remote = "scripts/test_results/keras_test_results/files/22_convolutional_remote.py";
 		String merged = "tmp/temp_out.py";
         
         // get the correct parser (pass in filename for file extension/type?)
@@ -59,7 +59,7 @@ public class Test {
         
         // MERGING
         System.out.println("Merging changes...");
-        ActionMerger merger = new ActionMerger(localActions, remoteActions);
+        ActionMerger merger = new ActionMerger(localActions, remoteActions, parser);
         merger.merge();
         
         System.out.println(baseTree.debugTree());
