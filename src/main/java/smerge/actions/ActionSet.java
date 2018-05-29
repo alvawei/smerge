@@ -107,6 +107,7 @@ public class ActionSet {
 	 * inserts. Calling this method will reduce all of the separate inserts into a single Insert action. 
 	 */
 	public void minimize() {
+		// shifts must be minimized first
 		minimizeShifts();
 		minimizeInserts();
 		minimizeDeletes();
