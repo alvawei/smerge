@@ -115,7 +115,7 @@ public class PythonParser extends Parser {
 		outerloop:
 		while (index < token.length() || !subtokens.isEmpty()) {
 			// add another line if needed
-			if (index == token.length() && (token.trim().endsWith("\\") || !subtokens.isEmpty())) {
+			if (index == token.length() || token.trim().endsWith("\\")) {
 				String temp = br.readLine();
 				if (temp != null) {
 					token += "\n" + temp;

@@ -10,20 +10,35 @@ import smerge.Merger;
 
 public class BiggerTest {
 	
-	public static final String DIR = "scripts/test_results/keras_test_results/files";
 
 	// this is a temporary class for testing
 	
 	public static void main(String[] args) throws IOException {
 		Set<String> filenames = new HashSet<>();
+		Set<String> dirnames = new HashSet<>();
 		
+		dirnames.add("scripts/test_results/ansible_test_results/files");
+		dirnames.add("scripts/test_results/flask_test_results/files");
+		dirnames.add("scripts/test_results/keras_test_results/files");
+		dirnames.add("scripts/test_results/models_test_results/files");
+		dirnames.add("scripts/test_results/pipenv_test_results/files");
+		dirnames.add("scripts/test_results/scikit-learn_test_results/files");
+		dirnames.add("scripts/test_results/XX-Net_test_results/files");
+
+
+
+
+
+
 		
-		// get filenames
-		File[] files = new File(DIR).listFiles();
-		for (File f : files) {
-			String filename = f.toString();
-			filenames.add(filename.substring(0, filename.lastIndexOf('_')));
-		}
+		for (String dirname : dirnames) {
+			// get filenames
+			File[] files = new File(dirname).listFiles();
+			for (File f : files) {
+				String filename = f.toString();
+				filenames.add(filename.substring(0, filename.lastIndexOf('_')));
+			}
+		}		
 		
 		for (String f : filenames) {
 			try {
