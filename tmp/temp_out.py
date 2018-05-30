@@ -1,145 +1,335 @@
-import numpy as np
-from numpy.testing import *
-from nose.tools import *
+# -*- coding: utf-8 -*-
+import os
+import tempfile
 
-from scikits.learn import glm
+from piptools.resolver import Resolver
+from piptools.repositories.pypi import PyPIRepository
+from piptools.scripts.compile import get_pip_command
+from piptools import logging
 
-<<<<<<< REMOTE
-def test_predict():
-    """
-    Just see if predicted values are close from known response.
-    """
-    n, m = 10, 20
-    np.random.seed(0)
-    X = np.random.randn(n, m)
-    Y = np.random.randn(n)
-    Y = Y - Y.mean() # center response
+import requests
+import parse
+import pip
+import six
 
-    Y_ = glm.LeastAngleRegression().fit(X, Y, intercept=False).predict(X)
-    print np.linalg.norm(Y - Y_)
-    assert np.linalg.norm(Y-Y_) < 1e-10
+# List of version control systems we support.
+VCS_LIST = ('git', 'svn', 'hg', 'bzr')
+
+requests = requests.session()
 
 
-    # the same but with an intercept
-    Y = Y + 10.
-    Y_ = glm.LeastAngleRegression().fit(X, Y).predict(X)
-    assert np.linalg.norm(Y-Y_) < 1e-10
+class PipCommand(pip.basecommand.Command):
+    name = 'PipCommand'
 
-=======
-# XXX: there seems to be somthing borked in the shape reconstruction of the
->>>>>>> LOCAL
-# sparse coef_path_ matrix
 
-def test_sparse_coding():
-    """Use LARS as a sparse encoder w.r.t to a given fixed dictionary"""
-    n_samples, n_features = 42, 50
-    n_dictionary = 30
+def shellquote(s):
+    return '"' + s.replace("'", "'\\''") + '"'
 
-    # generate random input set
-    X = np.random.randn(n_samples, n_features)
 
-    # take the first vectors of the dataset as a dictionnary
-    D = X[:n_dictionary].T
+def clean_pkg_version(version):
+    return six.u(pep440_version(str(version).replace('==', '')))
 
-    assert_equal(D.shape, (n_features, n_dictionary))
 
-    def sparse_encode(vector):
-        return glm.LeastAngleRegression().fit(
-            D, vector, n_features=5, normalize=False, intercept=False).coef_
+def resolve_deps(deps, sources=None, verbose=False, hashes=False):
+    constraints = []
 
-    def sparse_decode(vector):
-        return np.dot(D, vector)
-
-    # sparse encode each vector and check the quality of the encoded
-    # representation
-    for i, x_i in enumerate(X):
-        # compute a sparse representation of x_i using the dictionary D
-        c_i = sparse_encode(x_i)
-
-        assert_equal(c_i.shape, (n_dictionary,))
-
-        if i < n_dictionary:
-            # x_i is one of the vector of D hence there is a trivial sparse code
-            expected_code = np.zeros(n_dictionary)
-            expected_code[i] = 1.0
-
-            assert_almost_equal(c_i, expected_code, decimal=2)
+    for dep in deps:
+        if dep.startswith('-e '):
+            constraint = pip.req.InstallRequirement.from_editable(dep[len('-e '):])
         else:
-            # x_i does not exactly belong to the dictionary, hence up to 5
-            # components of the dictionary are used to represent it
-            assert_true((c_i != 0.0).sum() < 6)
-            assert_true((abs(sparse_decode(c_i) - x_i) < 0.1).all())
+            constraint = pip.req.InstallRequirement.from_line(dep)
+        constraints.append(constraint)
+
+    pip_command = get_pip_command()
+
+    pip_args = []
+
+    if sources:
+        pip_args.extend(['-i', sources[0]['url']])
+
+    pip_options, _ = pip_command.parse_args(pip_args)
+
+    pypi = PyPIRepository(pip_options=pip_options, session=requests)
+
+    if verbose:
+        logging.log.verbose = True
+
+    resolver = Resolver(constraints=constraints, repository=pypi)
+    results = []
+
+    # pre-resolve instead of iterating to avoid asking pypi for hashes of editable packages
+    resolved_tree = resolver.resolve()
+
+    for result in resolved_tree:
+
+
+    return results
+
+def format_toml(data):
+    """Pretty-formats a given toml string."""
+    data = data.split('\n')
+    for i, line in enumerate(data):
+        if i > 0:
+            if line.startswith('['):
+                data[i] = '\n{0}'.format(line)
+
+    return '\n'.join(data)
+
+
+def multi_split(s, split):
+    """Splits on multiple given separators."""
+    for r in split:
+        s = s.replace(r, '|')
+
+    return [i for i in s.split('|') if len(i) > 0]
+
+
+def convert_deps_from_pip(dep):
+    """"Converts a pip-formatted dependency to a Pipfile-formatted one."""
+    dependency = {}
+
+    import requirements
+
+    req = [r for r in requirements.parse(dep)][0]
+    # VCS Installs.
+    if req.vcs:
+        if req.name is None:
+            raise ValueError('pipenv requires an #egg fragment for version controlled '
+                             'dependencies. Please install remote dependency '
+                             'in the form {0}#egg=<package-name>.'.format(req.uri))
+
+        # Crop off the git+, etc part.
+        dependency[req.name] = {req.vcs: req.uri[len(req.vcs) + 1:]}
+
+        # Add --editable, if it's there.
+        if req.editable:
+            dependency[req.name].update({'editable': True})
+
+        # Add the specifier, if it was provided.
+        if req.revision:
+            dependency[req.name].update({'ref': req.revision})
+
+    elif req.specs or req.extras:
+        specs = None
+        # Comparison operators: e.g. Django>1.10
+        if req.specs:
+            r = multi_split(dep, '=<>')
+            specs = dep[len(r[0]):]
+            dependency[req.name] = specs
+
+        # Extras: e.g. requests[socks]
+        if req.extras:
+            dependency[req.name] = {'extras': req.extras}
+
+            if specs:
+                dependency[req.name].update({'version': specs})
 
 
 
-def test_toy():
-    """Very simple test on a small dataset"""
-    X = [[1, 0, -1.],
-         [0, 0, 0],
-         [0, 1, .9]]
-    Y = [1, 0, -1]
+    # Bare dependencies: e.g. requests
+    else:
+        dependency[dep] = '*'
 
-    clf = glm.LeastAngleRegression().fit(X, Y, max_features=1)
-    assert_array_almost_equal(clf.coef_, [0, 0, -1.2624], decimal=4)
-    assert_array_almost_equal(clf.alphas_, [1.4135, 0.1510], decimal=4)
-    assert_array_almost_equal(clf.alphas_.shape, clf.coef_path_.shape[1])
-    assert np.linalg.norm(clf.predict(X) - Y) < 0.3
-    
+    return dependency
+def convert_deps_to_pip(deps, r=True):
+    """"Converts a Pipfile-formatteddependency to a pip-formatted one."""
+    dependencies = []
 
-    clf = glm.LeastAngleRegression().fit(X, Y) # implicitly max_features=2
-    assert_array_almost_equal(clf.coef_, [0, -.0816, -1.34412], decimal=4)
-    assert_array_almost_equal(clf.alphas_, \
-                 [ 1.41356,   .1510,   3.919e-16], decimal=4)
-    assert_array_almost_equal(clf.alphas_.shape, clf.coef_path_.shape[1])
-    assert_array_almost_equal(clf.predict(X), np.array(Y))
+    for dep in deps.keys():
+        # Default (e.g. '>1.10').
+        extra = deps[dep] if isinstance(deps[dep], six.string_types) else ''
+        version = ''
 
-    # TODO: check that Lasso with coordinate descent finds the same
-    # coefficients
+        # Get rid of '*'.
+        if deps[dep] == '*' or str(extra) == '{}':
+            extra = ''
 
-def test_feature_selection():
-    n_samples, n_features = 442, 100
-    # deterministic test
-    np.random.seed(0)
+        hash = ''
+        # Support for single hash (spec 1).
+        if 'hash' in deps[dep]:
+            hash = ' --hash={0}'.format(deps[dep]['hash'])
 
-    # generate random input set
-    X = np.random.randn(n_samples, n_features)
+        # Support for multiple hashes (spec 2).
+        if 'hashes' in deps[dep]:
+            hash = '{0} '.format(''.join([' --hash={0} '.format(h) for h in deps[dep]['hashes']]))
 
-    # generate a ground truth model with only the first 10 features being non
-    # zeros (the other features are not correlated to Y and should be ignored by
-    # the L1 regularizer)
-    coef_ = np.random.randn(n_features)
-    coef_[10:] = 0.0
+        # Support for extras (e.g. requests[socks])
+        if 'extras' in deps[dep]:
+            extra = '[{0}]'.format(deps[dep]['extras'][0])
 
-    # generate the grand truth Y from the model and Y
-    Y = np.dot(X, coef_)
-    Y += np.random.normal(Y.shape) # make some (label) noise!
+        if 'version' in deps[dep]:
+            version = deps[dep]['version']
 
-    # fit the model assuming that will allready know that only 10 out of
-    # n_features are contributing to Y
-    clf = glm.LeastAngleRegression().fit(X, Y, max_features=None)
+        # Support for version control
+        maybe_vcs = [vcs for vcs in VCS_LIST if vcs in deps[dep]]
 
-    # ensure that only the first 10 coefs are non zeros and the remaining set to
-    # null, as in the ground thrutg model
-    assert_equal((clf.coef_[:10] == 0.0).sum(), 0)
-    assert_equal((clf.coef_[10:] != 0.0).sum(), 0)
+        vcs = maybe_vcs[0] if maybe_vcs else None
 
-    # train again, but this time without knowing in advance how many features
-    # are useful:
+        if vcs:
+            extra = '{0}+{1}'.format(vcs, deps[dep][vcs])
+
+            # Support for @refs.
+            if 'ref' in deps[dep]:
+                extra += '@{0}'.format(deps[dep]['ref'])
 
 
-    clf = glm.LeastAngleRegression().fit(X, Y, max_features=10)
-    assert_equal((clf.coef_[:10] == 0.0).sum(), 0)
-    assert_equal((clf.coef_[10:] != 0.0).sum(), 89)
+            extra += '#egg={0}'.format(dep)
+            # Support for editable.
+            if 'editable' in deps[dep]:
+                # Support for --egg.
+                dep = '-e '
+            else:
+                dep = ''
 
-    # explicitly set to zero parameters really close to zero (manual
-    # thresholding)
-    sparse_coef = np.where(abs(clf.coef_) < 1e-13,
-                           np.zeros(clf.coef_.shape),
-                           clf.coef_)
+        dependencies.append('{0}{1}{2}{3}'.format(dep, extra, version, hash))
+    if not r:
+        return dependencies
 
-    # we find again that only the first 10 features are useful
-    assert_equal((sparse_coef[:10] == 0.0).sum(), 0)
-    assert_equal((sparse_coef[10:] != 0.0).sum(), 0)
+    # Write requirements.txt to tmp directory.
+    f = tempfile.NamedTemporaryFile(suffix='-requirements.txt', delete=False)
 
 
+    f.write('\n'.join(dependencies).encode('utf-8'))
+    return f.name
+def mkdir_p(newdir):
+    """works the way a good mkdir should :)
+        - already exists, silently complete
+        - regular file in the way, raise an exception
+        - parent directory(ies) does not exist, make them as well
+        From: http://code.activestate.com/recipes/82465-a-friendly-mkdir/
+    """
+    if os.path.isdir(newdir):
+        pass
+    elif os.path.isfile(newdir):
+        raise OSError("a file with the same name as the desired dir, '{0}', already exists.".format(newdir))
+    else:
+        head, tail = os.path.split(newdir)
+        if head and not os.path.isdir(head):
+            mkdir_p(head)
+        if tail:
+            os.mkdir(newdir)
+
+
+def is_required_version(version, specified_version):
+    """Check to see if there's a hard requirement for version
+    number provided in the Pipfile.
+    """
+    # Certain packages may be defined with multiple values.
+    if isinstance(specified_version, dict):
+        specified_version = specified_version.get('version', '')
+    if specified_version.startswith('=='):
+        return version.strip() == specified_version.split('==')[1].strip()
+    return True
+
+
+def is_vcs(pipfile_entry):
+    """Determine if dictionary entry from Pipfile is for a vcs dependency."""
+    if isinstance(pipfile_entry, dict):
+        return any(key for key in pipfile_entry.keys() if key in VCS_LIST)
+    return False
+
+
+def pep440_version(version):
+    # use pip built in version parser
+    return str(pip.index.parse_version(version))
+
+
+def pep423_name(name):
+    """Normalize package name to PEP 423 style standard."""
+    return name.lower().replace('_', '-')
+
+
+def proper_case(package_name):
+    """Properly case project name from pypi.org"""
+    # Hit the simple API.
+    r = requests.get('https://pypi.org/pypi/{0}/json'.format(package_name), timeout=0.3, stream=True)
+    if not r.ok:
+        raise IOError('Unable to find package {0} in PyPI repository.'.format(package_name))
+
+    r = parse.parse('https://pypi.org/pypi/{name}/json', r.url)
+    good_name = r['name']
+
+
+
+    return good_name
+def split_vcs(split_file):
+    """Split VCS dependencies out from file."""
+    if 'packages' in split_file or 'dev-packages' in split_file:
+        sections = ('packages', 'dev-packages')
+    elif 'default' in split_file or 'develop' in split_file:
+        sections = ('default', 'develop')
+
+    # For each vcs entry in a given section, move it to section-vcs.
+    for section in sections:
+        entries = split_file.get(section, {})
+        vcs_dict = dict((k, entries.pop(k)) for k in list(entries.keys()) if is_vcs(entries[k]))
+        split_file[section+'-vcs'] = vcs_dict
+
+    return split_file
+
+
+def recase_file(file_dict):
+    """Recase file before writing to output."""
+    if 'packages' in file_dict or 'dev-packages' in file_dict:
+        sections = ('packages', 'dev-packages')
+    elif 'default' in file_dict or 'develop' in file_dict:
+        sections = ('default', 'develop')
+
+    for section in sections:
+        file_section = file_dict.get(section, {})
+
+        # Try to properly case each key if we can.
+        for key in list(file_section.keys()):
+            try:
+                cased_key = proper_case(key)
+            except IOError:
+                cased_key = key
+            file_section[cased_key] = file_section.pop(key)
+
+    return file_dict
+
+
+def walk_up(bottom):
+    """mimic os.walk, but walk 'up' instead of down the directory tree.
+    From: https://gist.github.com/zdavkeos/1098474
+    """
+
+    bottom = os.path.realpath(bottom)
+    # get files in current dir
+    try:
+        names = os.listdir(bottom)
+    except Exception:
+        return
+
+    dirs, nondirs = [], []
+
+    for name in names:
+        if os.path.isdir(os.path.join(bottom, name)):
+            dirs.append(name)
+        else:
+            nondirs.append(name)
+
+
+    yield bottom, dirs, nondirs
+    new_path = os.path.realpath(os.path.join(bottom, '..'))
+    # see if we are at the top
+    if new_path == bottom:
+        return
+
+    for x in walk_up(new_path):
+        yield x
+
+
+def find_requirements(max_depth=3):
+        """Returns the path of a Pipfile in parent directories."""
+        i = 0
+        for c, d, f in walk_up(os.getcwd()):
+            i += 1
+
+            if i < max_depth:
+                if 'requirements.txt':
+                    r = os.path.join(c, 'requirements.txt')
+                    if os.path.isfile(r):
+                        return r
+        raise RuntimeError('No requirements.txt found!')
 

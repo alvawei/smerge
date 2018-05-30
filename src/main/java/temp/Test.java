@@ -20,7 +20,7 @@ public class Test {
         String remote = "conflicts/test/test_remote.py"; // args[2];
         String merged = "conflicts/test/test_merged.py"; // args[3];
         */
-		String init = "scripts/test_results/scikit-learn_test_results/files/155_test_glm";
+		String init = "scripts/test_results/pipenv_test_results/files/8_utils";
 		String base = init + "_base.py";
 		String local = init + "_local.py";
 		String remote = init + "_remote.py";
@@ -72,8 +72,8 @@ public class Test {
         out.close();
         
         // CONFLICTS
-        System.out.print("Merge conflicts resolved: ");
-        System.out.println(merger.solvedConflicts + "/" + merger.totalConflicts);
+        System.out.println("Merge conflicts resolved: " + 
+        		(merger.totalConflicts - merger.unsolvedConflicts) + "/" + merger.totalConflicts);
 	}
 
 }

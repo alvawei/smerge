@@ -24,7 +24,7 @@ public class ActionMerger {
 	
 	// these integers are for evaluation purposes
 	public int totalConflicts;
-	public int solvedConflicts;
+	public int unsolvedConflicts;
 	
 	private ActionSet localActions;
 	private ActionSet remoteActions;
@@ -127,7 +127,6 @@ public class ActionMerger {
 		ASTNode mergedNode;
 		if (type == Type.IMPORT) {
 			mergedNode = mergeImports(null, local, remote);
-			solvedConflicts++;
 		} else if (local.getContent().equals(remote.getContent())) {
 			mergedNode = new ASTNode(type, local.getContent(), local.getIndentation());
 			mergedNode.setID(local.getID());
@@ -181,10 +180,8 @@ public class ActionMerger {
 			} else {
 				// unmergable
 				wrapConflict(base, local, remote);
-				return; // don't increase solved conflict count
 			}
 		}
-		solvedConflicts++;
 	}
 	
 	// applies non-conflicting updates 
@@ -210,6 +207,7 @@ public class ActionMerger {
 	// wraps an unsolvable conflict with conflict identifiable text
 	// returns a new base node if the given base node is null
 	private ASTNode wrapConflict(ASTNode base, ASTNode local, ASTNode remote) {
+		unsolvedConflicts++;
 		String baseContent = base == null ? "" : base.subtreeContent(p) + "\n=======\n";	
 		String conflict = 
 				"<<<<<<< REMOTE\n" + 

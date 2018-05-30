@@ -63,6 +63,6 @@ public class Merger {
         
         // CONFLICT COUNTS
         System.out.println("Merge conflicts resolved: " + 
-        		merger.solvedConflicts + "/" + merger.totalConflicts);
+        		(merger.totalConflicts - merger.unsolvedConflicts) + "/" + merger.totalConflicts);
     }
 }
