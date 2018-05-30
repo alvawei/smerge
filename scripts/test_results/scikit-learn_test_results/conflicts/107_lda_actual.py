@@ -53,9 +53,11 @@ class LDA(BaseEstimator, ClassifierMixin):
     QDA
 
     """
+
     def __init__(self, n_components=None, priors=None):
         self.n_components = n_components
         self.priors = np.asarray(priors) if priors is not None else None
+
     def fit(self, X, y, store_covariance=False, tol=1.0e-4, **params):
         """
         Fit the LDA model according to the given training data and parameters.
@@ -101,6 +103,7 @@ class LDA(BaseEstimator, ClassifierMixin):
             self.priors_ = counts / float(n_samples)
         else:
             self.priors_ = self.priors
+
         # Group means n_classes*n_features matrix
         means = []
         Xc = []
@@ -119,8 +122,10 @@ class LDA(BaseEstimator, ClassifierMixin):
         if store_covariance:
             cov /= (n_samples - n_classes)
             self.covariance_ = cov
+
         self.means_ = np.asarray(means)
         Xc = np.concatenate(Xc, 0)
+
         # ----------------------------
         # 1) within (univariate) scaling by with classes std-dev
         scaling = 1. / Xc.std(0)
@@ -130,6 +135,7 @@ class LDA(BaseEstimator, ClassifierMixin):
         X = np.sqrt(fac) * (Xc * scaling)
         # SVD of centered (within)scaled data
         U, S, V = linalg.svd(X, full_matrices=0)
+
         rank = np.sum(S > tol)
         if rank < n_features:
             warnings.warn("Variables are collinear")
@@ -154,15 +160,19 @@ X = np.dot(((np.sqrt((n_samples * self.priors_)*fac)) *
         # Use svd to find projection in the space spanned by the
         # (n_classes) centers
         _, S, V = linalg.svd(X, full_matrices=0)
+
         rank = np.sum(S > tol * S[0])
         # compose the scalings
         self.scaling = np.dot(scaling, V.T[:, :rank])
         self.xbar_ = xbar
-        self.scaling = scaling
-        self.means_ = means
-        self.xbar_ = xbar
-        self.classes = classes
+        # weight vectors / centroids
+        self.coef_ = np.dot(self.means_ - self.xbar_, self.scaling)
+        self.intercept_ = -0.5 * np.sum(self.coef_ ** 2, axis=1) + \
+                           np.log(self.priors_)
         return self
+        self.classes = classes
+
+
     def decision_function(self, X):
         """
         This function return the decision function values related to each
@@ -177,17 +187,10 @@ X = np.dot(((np.sqrt((n_samples * self.priors_)*fac)) *
         C : array, shape = [n_samples, n_classes]
         """
         X = np.asanyarray(X)
-        scaling = self.scaling
+        # center and scale data
         X = np.dot(X - self.xbar_, self.scaling)
-        # Remove overall mean (center) and scale
-        # a) data
-        X = np.dot(X - self.xbar_, self.scaling)
-        # b) centers
-        dm = np.dot(self.means_ - self.xbar_, scaling)
-        # for each class k, compute the linear discrinant function
-        # (p. 87 Hastie) of sphered (scaled data)
-        return -0.5 * np.sum(dm ** 2, 1) + \
-                np.log(self.priors_) + np.dot(X, dm.T)
+        return np.dot(X, self.coef_.T) + self.intercept_
+
     def transform(self, X):
         """
         This function return the decision function values related to each
@@ -206,6 +209,7 @@ X = np.dot(((np.sqrt((n_samples * self.priors_)*fac)) *
         X = np.dot(X - self.xbar_, self.scaling)
         n_comp = X.shape[1] if self.n_components is None else self.n_components
         return np.dot(X, self.coef_[:, :n_comp].T) + self.intercept_
+
     def predict(self, X):
         """
         This function does classification on an array of test vectors X.
@@ -223,6 +227,7 @@ X = np.dot(((np.sqrt((n_samples * self.priors_)*fac)) *
         d = self.decision_function(X)
         y_pred = self.classes[d.argmax(1)]
         return y_pred
+
     def predict_proba(self, X):
         """
         This function return posterior probabilities of classification
@@ -242,6 +247,7 @@ X = np.dot(((np.sqrt((n_samples * self.priors_)*fac)) *
         likelihood = np.exp(values - values.min(axis=1)[:, np.newaxis])
         # compute posterior probabilities
         return likelihood / likelihood.sum(axis=1)[:, np.newaxis]
+
     def predict_log_proba(self, X):
         """
         This function return posterior log-probabilities of classification
@@ -259,17 +265,4 @@ X = np.dot(((np.sqrt((n_samples * self.priors_)*fac)) *
         loglikelihood = (values - values.min(axis=1)[:, np.newaxis])
         normalization = np.logaddexp.reduce(loglikelihood, axis=1)
         return loglikelihood - normalization[:, np.newaxis]
-
-
-
-
-
-
-
-
-
-
-
-
-
 

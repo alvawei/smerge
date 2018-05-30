@@ -76,6 +76,76 @@ class run_audit(Command):
         else:
             print("No problems found in sourcecode.")
 
+<<<<<<< REMOTE
+setup(
+    name='Flask',
+    version='0.10.1-dev',
+    url='http://github.com/mitsuhiko/flask/',
+    license='BSD',
+    author='Armin Ronacher',
+    author_email='armin.ronacher@active-4.com',
+    description='A microframework based on Werkzeug, Jinja2 '
+                'and good intentions',
+    long_description=__doc__,
+    packages=['flask', 'flask.ext', 'flask.testsuite'],
+    include_package_data=True,
+    zip_safe=False,
+    platforms='any',
+    install_requires=[
+        'Werkzeug>=0.7',
+        'Jinja2>=2.4',
+        'itsdangerous>=0.21'
+    ],
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Environment :: Web Environment',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: BSD License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
+        'Topic :: Software Development :: Libraries :: Python Modules'
+    ],
+    cmdclass={'audit': run_audit},
+    test_suite='flask.testsuite.suite'
+)
+=======
+setup(
+    name='Flask',
+    version='0.10.1-dev',
+    url='http://github.com/mitsuhiko/flask/',
+    license='BSD',
+    author='Armin Ronacher',
+    author_email='armin.ronacher@active-4.com',
+    description='A microframework based on Werkzeug, Jinja2 '
+                'and good intentions',
+    long_description=__doc__,
+    packages=['flask', 'flask.ext', 'flask.testsuite'],
+    include_package_data=True,
+    zip_safe=False,
+    platforms='any',
+    install_requires=[
+        'Werkzeug>=0.7',
+        'Jinja2>=2.4',
+        'itsdangerous>=0.21'
+    ],
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Environment :: Web Environment',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: BSD License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
+        'Topic :: Software Development :: Libraries :: Python Modules'
+    ],
+    cmdclass={'audit': run_audit},
+    test_suite='flask.testsuite.suite'
+)
+=======
 setup(
     name='Flask',
     version='0.11-dev',
@@ -102,7 +172,8 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.3',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
         'Topic :: Software Development :: Libraries :: Python Modules'
@@ -110,4 +181,5 @@ setup(
     cmdclass={'audit': run_audit},
     test_suite='flask.testsuite.suite'
 )
+>>>>>>> LOCAL
 

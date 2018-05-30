@@ -1,10 +1,16 @@
+"""
+Generalized linear models
+=========================
 
-<<<<<<< REMOTE
-from .base import LinearRegression
-=======
+scikits.learn.glm is a module to fit genelarized linear models.
+It includes Ridge regression, Bayesian Regression, Lasso and
+Elastic Net estimators computed with Least Angle Regression
+and coordinate descent.
 
->>>>>>> LOCAL
+"""
 from .lars import LARS, LassoLARS, LeastAngleRegression
+from .lars import LARS, LassoLARS, lars_path, LeastAngleRegression
+
 from .coordinate_descent import Lasso, ElasticNet, LassoCV, ElasticNetCV
 from .bayes import Ridge, BayesianRidge, ARDRegression
 

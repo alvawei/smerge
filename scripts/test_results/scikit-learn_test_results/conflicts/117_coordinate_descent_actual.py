@@ -41,11 +41,13 @@ class ElasticNet(LinearModel):
     To avoid unnecessary memory duplication the X argument of the fit method
     should be directly passed as a fortran contiguous numpy array.
     """
+
     def __init__(self, alpha=1.0, rho=0.5, fit_intercept=True):
         self.alpha = alpha
         self.rho = rho
         self.coef_ = None
         self.fit_intercept = fit_intercept
+
     # @profile
     def fit(self, X, y, precompute='auto', Xy=None, maxit=1000, tol=1e-4,
             coef_init=None, **params):
@@ -85,15 +87,20 @@ class ElasticNet(LinearModel):
         self._set_params(**params)
         X = np.asanyarray(X, dtype=np.float64)
         y = np.asanyarray(y, dtype=np.float64)
+
         X, y, Xmean, ymean = LinearModel._center_data(X, y, self.fit_intercept)
+
         if coef_init is None:
             self.coef_ = np.zeros(X.shape[1], dtype=np.float64)
         else:
             self.coef_ = coef_init
+
         n_samples = X.shape[0]
         alpha = self.alpha * self.rho * n_samples
         beta = self.alpha * (1.0 - self.rho) * n_samples
+
         X = np.asfortranarray(X) # make data contiguous in memory
+
         # precompute if n_samples > n_features
         if hasattr(precompute, '__array__'):
             Gram = precompute
@@ -102,6 +109,7 @@ class ElasticNet(LinearModel):
             Gram = np.dot(X.T, X)
         else:
             Gram = None
+
         if Gram is None:
             self.coef_, self.dual_gap_, self.eps_ = \
                     cd_fast.enet_coordinate_descent(self.coef_, alpha, beta,
@@ -112,26 +120,18 @@ class ElasticNet(LinearModel):
             self.coef_, self.dual_gap_, self.eps_ = \
                     cd_fast.enet_coordinate_descent_gram(self.coef_, alpha,
                                 beta, Gram, Xy, y, maxit, tol)
+
         self._set_intercept(Xmean, ymean)
+
         if self.dual_gap_ > self.eps_:
             warnings.warn('Objective did not converge, you might want'
                           ' to increase the number of interations')
+
         # Store explained variance for __str__
         self.explained_variance_ = self._explained_variance(X, y) # XXX
+
         # return self for chaining fit and predict calls
         return self
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ###############################################################################
@@ -183,10 +183,10 @@ class Lasso(ElasticNet):
     To avoid unnecessary memory duplication the X argument of the fit method
     should be directly passed as a fortran contiguous numpy array.
     """
+
     def __init__(self, alpha=1.0, fit_intercept=True):
         super(Lasso, self).__init__(alpha=alpha, rho=1.0,
                                     fit_intercept=fit_intercept)
-
 
 ###############################################################################
 # Classes to store linear models along a regularization path
@@ -234,9 +234,6 @@ def lasso_path(X, y, eps=1e-3, n_alphas=100, alphas=None, fit_intercept=True,
     X = np.asfortranarray(X) # make data contiguous in memory
 
 
-
-
-
 def enet_path(X, y, rho=0.5, eps=1e-3, n_alphas=100, alphas=None,
               fit_intercept=True, verbose=False, **fit_params):
     """Compute Elastic-Net path with coordinate descent
@@ -278,6 +275,7 @@ def enet_path(X, y, rho=0.5, eps=1e-3, n_alphas=100, alphas=None,
     """
     X, y, Xmean, ymean = LinearModel._center_data(X, y, fit_intercept)
     X = np.asfortranarray(X) # make data contiguous in memory
+
     n_samples = X.shape[0]
     if alphas is None:
         alpha_max = np.abs(np.dot(X.T, y)).max() / (n_samples * rho)
@@ -287,12 +285,14 @@ def enet_path(X, y, rho=0.5, eps=1e-3, n_alphas=100, alphas=None,
         alphas = np.sort(alphas)[::-1] # make sure alphas are properly ordered
     coef_ = None # init coef_
     models = []
+
     if not fit_params.has_key('precompute') \
         or fit_params['precompute'] is True \
         or (fit_intercept and hasattr(fit_params['precompute'], '__array__')):
         fit_params['precompute'] = np.dot(X.T, X)
         if not fit_params.has_key('Xy') or fit_params['Xy'] is None:
             fit_params['Xy'] = np.dot(X.T, y)
+
     for alpha in alphas:
         model = ElasticNet(alpha=alpha, rho=rho, fit_intercept=False)
         model.fit(X, y, coef_init=coef_, **fit_params)
@@ -306,17 +306,16 @@ def enet_path(X, y, rho=0.5, eps=1e-3, n_alphas=100, alphas=None,
     return models
 
 
-
-
-
 class LinearModelCV(LinearModel):
     """Base class for iterative model fitting along a regularization path"""
+
     def __init__(self, eps=1e-3, n_alphas=100, alphas=None,
                  fit_intercept=True):
         self.eps = eps
         self.n_alphas = n_alphas
         self.alphas = alphas
         self.fit_intercept = fit_intercept
+
     def fit(self, X, y, cv=None, **fit_params):
         """Fit linear model with coordinate descent along decreasing alphas
         using cross-validation
@@ -338,20 +337,27 @@ class LinearModelCV(LinearModel):
             keyword arguments passed to the Lasso fit method
 
         """
+
         X = np.asanyarray(X, dtype=np.float64)
         y = np.asanyarray(y, dtype=np.float64)
+
         n_samples = X.shape[0]
+
         # Start to compute path on full data
         path_params = fit_params.copy()
         path_params.update(self._get_params())
         models = self.path(X, y, **path_params)
+
         alphas = [model.alpha for model in models]
         n_alphas = len(alphas)
+
         # init cross-validation generator
         cv = cv if cv else KFold(n_samples, 5)
+
         params = self._get_params()
         params['alphas'] = alphas
         params['n_alphas'] = n_alphas
+
         # Compute path for all folds and compute MSE to get the best alpha
         mse_alphas = np.zeros(n_alphas)
         fit_params.update(params)
@@ -360,25 +366,16 @@ class LinearModelCV(LinearModel):
             for i_alpha, model in enumerate(models_train):
                 y_ = model.predict(X[test])
                 mse_alphas[i_alpha] += ((y_ - y[test]) ** 2).mean()
+
         i_best_alpha = np.argmin(mse_alphas)
         model = models[i_best_alpha]
+
         self.coef_ = model.coef_
         self.intercept_ = model.intercept_
         self.explained_variance_ = model.explained_variance_
         self.alpha = model.alpha
         self.alphas = np.asarray(alphas)
         return self
-
-
-
-
-
-
-
-
-
-
-
 
 
 class LassoCV(LinearModelCV):
@@ -406,9 +403,8 @@ class LassoCV(LinearModelCV):
     To avoid unnecessary memory duplication the X argument of the fit method
     should be directly passed as a fortran contiguous numpy array.
     """
+
     path = staticmethod(lasso_path)
-
-
 
 
 class ElasticNetCV(LinearModelCV):
@@ -440,7 +436,9 @@ class ElasticNetCV(LinearModelCV):
     To avoid unnecessary memory duplication the X argument of the fit method
     should be directly passed as a fortran contiguous numpy array.
     """
+
     path = staticmethod(enet_path)
+
     def __init__(self, rho=0.5, eps=1e-3, n_alphas=100, alphas=None,
                  fit_intercept=True):
         self.rho = rho
@@ -448,6 +446,4 @@ class ElasticNetCV(LinearModelCV):
         self.n_alphas = n_alphas
         self.alphas = alphas
         self.fit_intercept = fit_intercept
-
-
 

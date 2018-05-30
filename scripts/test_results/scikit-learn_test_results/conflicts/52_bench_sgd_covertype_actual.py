@@ -62,6 +62,8 @@ from sklearn.svm import LinearSVC
 from sklearn.linear_model import SGDClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
+from sklearn.ensemble.gradient_boosting import GradientBoostingClassifier
 from sklearn import metrics
 
 ######################################################################
@@ -173,16 +175,45 @@ sgd_parameters = {
     }
 sgd_err, sgd_train_time, sgd_test_time = benchmark(SGDClassifier(
     **sgd_parameters))
-
+## Train CART model
+<<<<<<< REMOTE
 cart_err, cart_train_time, cart_test_time = benchmark(
-    DecisionTreeClassifier(min_split=5, max_depth=30))
+    DecisionTreeClassifier(min_split=5,
+                           max_depth=None))
+=======
+## print("Training GB model")
+>>>>>>> LOCAL
+<<<<<<< REMOTE
 
-## Print classification performance
+=======
+## gb_err, gb_train_time, gb_test_time = benchmark(
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+######################################################################
+=======
+##     GradientBoostingClassifier(min_split=5, max_depth=10, n_iter=20,
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+## Train RandomForest model
+=======
+##                                learn_rate=.8, subsample=0.5))
+>>>>>>> LOCAL
+<<<<<<< REMOTE
 print("")
+=======
+
+>>>>>>> LOCAL
+
+
+
+## print_row("GB", gb_train_time, gb_test_time, gb_err)
+######################################################################
+## Print classification performance
+print_row("RandomForest", rf_train_time, rf_test_time, rf_err)
+print_row("Extra-Trees", et_train_time, et_test_time, et_err)
+print("Classification performance:")
 print("===========================")
 print("")
-######################################################################
-
 
 def print_row(clf_type, train_time, test_time, err):
     print("%s %s %s %s" % (clf_type.ljust(12),
@@ -195,7 +226,6 @@ print("%s %s %s %s" % ("Classifier  ", "train-time", "test-time",
 print("-" * 44)
 print_row("Liblinear", liblinear_train_time, liblinear_test_time,
           liblinear_err)
-print("Classification performance:")
 print_row("GaussianNB", gnb_train_time, gnb_test_time, gnb_err)
 print_row("SGD", sgd_train_time, sgd_test_time, sgd_err)
 print_row("CART", cart_train_time, cart_test_time, cart_err)

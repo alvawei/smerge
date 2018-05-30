@@ -147,37 +147,37 @@ def benchmark(clf):
     clf.fit(X_train, y_train)
     train_time = time() - t0
     print "train time: %0.3fs" % train_time
+
     t0 = time()
     pred = clf.predict(X_test)
     test_time = time() - t0
     print "test time:  %0.3fs" % test_time
+
     score = metrics.f1_score(y_test, pred)
     print "f1-score:   %0.3f" % score
+
     if hasattr(clf, 'coef_'):
         print "dimensionality: %d" % clf.coef_.shape[1]
         print "density: %f" % density(clf.coef_)
+
         if opts.print_top10:
             print "top 10 keywords per class:"
             for i, category in enumerate(categories):
                 top10 = np.argsort(clf.coef_[i])[-10:]
                 print trim("%s: %s" % (category, " ".join(vocabulary[top10])))
         print
+
     if opts.print_report:
         print "classification report:"
         print metrics.classification_report(y_test, pred,
                                             target_names=categories)
+
     if opts.print_cm:
         print "confusion matrix:"
         print metrics.confusion_matrix(y_test, pred)
+
     print
     return score, train_time, test_time
-
-
-
-
-
-
-
 
 for clf, name in ((RidgeClassifier(tol=1e-1), "Ridge Classifier"),
                   (KNeighborsClassifier(n_neighbors=10), "kNN")):
@@ -191,10 +191,10 @@ for penalty in ["l2", "l1"]:
     # Train Liblinear model
     liblinear_results = benchmark(LinearSVC(loss='l2', penalty=penalty, C=1000,
                                             dual=False, tol=1e-3))
+
     # Train SGD model
     sgd_results = benchmark(SGDClassifier(alpha=.0001, n_iter=50,
                                           penalty=penalty))
-
 
 # Train SGD with Elastic Net penalty
 print 80 * '='
@@ -217,10 +217,10 @@ class L1LinearSVC(LinearSVC):
                                       dual=False, tol=1e-3)
         X = self.transformer_.fit_transform(X, y)
         return LinearSVC.fit(self, X, y)
+
     def predict(self, X):
         X = self.transformer_.transform(X)
         return LinearSVC.predict(self, X)
-
 
 
 print 80 * '='

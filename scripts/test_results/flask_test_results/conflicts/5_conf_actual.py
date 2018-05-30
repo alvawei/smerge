@@ -1,92 +1,82 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-
-
-
-
+from __future__ import print_function
+import inspect
+import inspect
+import re
+import re
+from pallets_sphinx_themes import DocVersion, ProjectLink, get_version
+from pallets_sphinx_themes import ProjectLink, get_version
+# Project --------------------------------------------------------------
+copyright = '2010 Pallets Team'
+author = 'Pallets Team'
+release, version = get_version('Flask')
+# General --------------------------------------------------------------
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
+    'sphinxcontrib.log_cabinet',
 ]
-
-
-
-
-master_doc = 'index'
-
-project = 'Flask'
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-html_favicon = '_static/flask-favicon.ico'
-
-html_static_path = ['_static']
-
-
-
-html_sidebars = {
-    'index': [
-        'searchbox.html',
+# HTML -----------------------------------------------------------------
+html_theme = 'flask'
+<<<<<<< REMOTE
+html_context = {
+    'project_links': [
+        ProjectLink('Donate to Pallets', 'https://psfmember.org/civicrm/contribute/transact?reset=1&id=20'),
+        ProjectLink('Flask Website', 'https://palletsprojects.com/p/flask/'),
+        ProjectLink('PyPI releases', 'https://pypi.org/project/Flask/'),
+        ProjectLink('Source Code', 'https://github.com/pallets/flask/'),
+        ProjectLink(
+            'Issue Tracker', 'https://github.com/pallets/flask/issues/'),
     ],
-    '**': [
-        'localtoc.html',
-        'relations.html',
-        'searchbox.html',
-    ]
+    'canonical_url': 'http://flask.pocoo.org/docs/{}/'.format(version),
+    'carbon_ads_args': 'zoneid=1673&serve=C6AILKT&placement=pocooorg',
 }
+=======
+html_context = {
+    'project_links': [
+        ProjectLink('Donate to Pallets', 'https://psfmember.org/civicrm/contribute/transact?reset=1&id=20'),
+        ProjectLink('Flask Website', 'https://palletsprojects.com/p/flask/'),
+        ProjectLink('PyPI releases', 'https://pypi.org/project/Flask/'),
+        ProjectLink('Source Code', 'https://github.com/pallets/flask/'),
+        ProjectLink(
+            'Issue Tracker', 'https://github.com/pallets/flask/issues/'),
+    ],
+    'versions': [
+        DocVersion('dev', 'Development', 'unstable'),
+        DocVersion('1.0', 'Flask 1.0', 'stable'),
+        DocVersion('0.12', 'Flask 0.12'),
+    ],
+    'canonical_url': 'http://flask.pocoo.org/docs/{}/'.format(version),
+    'carbon_ads_args': 'zoneid=1673&serve=C6AILKT&placement=pocooorg',
+}
+>>>>>>> LOCAL
+html_logo = '_static/flask.png'
+html_additional_pages = {
+    '404': '404.html',
+}
+html_show_sourcelink = False
 
-
+# LaTeX ----------------------------------------------------------------
 
 latex_documents = [
+    (master_doc, 'Flask.tex', 'Flask Documentation', 'Pallets Team', 'manual'),
 ]
-latex_use_modindex = False
 latex_elements = {
-    'fontpkg': r'\usepackage{mathpazo}',
     'papersize': 'a4paper',
     'pointsize': '12pt',
+    'fontpkg': r'\usepackage{mathpazo}',
     'preamble': r'\usepackage{flaskstyle}',
 }
-latex_use_parts = True
-latex_additional_files = ['flaskstyle.sty', 'logo.pdf']
-intersphinx_mapping = {
-    'python': ('https://docs.python.org/3/', None),
-    'werkzeug': ('http://werkzeug.pocoo.org/docs/', None),
-    'click': ('http://click.pocoo.org/', None),
-    'jinja': ('http://jinja.pocoo.org/docs/', None),
-    'sqlalchemy': ('https://docs.sqlalchemy.org/en/latest/', None),
-    'wtforms': ('https://wtforms.readthedocs.io/en/latest/', None),
-    'blinker': ('https://pythonhosted.org/blinker/', None),
-}
-def unwrap_decorators():
-    import sphinx.util.inspect as inspect
-    import functools
-    old_getargspec = inspect.getargspec
-    def getargspec(x):
-        return old_getargspec(getattr(x, '_original_function', x))
-    inspect.getargspec = getargspec
-    old_update_wrapper = functools.update_wrapper
-    def update_wrapper(wrapper, wrapped, *a, **kw):
-        rv = old_update_wrapper(wrapper, wrapped, *a, **kw)
-        rv._original_function = wrapped
-        return rv
-    functools.update_wrapper = update_wrapper
-unwrap_decorators()
-del unwrap_decorators
+# linkcheck ------------------------------------------------------------
+linkcheck_anchors = False
+# Local Extensions -----------------------------------------------------
+_internal_mark_re = re.compile(r'^\s*:internal:\s*$(?m)', re.M)
+def skip_internal(app, what, name, obj, skip, options):
+def cut_module_meta(app, what, name, obj, options, lines):
+def github_link(
+    name, rawtext, text, lineno, inliner, options=None, content=None
+):
+def setup(app):
+master_doc = 'index'
 

@@ -1,5 +1,13 @@
+from setuptools import setup
+from setuptools import find_packages
+<<<<<<< REMOTE
 
-from distutils.core import setup
+=======
+try:
+    from setuptools import setup
+
+>>>>>>> LOCAL
+<<<<<<< REMOTE
 setup(name='Keras',
       version='0.0.1',
       description='Theano-based Deep Learning',
@@ -10,4 +18,10 @@ setup(name='Keras',
       packages=find_packages(),
       # TODO: dependencies
 )
+=======
+except ImportError:
+    from distutils.core import setup
+
+
+>>>>>>> LOCAL
 

@@ -53,6 +53,7 @@ six = {{version = "*", index = "pypi"}}
 [dev-packages]
             """.format(os.environ['PIPENV_TEST_INDEX']).strip()
             f.write(contents)
+
         if lock_first:
             # force source to be cached
             c = p.pipenv('lock')
@@ -75,37 +76,40 @@ six = {{version = "*", index = "pypi"}}
             assert sorted(source.items()) == sorted(project.find_source(url).items())
 
 
-
 @pytest.mark.install
 @pytest.mark.project
 @pytest.mark.parametrize('newlines', [u'\n', u'\r\n'])
 def test_maintain_file_line_endings(PipenvInstance, pypi, newlines):
     with PipenvInstance(pypi=pypi, chdir=True) as p:
         # Initial pipfile + lockfile generation
-        <<<<<<< REMOTE
-c = p.pipenv('install pytz')
+<<<<<<< REMOTE
+# Rewrite each file with parameterized newlines
 =======
-c = p.pipenv('install six')
-=======
-c = p.pipenv('install')
+
 >>>>>>> LOCAL
-        # Rewrite each file with parameterized newlines
-        for fn in [p.pipfile_path, p.lockfile_path]:
-            with io.open(fn) as f:
-                contents = f.read()
-                written_newlines = f.newlines
-            assert written_newlines == u'\n', '{0!r} != {1!r} for {2}'.format(
-                written_newlines, u'\n', fn,
-            )
-            with io.open(fn, 'w', newline=newlines) as f:
-                f.write(contents)
-        # Run pipenv install to programatically rewrite
-        assert c.return_code == 0
+<<<<<<< REMOTE
+# Run pipenv install to programatically rewrite
+=======
+assert f.newlines == u'\n', "expected {}, got {}".format(
+            repr(u'\n'),
+            repr(f.newlines),
+        )
+>>>>>>> LOCAL
+        # message because of  https://github.com/pytest-dev/pytest/issues/3443
+<<<<<<< REMOTE
+
+=======
+        with io.open(path, 'w', newline=newlines) as f:
+            f.write(contents)
+
+
+>>>>>>> LOCAL
 <<<<<<< REMOTE
 # Make sure we kept the right newlines
 =======
-c = p.pipenv('install chardet')
+before = os.path.getmtime(path)
 >>>>>>> LOCAL
+<<<<<<< REMOTE
         for fn in [p.pipfile_path, p.lockfile_path]:
             with io.open(fn) as f:
                 f.read()    # Consumes the content to detect newlines.
@@ -113,13 +117,27 @@ c = p.pipenv('install chardet')
             assert actual_newlines == newlines, '{0!r} != {1!r} for {2}'.format(
                 actual_newlines, newlines, fn,
             )
-        c = p.pipenv('install chardet')
+
+=======
+
+>>>>>>> LOCAL
+
+        assert os.path.getmtime(path) != before
+
+        assert actual_newlines == newlines, "expected {}, got {}".format(
+            repr(newlines),
+            repr(actual_newlines),
+        )
+        # message because of  https://github.com/pytest-dev/pytest/issues/3443
+        <<<<<<< REMOTE
+c = p.pipenv('install pytz')
+=======
+c = p.pipenv('install six')
+=======
+c = p.pipenv('install')
+>>>>>>> LOCAL
         assert c.return_code == 0
 
-
-
-
-
-
-
+        c = p.pipenv('install chardet')
+        assert c.return_code == 0
 

@@ -13,17 +13,12 @@ Maximum likelihood covariance estimator.
 from __future__ import division
 import warnings
 import numpy as np
-from scipy.linalg.lapack import get_lapack_funcs
 from scipy import linalg
 
 from ..base import BaseEstimator
-from ..utils import array2d
-from ..utils.extmath import fast_logdet
-
+from ..utils.extmath import fast_logdet, symmetric_pinv
 # import useful Lapack function to speedup matrices inversions
-getri, getrf = get_lapack_funcs(('getri', 'getrf'),
-                                (np.empty((), dtype=np.float64),
-                                 np.empty((), dtype=np.float64)))
+from ..utils import array2d
 
 
 def log_likelihood(emp_cov, precision):
@@ -65,13 +60,13 @@ def empirical_covariance(X, assume_centered=False):
         X = np.reshape(X, (1, -1))
         warnings.warn("Only one sample available. " \
                           "You may want to reshape your data array")
+
     if assume_centered:
         covariance = np.dot(X.T, X) / X.shape[0]
     else:
         covariance = np.cov(X.T, bias=1)
+
     return covariance
-
-
 
 
 class EmpiricalCovariance(BaseEstimator):
@@ -100,6 +95,7 @@ class EmpiricalCovariance(BaseEstimator):
     def __init__(self, store_precision=True, assume_centered=False):
         self.store_precision = store_precision
         self.assume_centered = assume_centered
+
     def _set_covariance(self, covariance):
         """Saves the covariance and precision estimates
 
@@ -125,6 +121,7 @@ self.precision_ = symmetric_pinv(covariance)
 >>>>>>> LOCAL
         else:
             self.precision_ = None
+
     def get_precision(self):
         """Getter for the precision matrix.
 
@@ -143,6 +140,7 @@ self.precision_ = symmetric_pinv(covariance)
 precision = symmetric_pinv(self.covariance_)
 >>>>>>> LOCAL
         return precision
+
     def fit(self, X):
         """Fits the Maximum Likelihood Estimator covariance model
         according to the given training data and parameters.
@@ -166,7 +164,9 @@ precision = symmetric_pinv(self.covariance_)
         covariance = empirical_covariance(
             X, assume_centered=self.assume_centered)
         self._set_covariance(covariance)
+
         return self
+
     def score(self, X_test):
         """Computes the log-likelihood of a gaussian data set with
         `self.covariance_` as an estimator of its covariance matrix.
@@ -191,7 +191,9 @@ precision = symmetric_pinv(self.covariance_)
             X_test - self.location_, assume_centered=True)
         # compute log likelihood
         res = log_likelihood(test_cov, self.get_precision())
+
         return res
+
     def error_norm(self, comp_cov, norm='frobenius', scaling=True,
                    squared=True):
         """Computes the Mean Squared Error between two covariance estimators.
@@ -238,7 +240,9 @@ precision = symmetric_pinv(self.covariance_)
             result = squared_norm
         else:
             result = np.sqrt(squared_norm)
+
         return result
+
     def mahalanobis(self, observations):
         """Computes the mahalanobis distances of given observations.
 
@@ -263,15 +267,6 @@ precision = symmetric_pinv(self.covariance_)
         centered_obs = observations - self.location_
         mahalanobis_dist = np.sum(
             np.dot(centered_obs, precision) * centered_obs, 1)
+
         return mahalanobis_dist
-
-
-
-
-
-
-
-
-
-
 

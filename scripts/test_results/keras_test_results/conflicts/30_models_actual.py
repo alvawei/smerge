@@ -41,48 +41,63 @@ def slice_X(X, start=None, stop=None):
         else:
             return X[start:stop]
 
+def calculate_class_weights(Y, class_weight):
+    if isinstance(class_weight, dict):
+        if Y.shape[1] > 1:
+            y_classes = Y.argmax(axis=1)
+        elif Y.shape[1] == 1:
+            y_classes = np.reshape(Y, Y.shape[0])
+        else:
+            y_classes = Y
+        w = np.array(map(lambda x: class_weight[x], y_classes))
+    else:
+        w = np.ones((Y.shape[0]))
+    return w
 
+<<<<<<< REMOTE
 class Model(object):
     def compile(self, optimizer, loss, class_mode="categorical", theano_mode=None):
         self.optimizer = optimizers.get(optimizer)
         self.loss = objectives.get(loss)
+
         # input of model
         self.X_train = self.get_input(train=True)
         self.X_test = self.get_input(train=False)
+
         self.y_train = self.get_output(train=True)
         self.y_test = self.get_output(train=False)
+
         # target of model
         self.y = T.zeros_like(self.y_train)
+
         # parameter for rescaling the objective function
         self.class_weights = T.vector()
+
         train_loss = self.loss(self.y, self.y_train, self.class_weights)
         test_score = self.loss(self.y, self.y_test)
+
         if class_mode == "categorical":
             train_accuracy = T.mean(T.eq(T.argmax(self.y, axis=-1), T.argmax(self.y_train, axis=-1)))
             test_accuracy = T.mean(T.eq(T.argmax(self.y, axis=-1), T.argmax(self.y_test, axis=-1)))
-<<<<<<< REMOTE
-else:
-=======
-if hasattr(self, 'cost_updates'):
->>>>>>> LOCAL
+
         elif class_mode == "binary":
             train_accuracy = T.mean(T.eq(self.y, T.round(self.y_train)))
             test_accuracy = T.mean(T.eq(self.y, T.round(self.y_test)))
         else:
-            y_classes = Y
+            raise Exception("Invalid class mode:" + str(class_mode))
         self.class_mode = class_mode
-        else:
-            train_ins = [self.X_train, self.y, self.class_weights]
-            test_ins = [self.X_test, self.y]
-            predict_ins = [self.X_test]
-            return self._test(*ins)
-        updates = self.optimizer.get_updates(self.params, self.regularizers, self.constraints,  train_loss)
+
+        updates = self.optimizer.get_updates(self.params, self.regularizers, self.constraints, train_loss)
+
         if type(self.X_train) == list:
             train_ins = self.X_train + [self.y, self.class_weights]
             test_ins = self.X_test + [self.y]
             predict_ins = self.X_test
         else:
-        w = np.ones((Y.shape[0]))
+            train_ins = [self.X_train, self.y, self.class_weights]
+            test_ins = [self.X_test, self.y]
+            predict_ins = [self.X_test]
+
         self._train = theano.function(train_ins, train_loss, 
             updates=updates, allow_input_downcast=True, mode=theano_mode)
         self._train_with_acc = theano.function(train_ins, [train_loss, train_accuracy], 
@@ -93,6 +108,8 @@ if hasattr(self, 'cost_updates'):
             allow_input_downcast=True, mode=theano_mode)
         self._test_with_acc = theano.function(test_ins, [test_score, test_accuracy], 
             allow_input_downcast=True, mode=theano_mode)
+
+
     def train(self, X, y, accuracy=False, class_weight=None):
         X = standardize_X(X)
         y = standardize_y(y)
@@ -103,37 +120,23 @@ if hasattr(self, 'cost_updates'):
             return self._train_with_acc(*ins)
         else:
             return self._train(*ins)
-            if 0 < validation_split < 1:
-                # If a validation split size is given (e.g. validation_split=0.2)
-                # then split X into smaller X and X_val,
-                # and split y into smaller y and y_val.
-                do_validation = True
-                split_at = int(len(y) * (1 - validation_split))
-                (X, X_val) = (slice_X(X, 0, split_at), slice_X(X, split_at))
-                (y, y_val) = (y[0:split_at], y[split_at:])
-                if verbose:
-                    print("Train on %d samples, validate on %d samples" % (len(y), len(y_val)))
-        X = standardize_X(X)
-        y = standardize_y(y)
-        # calculate the weight vector for the loss function
-        w = calculate_class_weights(y, class_weight)
-        ins = X + [y, w]
-        if accuracy:
-            return self._train_with_acc(*ins)
-        else:
-            return self._train(*ins)
+        
+
     def test(self, X, y, accuracy=False):
         X = standardize_X(X)
         y = standardize_y(y)
         ins = X + [y]
         if accuracy:
             return self._test_with_acc(*ins)
-                else:
-                    loss = self._train(*ins)
+        else:
+            return self._test(*ins)
+
+
     def fit(self, X, y, batch_size=128, nb_epoch=100, verbose=1, callbacks=[],
             validation_split=0., validation_data=None, shuffle=True, show_accuracy=False, class_weight=None):
         X = standardize_X(X)
         y = standardize_y(y)
+
         do_validation = False
         if validation_data:
             try:
@@ -146,11 +149,25 @@ if hasattr(self, 'cost_updates'):
             y_val = standardize_y(y_val)
             if verbose:
                 print("Train on %d samples, validate on %d samples" % (len(y), len(y_val)))
+        else:
+            if 0 < validation_split < 1:
+                # If a validation split size is given (e.g. validation_split=0.2)
+                # then split X into smaller X and X_val,
+                # and split y into smaller y and y_val.
+                do_validation = True
+                split_at = int(len(y) * (1 - validation_split))
+                (X, X_val) = (slice_X(X, 0, split_at), slice_X(X, split_at))
+                (y, y_val) = (y[0:split_at], y[split_at:])
+                if verbose:
+                    print("Train on %d samples, validate on %d samples" % (len(y), len(y_val)))
+
         index_array = np.arange(len(y))
+
         callbacks = cbks.CallbackList(callbacks)
         if verbose:
             callbacks.append(cbks.BaseLogger())
         callbacks.append(cbks.History())
+
         callbacks._set_model(self)
         callbacks._set_params({
             'batch_size': batch_size,
@@ -161,28 +178,36 @@ if hasattr(self, 'cost_updates'):
             'show_accuracy': show_accuracy
         })
         callbacks.on_train_begin()
+
         for epoch in range(nb_epoch):
             callbacks.on_epoch_begin(epoch)
             if shuffle:
                 np.random.shuffle(index_array)
+
             batches = make_batches(len(y), batch_size)
             for batch_index, (batch_start, batch_end) in enumerate(batches):
                 batch_ids = index_array[batch_start:batch_end]
                 X_batch = slice_X(X, batch_ids)
                 y_batch = y[batch_ids]
+
                 # calculate weight vector for current batch
                 w = calculate_class_weights(y_batch, class_weight)
+
                 batch_logs = {}
                 batch_logs['batch'] = batch_index
                 batch_logs['size'] = len(batch_ids)
                 callbacks.on_batch_begin(batch_index, batch_logs)
+
                 ins = X_batch + [y_batch, w]
                 if show_accuracy:
                     loss, acc = self._train_with_acc(*ins)
                     batch_logs['accuracy'] = acc
-        else:
+                else:
+                    loss = self._train(*ins)
                 batch_logs['loss'] = loss
+
                 callbacks.on_batch_end(batch_index, batch_logs)
+                
                 if batch_index == len(batches) - 1: # last batch
                     # validation
                     epoch_logs = {}
@@ -191,14 +216,17 @@ if hasattr(self, 'cost_updates'):
                             val_loss, val_acc = self.evaluate(X_val, y_val, batch_size=batch_size, \
                                 verbose=0, show_accuracy=True)
                             epoch_logs['val_accuracy'] = val_acc
-            else:
                         else:
                             val_loss = self.evaluate(X_val, y_val, batch_size=batch_size, verbose=0)
                         epoch_logs['val_loss'] = val_loss
+
             callbacks.on_epoch_end(epoch, epoch_logs)
+
         callbacks.on_train_end()
         # return history
         return callbacks.callbacks[-1]
+
+
     def predict(self, X, batch_size=128, verbose=1):
         X = standardize_X(X)
         batches = make_batches(len(X[0]), batch_size)
@@ -207,35 +235,48 @@ if hasattr(self, 'cost_updates'):
         for batch_index, (batch_start, batch_end) in enumerate(batches):
             X_batch = slice_X(X, batch_start, batch_end)
             batch_preds = self._predict(*X_batch)
+
             if batch_index == 0:
                 shape = (len(X[0]),) + batch_preds.shape[1:]
                 preds = np.zeros(shape)
             preds[batch_start:batch_end] = batch_preds
+
             if verbose == 1:
                 progbar.update(batch_end)
+
         return preds
+
     def predict_proba(self, X, batch_size=128, verbose=1):
         preds = self.predict(X, batch_size, verbose)
         if preds.min() < 0 or preds.max() > 1:
             warnings.warn("Network returning invalid probability values.")
         return preds
+
+
     def predict_classes(self, X, batch_size=128, verbose=1):
         proba = self.predict(X, batch_size=batch_size, verbose=verbose)
         if self.class_mode == "categorical":
             return proba.argmax(axis=-1)
+        else:
+            return (proba > 0.5).astype('int32')
+
+
     def evaluate(self, X, y, batch_size=128, show_accuracy=False, verbose=1):
         X = standardize_X(X)
         y = standardize_y(y)
+
         if show_accuracy:
             tot_acc = 0.
         tot_score = 0.
         seen = 0
+
         batches = make_batches(len(y), batch_size)
         if verbose:
             progbar = Progbar(target=len(y), verbose=verbose)
         for batch_index, (batch_start, batch_end) in enumerate(batches):
             X_batch = slice_X(X, batch_start, batch_end)
             y_batch = y[batch_start:batch_end]
+
             ins = X_batch + [y_batch]
             if show_accuracy:
                 loss, acc = self._test_with_acc(*ins)
@@ -244,64 +285,23 @@ if hasattr(self, 'cost_updates'):
             else:
                 loss = self._test(*ins)
                 log_values = [('loss', loss)]
-                loss = self._test(*ins)
-                log_values = [('loss', loss)]
             tot_score += loss * len(y_batch)
             seen += len(y_batch)
+
             # logging
             if verbose:
                 progbar.update(batch_end, log_values)
+
         if show_accuracy:
             return tot_score / seen, tot_acc / seen
         else:
             return tot_score / seen
-            return tot_score / seen
-        else:
-            return (proba > 0.5).astype('int32')
 
 
 
+=======
 
-
-
-
-
-
-
-
-
-        
-
-
-
-        
-
-
-
-
-
-
-
-
-
-                
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+>>>>>>> LOCAL
 
 class Sequential(Model, containers.Sequential):
     '''
@@ -315,7 +315,7 @@ class Sequential(Model, containers.Sequential):
             - predict_proba
             - predict_classes
         Inherits from containers.Sequential the following methods:
-            - add
+            - add 
             - get_output
             - get_input
             - get_weights
@@ -326,7 +326,13 @@ class Sequential(Model, containers.Sequential):
         self.params = [] # learnable
         self.regularizers = [] # same size as params
         self.constraints = [] # same size as params
-        self.cost_updates = [] # NOT the same size as params
+<<<<<<< REMOTE
+
+=======
+self.cost_updates = [] # NOT the same size as params
+>>>>>>> LOCAL
+
+
     def get_config(self, verbose=0):
         layers = []
         for i, l in enumerate(self.layers):
@@ -335,6 +341,7 @@ class Sequential(Model, containers.Sequential):
         if verbose:
             printv(layers)
         return layers
+
     def save_weights(self, filepath, overwrite=False):
         # Save weights from all layers to HDF5
         import h5py
@@ -351,6 +358,7 @@ class Sequential(Model, containers.Sequential):
             if overwrite == 'n':
                 return
             print('[TIP] Next time specify overwrite=True in save_weights!')
+
         f = h5py.File(filepath, 'w')
         f.attrs['nb_layers'] = len(self.layers)
         for k, l in enumerate(self.layers):
@@ -363,6 +371,7 @@ class Sequential(Model, containers.Sequential):
                 param_dset[:] = param
         f.flush()
         f.close()
+
     def load_weights(self, filepath):
         # Loads weights from HDF5 file
         import h5py
@@ -374,10 +383,4 @@ class Sequential(Model, containers.Sequential):
         f.close()
 
 
-
-
-
-
-
-        
 

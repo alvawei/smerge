@@ -80,9 +80,11 @@ class Pipeline(BaseEstimator):
         >>> prediction = anova_svm.predict(X)
         >>> score = anova_svm.score(X)
     """
+
     #--------------------------------------------------------------------------
     # BaseEstimator interface
     #--------------------------------------------------------------------------
+
     def __init__(self, steps):
         """
         Parameters
@@ -110,6 +112,7 @@ class Pipeline(BaseEstimator):
             ("Last step of chain should implement fit",
                 "'%s' (type %s) doesn't)" % (estimator, type(estimator))
             )
+
     def _get_params(self, deep=True):
         if not deep:
             return super(Pipeline, self)._get_params(deep=False)
@@ -119,9 +122,11 @@ class Pipeline(BaseEstimator):
                 for key, value in step._get_params(deep=True).iteritems():
                     out['%s__%s' % (name, key)] = value
             return out
+
     #--------------------------------------------------------------------------
     # Estimator interface
     #--------------------------------------------------------------------------
+
     def _pre_transform(self, X, y=None, **fit_params):
         fit_params_steps = dict((step, {}) for step, _ in self.steps)
         for pname, pval in fit_params.iteritems():
@@ -135,33 +140,40 @@ class Pipeline(BaseEstimator):
                 Xt = transform.fit(Xt, y, **fit_params_steps[name]) \
                               .transform(Xt)
         return Xt, fit_params_steps[self.steps[-1][0]]
+
     def fit(self, X, y=None, **fit_params):
         Xt, fit_params = self._pre_transform(X, y, **fit_params)
         self.steps[-1][-1].fit(Xt, y, **fit_params)
         return self
+
     def fit_transform(self, X, y=None, **fit_params):
         Xt, fit_params = self._pre_transform(X, y, **fit_params)
         return self.steps[-1][-1].fit_transform(Xt, y, **fit_params)
+
     def predict(self, X):
         Xt = X
         for name, transform in self.steps[:-1]:
             Xt = transform.transform(Xt)
         return self.steps[-1][-1].predict(Xt)
+
     def predict_proba(self, X):
         Xt = X
         for name, transform in self.steps[:-1]:
             Xt = transform.transform(Xt)
         return self.steps[-1][-1].predict_proba(Xt)
+
     def predict_log_proba(self, X):
         Xt = X
         for name, transform in self.steps[:-1]:
             Xt = transform.transform(Xt)
         return self.steps[-1][-1].predict_log_proba(Xt)
+
     def transform(self, X):
         Xt = X
         for name, transform in self.steps[:-1]:
             Xt = transform.transform(Xt)
         return self.steps[-1][-1].transform(Xt)
+
     def inverse_transform(self, X):
         if X.ndim == 1:
             X = X[None, :]
@@ -169,22 +181,10 @@ class Pipeline(BaseEstimator):
         for name, step in self.steps[:-1][::-1]:
             Xt = step.inverse_transform(Xt)
         return Xt
+
     def score(self, X, y=None):
         Xt = X
         for name, transform in self.steps[:-1]:
             Xt = transform.transform(Xt)
         return self.steps[-1][-1].score(Xt, y)
-
-
-
-
-
-
-
-
-
-
-
-
-
 

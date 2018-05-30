@@ -17,6 +17,7 @@
 See model.py for more details and usage.
 """
 
+import six
 import tensorflow as tf
 from deeplab import common
 from deeplab import model
@@ -176,9 +177,18 @@ def _build_deeplab(inputs_queue, outputs_to_num_classes, ignore_label):
       'logits_1.50'.
   """
   samples = inputs_queue.dequeue()
+
   # add name input and label so we can add to summary
   samples[common.IMAGE] = tf.identity(samples[common.IMAGE], 'input_image')
   samples[common.LABEL] = tf.identity(samples[common.LABEL], 'input_label')
+
+  # add name to graph node so we can add to summary
+  outputs_to_scales_to_logits[common.OUTPUT_TYPE][model._MERGED_LOGITS_SCOPE] = tf.identity( 
+    outputs_to_scales_to_logits[common.OUTPUT_TYPE][model._MERGED_LOGITS_SCOPE],
+    name = 'semantic_merged_logits'
+  )
+
+
   model_options = common.ModelOptions(
       outputs_to_num_classes=outputs_to_num_classes,
       crop_size=FLAGS.train_crop_size,
@@ -188,28 +198,11 @@ def _build_deeplab(inputs_queue, outputs_to_num_classes, ignore_label):
       samples[common.IMAGE],
       model_options=model_options,
       image_pyramid=FLAGS.image_pyramid,
-  for output, num_classes in six.iteritems(outputs_to_num_classes):
-    train_utils.add_softmax_cross_entropy_loss_for_each_scale(
-        outputs_to_scales_to_logits[output],
-        samples[common.LABEL],
-        num_classes,
-        ignore_label,
-        loss_weight=1.0,
-        upsample_logits=FLAGS.upsample_logits,
-        scope=output)
       weight_decay=FLAGS.weight_decay,
       is_training=True,
-  # add name to graph node so we can add to summary
-  outputs_to_scales_to_logits[common.OUTPUT_TYPE][model._MERGED_LOGITS_SCOPE] = tf.identity( 
-    outputs_to_scales_to_logits[common.OUTPUT_TYPE][model._MERGED_LOGITS_SCOPE],
-    name = 'semantic_merged_logits'
-  )
       fine_tune_batch_norm=FLAGS.fine_tune_batch_norm)
+
   return outputs_to_scales_to_logits
-
-
-
-
 
 def main(unused_argv):
   tf.logging.set_verbosity(tf.logging.INFO)
@@ -220,35 +213,142 @@ def main(unused_argv):
       replica_id=FLAGS.task,
       num_replicas=FLAGS.num_replicas,
       num_ps_tasks=FLAGS.num_ps_tasks)
+
   # Split the batch across GPUs.
   assert FLAGS.train_batch_size % config.num_clones == 0, (
       'Training batch size not divisble by number of clones (GPUs).')
+
   clone_batch_size = int(FLAGS.train_batch_size / config.num_clones)
+
   # Get dataset-dependent information.
   dataset = segmentation_dataset.get_dataset(
       FLAGS.dataset, FLAGS.train_split, dataset_dir=FLAGS.dataset_dir)
+
   tf.gfile.MakeDirs(FLAGS.train_logdir)
   tf.logging.info('Training on %s set', FLAGS.train_split)
 
+  with tf.Graph().as_default() as graph:
+    with tf.device(config.inputs_device()):
+      samples = input_generator.get(
+          dataset,
+          FLAGS.train_crop_size,
+          clone_batch_size,
+          min_resize_value=FLAGS.min_resize_value,
+          max_resize_value=FLAGS.max_resize_value,
+          resize_factor=FLAGS.resize_factor,
+          min_scale_factor=FLAGS.min_scale_factor,
+          max_scale_factor=FLAGS.max_scale_factor,
+          scale_factor_step_size=FLAGS.scale_factor_step_size,
+          dataset_split=FLAGS.train_split,
+          is_training=True,
+          model_variant=FLAGS.model_variant)
+      inputs_queue = prefetch_queue.prefetch_queue(
+          samples, capacity=128 * config.num_clones)
 
+    # Create the global step on the device storing the variables.
+    with tf.device(config.variables_device()):
+      global_step = tf.train.get_or_create_global_step()
 
+      # Define the model and create clones.
+      model_fn = _build_deeplab
+      model_args = (inputs_queue, {
+          common.OUTPUT_TYPE: dataset.num_classes
+      }, dataset.ignore_label)
+      clones = model_deploy.create_clones(config, model_fn, args=model_args)
 
+      # Gather update_ops from the first clone. These contain, for example,
+      # the updates for the batch_norm variables created by model_fn.
+      first_clone_scope = config.clone_scope(0)
+      update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS, first_clone_scope)
 
+    # Gather initial summaries.
+    summaries = set(tf.get_collection(tf.GraphKeys.SUMMARIES))
 
+    # Add summaries for model variables.
+    for model_var in slim.get_model_variables():
+      summaries.add(tf.summary.histogram(model_var.op.name, model_var))
 
+    # Add summaries for images, labels, semantic predictions
+    summary_image = graph.get_tensor_by_name(first_clone_scope + '/input_image:0')
+    summaries.add(tf.summary.image('samples/input_image', summary_image))
 
+    summary_label = tf.cast(graph.get_tensor_by_name(first_clone_scope + '/input_label:0'), tf.uint8)
+    summaries.add(tf.summary.image('samples/input_label', summary_label))
 
+    predictions = tf.cast(tf.expand_dims(tf.argmax(graph.get_tensor_by_name(first_clone_scope + '/semantic_merged_logits:0'), 3), -1), tf.uint8)
+    summaries.add(tf.summary.image('samples/semantic_predictions', predictions))
 
+    # Add summaries for losses.
+    for loss in tf.get_collection(tf.GraphKeys.LOSSES, first_clone_scope):
+      summaries.add(tf.summary.scalar('losses/%s' % loss.op.name, loss))
 
+    # Build the optimizer based on the device specification.
+    with tf.device(config.optimizer_device()):
+      learning_rate = train_utils.get_model_learning_rate(
+          FLAGS.learning_policy, FLAGS.base_learning_rate,
+          FLAGS.learning_rate_decay_step, FLAGS.learning_rate_decay_factor,
+          FLAGS.training_number_of_steps, FLAGS.learning_power,
+          FLAGS.slow_start_step, FLAGS.slow_start_learning_rate)
+      optimizer = tf.train.MomentumOptimizer(learning_rate, FLAGS.momentum)
+      summaries.add(tf.summary.scalar('learning_rate', learning_rate))
 
+    startup_delay_steps = FLAGS.task * FLAGS.startup_delay_steps
+    for variable in slim.get_model_variables():
+      summaries.add(tf.summary.histogram(variable.op.name, variable))
 
+    with tf.device(config.variables_device()):
+      total_loss, grads_and_vars = model_deploy.optimize_clones(
+          clones, optimizer)
+      total_loss = tf.check_numerics(total_loss, 'Loss is inf or nan.')
+      summaries.add(tf.summary.scalar('total_loss', total_loss))
 
+      # Modify the gradients for biases and last layer variables.
+      last_layers = model.get_extra_layer_scopes()
+      grad_mult = train_utils.get_model_gradient_multipliers(
+          last_layers, FLAGS.last_layer_gradient_multiplier)
+      if grad_mult:
+        grads_and_vars = slim.learning.multiply_gradients(
+            grads_and_vars, grad_mult)
 
+      # Create gradient update op.
+      grad_updates = optimizer.apply_gradients(
+          grads_and_vars, global_step=global_step)
+      update_ops.append(grad_updates)
+      update_op = tf.group(*update_ops)
+      with tf.control_dependencies([update_op]):
+        train_tensor = tf.identity(total_loss, name='train_op')
 
+    # Add the summaries from the first clone. These contain the summaries
+    # created by model_fn and either optimize_clones() or _gather_clone_loss().
+    summaries |= set(
+        tf.get_collection(tf.GraphKeys.SUMMARIES, first_clone_scope))
 
+    # Merge all summaries together.
+    summary_op = tf.summary.merge(list(summaries))
 
+    # Soft placement allows placing on CPU ops without GPU implementation.
+    session_config = tf.ConfigProto(
+        allow_soft_placement=True, log_device_placement=False)
 
-
+    # Start the training.
+    slim.learning.train(
+        train_tensor,
+        logdir=FLAGS.train_logdir,
+        log_every_n_steps=FLAGS.log_steps,
+        master=FLAGS.master,
+        number_of_steps=FLAGS.training_number_of_steps,
+        is_chief=(FLAGS.task == 0),
+        session_config=session_config,
+        startup_delay_steps=startup_delay_steps,
+        init_fn=train_utils.get_model_init_fn(
+            FLAGS.train_logdir,
+            FLAGS.tf_initial_checkpoint,
+            FLAGS.initialize_last_layer,
+            last_layers,
+            ignore_missing_vars=True),
+        summary_op=summary_op,
+        save_summaries_secs=FLAGS.save_summaries_secs,
+        save_interval_secs=FLAGS.save_interval_secs)
 
 
 if __name__ == '__main__':

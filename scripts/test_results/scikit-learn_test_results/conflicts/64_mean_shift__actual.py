@@ -6,33 +6,52 @@ Authors: Conrad Lee conradlee@gmail.com
          Gael Varoquaux gael.varoquaux@normalesup.org
 """
 
-from math import floor
+from collections import defaultdict
 import numpy as np
 
+from ..utils import extmath, check_random_state
 from ..base import BaseEstimator
-from ..metrics.pairwise import euclidean_distances
+from ..ball_tree import BallTree
 
 
-def estimate_bandwidth(X, quantile=0.3):
-    """Estimate the bandwith ie the radius to use with an RBF kernel
-    in the MeanShift algorithm
+def estimate_bandwidth(X, quantile=0.3, n_samples=None, random_state=0):
+    """Estimate the bandwith to use with MeanShift algorithm
 
+    Parameters
+    ----------
     X: array [n_samples, n_features]
         Input points
 
     quantile: float, default 0.3
         should be between [0, 1]
         0.5 means that the median is all pairwise distances is used
+
+    n_samples: int
+        The number of samples to use. If None, all samples are used.
+
+    random_state: int or RandomState
+        Pseudo number generator state used for random sampling.
+
+    Returns
+    -------
+    bandwidth: float
+        The bandwidth parameter
     """
-    distances = euclidean_distances(X, X)
-    distances = np.triu(distances, 1)
-    distances_sorted = np.sort(distances[distances > 0])
-    bandwidth = distances_sorted[floor(quantile * len(distances_sorted))]
+    random_state = check_random_state(random_state)
+    if n_samples is not None:
+        idx = random_state.permutation(X.shape[0])[:n_samples]
+        X = X[idx]
+    d, _ = BallTree(X).query(X, int(X.shape[0] * quantile),
+                             return_distance=True)
+    bandwidth = np.mean(np.max(d, axis=1))
     return bandwidth
 
 
-def mean_shift(X, bandwidth=None):
+def mean_shift(X, bandwidth=None, seeds=None, bin_seeding=False,
+               cluster_all=True, max_iterations=300):
     """Perform MeanShift Clustering of data using a flat kernel
+
+    Seed using a binning technique for scalability.
 
     Parameters
     ----------
@@ -44,6 +63,22 @@ def mean_shift(X, bandwidth=None):
         kernel bandwidth
         If bandwidth is not defined, it is set using
         a heuristic given by the median of all pairwise distances
+
+    seeds: array [n_seeds, n_features]
+        point used as initial kernel locations
+
+    bin_seeding: boolean
+        If true, initial kernel locations are not locations of all
+        points, but rather the location of the discretized version of
+        points, where points are binned onto a grid whose coarseness
+        corresponds to the bandwidth. Setting this option to True will speed
+        up the algorithm because fewer seeds will be initialized.
+        default value: False
+        Ignored if seeds argument is not None
+
+    min_bin_freq: int, optional
+       To speed up the algorithm, accept only those bins with at least
+       min_bin_freq points as seeds. If not defined, set to 1.
 
     Returns
     -------
@@ -58,97 +93,108 @@ def mean_shift(X, bandwidth=None):
     -----
     See examples/plot_meanshift.py for an example.
 
-    K. Funkunaga and L.D. Hosteler, "The Estimation of the Gradient of a
-    Density Function, with Applications in Pattern Recognition"
-
     """
+
     if bandwidth is None:
         bandwidth = estimate_bandwidth(X)
+    if seeds is None:
+        if bin_seeding:
+            seeds = get_bin_seeds(X, bandwidth)
+        else:
+            seeds = X
     n_points, n_features = X.shape
-    n_clusters = 0
-    bandwidth_squared = bandwidth ** 2
-    points_idx_init = np.arange(n_points)
     stop_thresh = 1e-3 * bandwidth  # when mean has converged
-    cluster_centers = []  # center of clusters
-    # track if a points been seen already
-    been_visited_flag = np.zeros(n_points, dtype=np.bool)
-    # number of points to possibly use as initilization points
-    n_points_init = n_points
-    # used to resolve conflicts on cluster membership
-    cluster_votes = []
-    random_state = np.random.RandomState(0)
-    while n_points_init:
-        # pick a random seed point
-        tmp_index = random_state.randint(n_points_init)
-        # use this point as start of mean
-        start_idx = points_idx_init[tmp_index]
-        my_mean = X[start_idx, :]  # intilize mean to this points location
-        # points that will get added to this cluster
-        my_members = np.zeros(n_points, dtype=np.bool)
-        # used to resolve conflicts on cluster membership
-        this_cluster_votes = np.zeros(n_points, dtype=np.uint16)
-        while True:  # loop until convergence
-            # dist squared from mean to all points still active
-            sqrt_dist_to_all = np.sum((my_mean - X) ** 2, axis=1)
-            # points within bandwidth
-            in_idx = sqrt_dist_to_all < bandwidth_squared
-            # add a vote for all the in points belonging to this cluster
-            this_cluster_votes[in_idx] += 1
+    center_intensity_dict = {}
+    ball_tree = BallTree(X)  # to efficiently look up nearby points
+
+    # For each seed, climb gradient until convergence or max_iterations
+    for my_mean in seeds:
+        completed_iterations = 0
+        while True:
+            # Find mean of points within bandwidth
+            points_within = X[ball_tree.query_radius([my_mean], bandwidth)[0]]
+            if len(points_within) == 0:
+                break  # Depending on seeding strategy this condition may occur
             my_old_mean = my_mean  # save the old mean
-            my_mean = np.mean(X[in_idx, :], axis=0)  # compute the new mean
-            # add any point within bandwidth to the cluster
-            my_members = np.logical_or(my_members, in_idx)
-            # mark that these points have been visited
-            been_visited_flag[my_members] = True
-            if np.linalg.norm(my_mean - my_old_mean) < stop_thresh:
-                # check for merge possibilities
-                merge_with = -1
-                for c in range(n_clusters):
-                    # distance from possible new clust max to old clust max
-                    dist_to_other = np.linalg.norm(my_mean -
-                                                        cluster_centers[c])
-                    # if its within bandwidth/2 merge new and old
-                    if dist_to_other < bandwidth / 2:
-                        merge_with = c
+            my_mean = np.mean(points_within, axis=0)
+            # If converged or at max_iterations, addS the cluster
+            if extmath.norm(my_mean - my_old_mean) < stop_thresh or \
+                   completed_iterations == max_iterations:
+                center_intensity_dict[tuple(my_mean)] = len(points_within)
                 break
-                if merge_with >= 0:  # something to merge
-                    # record the max as the mean of the two merged
-                    # (I know biased twoards new ones)
-                    cluster_centers[merge_with] = 0.5 * (my_mean +
-                                                cluster_centers[merge_with])
-                    # add these votes to the merged cluster
-                    cluster_votes[merge_with] += this_cluster_votes
-                else:  # its a new cluster
-                    n_clusters += 1  # increment clusters
-                    cluster_centers.append(my_mean)  # record the mean
-                    cluster_votes.append(this_cluster_votes)
-                break
-        # we can initialize with any of the points not yet visited
-        points_idx_init = np.where(been_visited_flag == False)[0]
-        n_points_init = points_idx_init.size  # number of active points in set
-    # a point belongs to the cluster with the most votes
-    labels = np.argmax(cluster_votes, axis=0)
+            completed_iterations += 1
+
+    # POST PROCESSING: remove near duplicate points
+    # If the distance between two kernels is less than the bandwidth,
+    # then we have to remove one because it is a duplicate. Remove the
+    # one with fewer points.
+    sorted_by_intensity = sorted(center_intensity_dict.items(),
+                                 key=lambda tup: tup[1], reverse=True)
+    sorted_centers = np.array([tup[0] for tup in sorted_by_intensity])
+    unique = np.ones(len(sorted_centers), dtype=np.bool)
+    cc_tree = BallTree(sorted_centers)
+    for i, center in enumerate(sorted_centers):
+        if unique[i]:
+            neighbor_idxs = cc_tree.query_radius([center], bandwidth)[0]
+            unique[neighbor_idxs] = 0
+            unique[i] = 1  # leave the current point as uniuqe
+    cluster_centers = sorted_centers[unique]
+
+    # ASSIGN LABELS: a point belongs to the cluster that it is closest to
+    centers_tree = BallTree(cluster_centers)
+    labels = np.zeros(n_points, dtype=np.int)
+    distances, idxs = centers_tree.query(X, 1)
+    if cluster_all:
+        labels = idxs.flatten()
+    else:
+        labels[:] = -1
+        bool_selector = distances.flatten() <= bandwidth
+        labels[bool_selector] = idxs.flatten()[bool_selector]
     return cluster_centers, labels
 
 
+def get_bin_seeds(X, bin_size, min_bin_freq=1):
+    """
+    Finds seeds for clustering.mean_shift by first binning
+    data onto a grid whose lines are spaced bin_size apart, and then
+    choosing those bins with at least min_bin_freq points.
+    Parameters
+    ----------
 
+    X : array [n_samples, n_features]
+        Input points, the same points that will be used in mean_shift
 
+    bin_size: float
+        Controls the coarseness of the binning. Smaller values lead
+        to more seeding (which is computationally more expensive). If you're
+        not sure how to set this, set it to the value of the bandwidth used
+        in clustering.mean_shift
 
+    min_bin_freq: integer, default 1
+        Only bins with at least min_bin_freq will be selected as seeds.
+        Raising this value decreases the number of seeds found, which
+        makes mean_shift computationally cheaper.
+    Returns
+    -------
 
+    bin_seeds : array [n_samples, n_features]
+        points used as initial kernel posistions in clustering.mean_shift
+    """
 
+    # Bin points
+    bin_sizes = defaultdict(int)
+    for point in X:
+        binned_point = np.cast[np.int32](point / bin_size)
+        bin_sizes[tuple(binned_point)] += 1
 
-
-
-
-
-
-
-
-
-
-
+    # Select only those bins as seeds which have enough members
+    bin_seeds = np.array([point for point, freq in bin_sizes.iteritems() if \
+                          freq >= min_bin_freq], dtype=np.float32)
+    bin_seeds = bin_seeds * bin_size
+    return bin_seeds
 
 ##############################################################################
+
 
 class MeanShift(BaseEstimator):
     """MeanShift clustering
@@ -211,6 +257,7 @@ class MeanShift(BaseEstimator):
     the mean shift algorithm and will be the bottleneck if it is used.
 
     """
+
     def __init__(self, bandwidth=None, seeds=None, bin_seeding=False,
                  cluster_all=True):
         self.bandwidth = bandwidth
@@ -219,6 +266,7 @@ class MeanShift(BaseEstimator):
         self.cluster_all = cluster_all
         self.cluster_centers_ = None
         self.labels_ = None
+
     def fit(self, X):
         """ Compute MeanShift
 
@@ -230,6 +278,4 @@ class MeanShift(BaseEstimator):
         """
         self.cluster_centers_, self.labels_ = mean_shift(X, self.bandwidth)
         return self
-
-
 

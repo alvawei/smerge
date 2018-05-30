@@ -26,23 +26,30 @@ import string
 
 class LookupModule(object):
     LENGTH = 20
+
     def __init__(self, length=None, encrypt=None, basedir=None, **kwargs):
         self.basedir = basedir
+
     def random_salt(self):
         salt_chars = ascii_letters + digits + './'
         return utils.random_password(length=8, chars=salt_chars)
+
     def run(self, terms, inject=None, **kwargs):
         terms = utils.listify_lookup_plugin_terms(terms, self.basedir, inject)
+
         ret = []
+
         for term in terms:
             # you can't have escaped spaces in yor pathname
             params = term.split()
             relpath = params[0]
+
             paramvals = {
                 'length': LookupModule.LENGTH,
                 'encrypt': None,
                 'chars': ['ascii_letters','digits',".,:-_"],
             }
+
             # get non-default parameters if specified
             try:
                 for param in params[1:]:
@@ -59,9 +66,11 @@ class LookupModule(object):
                         paramvals[name] = value
             except (ValueError, AssertionError) as e:
                 raise errors.AnsibleError(e)
+
             length  = paramvals['length']
             encrypt = paramvals['encrypt']
             use_chars = paramvals['chars']
+
             # get password or create it if file doesn't exist
             path = utils.path_dwim(self.basedir, relpath)
             if not os.path.exists(path):
@@ -80,12 +89,14 @@ class LookupModule(object):
             else:
                 content = open(path).read().rstrip()
                 sep = content.find(' ')
+
                 if sep >= 0:
                     password = content[:sep]
                     salt = content[sep+1:].split('=')[1]
                 else:
                     password = content
                     salt = None
+
                 # crypt requested, add salt if missing
                 if (encrypt is not None and not salt):
                     salt = self.random_salt()
@@ -96,24 +107,13 @@ class LookupModule(object):
                 elif (encrypt is None and salt):
                     with open(path, 'w') as f:
                         f.write(password + '\n')
+
             if encrypt:
                 password = utils.do_encrypt(password, encrypt, salt=salt)
+
             ret.append(password)
+
         return ret
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

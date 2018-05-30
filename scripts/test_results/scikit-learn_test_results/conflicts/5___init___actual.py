@@ -25,7 +25,7 @@ from .classification import precision_score
 from .classification import recall_score
 from .classification import zero_one_loss
 
-# Deprecated in 0.16
+from . import cluster
 from .cluster import adjusted_mutual_info_score
 from .cluster import adjusted_rand_score
 from .cluster import completeness_score
@@ -37,7 +37,7 @@ from .cluster import normalized_mutual_info_score
 from .cluster import silhouette_samples
 from .cluster import silhouette_score
 from .cluster import v_measure_score
-from .ranking import auc_score
+
 from .pairwise import euclidean_distances
 from .pairwise import pairwise_distances
 from .pairwise import pairwise_distances_argmin
@@ -51,9 +51,9 @@ from .regression import r2_score
 
 from .scorer import make_scorer
 from .scorer import SCORERS
-from . import cluster
 
-
+# Deprecated in 0.16
+from .ranking import auc_score
 
 __all__ = [
     'accuracy_score',

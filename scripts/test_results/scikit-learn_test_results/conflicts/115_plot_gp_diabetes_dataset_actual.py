@@ -20,14 +20,26 @@ of the Gaussian Process model. Based on these predictions, we compute a
 leave-one-out of the coefficient of determination (Q2).
 """
 
+from scikits.learn import datasets
+# XXX : why doing this below?
+<<<<<<< REMOTE
+gp.thetaU = None
+=======
+# Estimate the leave-one-out coefficient of determination score
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+gp.verbose = False
+=======
+Q2, y_pred = gp.score(return_predictions=True)
+>>>>>>> LOCAL
+n_jobs = -1 # use all CPUs available on the machine
+# XXX : I'm lost. Why y_pred = y + ... ?
+
 # Author: Vincent Dubourg <vincent.dubourg@gmail.com>
 # License: BSD style
-
-from scikits.learn import datasets, cross_val, metrics
 from scikits.learn.gaussian_process import GaussianProcess
 from matplotlib import pyplot as pl
 
-# Print the docstring
 print __doc__
 
 # Load the dataset from scikits' data sets
@@ -39,23 +51,9 @@ gp = GaussianProcess(regr='constant', corr='absolute_exponential',
                      theta0=[1e-4] * 10, thetaL=[1e-12] * 10,
                      thetaU=[1e-2] * 10, nugget=1e-2, optimizer='Welch',
                      verbose=True)
-
 # Fit the GP model to the data
 gp.fit(X, y)
-gp.theta0 = gp.theta
-gp.thetaL = None
-gp.thetaU = None
-gp.verbose = False
 
-# Estimate the leave-one-out predictions using the cross_val module
-n_jobs = 2 # the distributing capacity available on the machine
-y_pred = y + cross_val.cross_val_score(gp, X, y=y,
-                                   cv=cross_val.LeaveOneOut(y.size),
-                                   n_jobs=n_jobs,
-                                ).ravel()
-
-# Compute the empirical explained variance
-Q2 = metrics.explained_variance_score(y, y_pred)
 
 # Goodness-of-fit plot
 pl.figure()

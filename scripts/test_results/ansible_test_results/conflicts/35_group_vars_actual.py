@@ -24,17 +24,23 @@ import ansible.constants as C
 class VarsModule(object):
     def __init__(self, inventory):
         self.inventory = inventory
+
     def run(self, host):
         # return the inventory variables for the host
+
         inventory = self.inventory
         #hostrec = inventory.get_host(host)
+
         groupz = sorted(inventory.groups_for_host(host.name), key=lambda g: g.depth)
         groups = [ g.name for g in groupz ]
         basedir = inventory.basedir()
+
         if basedir is None:
             # could happen when inventory is passed in via the API
             return
+
         results = {}
+
         # load vars in inventory_dir/group_vars/name_of_group
         for x in groups:
             p = os.path.join(basedir, "group_vars/%s" % x)
@@ -50,6 +56,7 @@ class VarsModule(object):
                     else:
                         results.update(data)
                     break
+
         # load vars in inventory_dir/hosts_vars/name_of_host
         p = os.path.join(basedir, "host_vars/%s" % host.name)
         paths = [p, '.'.join([p, 'yml']), '.'.join([p, 'yaml'])]
@@ -65,13 +72,6 @@ class VarsModule(object):
                     results.update(data)
                 break
         return results
-
-
-
-
-
-
-
 
 
 

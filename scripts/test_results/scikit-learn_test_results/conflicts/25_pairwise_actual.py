@@ -41,7 +41,6 @@ from scipy.sparse import issparse
 
 from ..utils import safe_asarray
 from ..utils import atleast2d_or_csr
-from ..utils import deprecated
 from ..utils import gen_even_slices
 from ..utils.extmath import safe_sparse_dot
 from ..externals.joblib import Parallel
@@ -82,9 +81,9 @@ def check_pairwise_arrays(X, Y):
         X = safe_asarray(X)
         X = Y = atleast2d_or_csr(X, dtype=np.float)
     else:
-        X = safe_asarray(X)
-        X = safe_asarray(X)
-        X = safe_asarray(X)
+        Y = safe_asarray(Y)
+        X = atleast2d_or_csr(X, dtype=np.float)
+        Y = atleast2d_or_csr(Y, dtype=np.float)
     if len(X.shape) < 2:
         raise ValueError("X is required to be at least two dimensional.")
     if len(Y.shape) < 2:
@@ -150,6 +149,7 @@ def euclidean_distances(X, Y=None, Y_norm_squared=None, squared=False):
         XX = X.multiply(X).sum(axis=1)
     else:
         XX = np.sum(X * X, axis=1)[:, np.newaxis]
+
     if X is Y:  # shortcut in the common case euclidean_distances(X, X)
         YY = XX.T
     elif Y_norm_squared is None:
@@ -166,6 +166,7 @@ def euclidean_distances(X, Y=None, Y_norm_squared=None, squared=False):
         if YY.shape != (1, Y.shape[0]):
             raise ValueError(
                         "Incompatible dimensions for Y and Y_norm_squared")
+
     # TODO: a faster Cython implementation would do the clipping of negative
     # values in a single pass over the output matrix.
     distances = safe_sparse_dot(X, Y.T, dense_output=True)
@@ -173,20 +174,13 @@ def euclidean_distances(X, Y=None, Y_norm_squared=None, squared=False):
     distances += XX
     distances += YY
     np.maximum(distances, 0, distances)
+
     if X is Y:
         # Ensure that distances between vectors and themselves are set to 0.0.
         # This may not be the case due to floating point rounding errors.
         distances.flat[::distances.shape[0] + 1] = 0.0
+
     return distances if squared else np.sqrt(distances)
-
-
-
-
-
-
-@deprecated("to be deprecated in v0.11; use euclidean_distances instead")
-def euclidian_distances(*args, **kwargs):
-    return euclidean_distances(*args, **kwargs)
 
 
 def manhattan_distances(X, Y=None, sum_over_features=True):
@@ -289,12 +283,12 @@ def polynomial_kernel(X, Y=None, degree=3, gamma=0, coef0=1):
     X, Y = check_pairwise_arrays(X, Y)
     if gamma == 0:
         gamma = 1.0 / X.shape[1]
+
     K = linear_kernel(X, Y)
     K *= gamma
     K += coef0
     K **= degree
     return K
-
 
 
 def sigmoid_kernel(X, Y=None, gamma=0, coef0=1):
@@ -318,12 +312,12 @@ def sigmoid_kernel(X, Y=None, gamma=0, coef0=1):
     X, Y = check_pairwise_arrays(X, Y)
     if gamma == 0:
         gamma = 1.0 / X.shape[1]
+
     K = linear_kernel(X, Y)
     K *= gamma
     K += coef0
     np.tanh(K, K)   # compute tanh in-place
     return K
-
 
 
 def rbf_kernel(X, Y=None, gamma=0):
@@ -347,11 +341,11 @@ def rbf_kernel(X, Y=None, gamma=0):
     X, Y = check_pairwise_arrays(X, Y)
     if gamma == 0:
         gamma = 1.0 / X.shape[1]
+
     K = euclidean_distances(X, Y, squared=True)
     K *= -gamma
     np.exp(K, K)    # exponentiate K in-place
     return K
-
 
 
 # Helper functions - distance
@@ -394,16 +388,15 @@ def _parallel_pairwise(X, Y, func, n_jobs, **kwds):
     and compute them in parallel"""
     if n_jobs < 0:
         n_jobs = max(cpu_count() + 1 + n_jobs, 1)
+
     if Y is None:
         Y = X
+
     ret = Parallel(n_jobs=n_jobs, verbose=0)(
             delayed(func)(X, Y[s], **kwds)
             for s in gen_even_slices(Y.shape[0], n_jobs))
+
     return np.hstack(ret)
-
-
-
-
 
 
 def pairwise_distances(X, Y=None, metric="euclidean", n_jobs=1, **kwds):

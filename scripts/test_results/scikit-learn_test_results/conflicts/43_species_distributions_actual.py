@@ -37,13 +37,13 @@ Notes:
 
 from cStringIO import StringIO
 
-import os
+from os.path import join
+from os.path import join, exists
+from os.path import exists
 from os import makedirs
-from os.path import join, normpath, split, exists
 
 import urllib2
 
-import pylab as pl
 import numpy as np
 
 from sklearn.datasets.base import get_data_home, Bunch
@@ -68,15 +68,15 @@ def _load_coverage(F, header_length=6,
     except:
         F = open(F)
         header = [F.readline() for i in range(header_length)]
+
     make_tuple = lambda t: (t.split()[0], float(t.split()[1]))
     header = dict([make_tuple(line) for line in header])
+
     M = np.loadtxt(F, dtype=dtype)
     nodata = header['NODATA_value']
     if nodata != -9999:
         M[nodata] = -9999
     return M
-
-
 
 
 def _load_csv(F):
@@ -97,12 +97,12 @@ def _load_csv(F):
     except:
         F = open(F)
         names = F.readline().strip().split(',')
+
     rec = np.loadtxt(F, skiprows=1, delimiter=',',
                      dtype='a22,f4,f4')
     rec.dtype.names = names
+
     return rec
-
-
 
 
 def construct_grids(batch):
@@ -123,13 +123,13 @@ def construct_grids(batch):
     xmax = xmin + (batch.Nx * batch.grid_size)
     ymin = batch.y_left_lower_corner + batch.grid_size
     ymax = ymin + (batch.Ny * batch.grid_size)
+
     # x coordinates of the grid cells
     xgrid = np.arange(xmin, xmax, batch.grid_size)
     # y coordinates of the grid cells
     ygrid = np.arange(ymin, ymax, batch.grid_size)
+
     return (xgrid, ygrid)
-
-
 
 
 def fetch_species_distributions(data_home=None,
@@ -207,6 +207,7 @@ def fetch_species_distributions(data_home=None,
     data_home = get_data_home(data_home)
     if not exists(data_home):
         makedirs(data_home)
+
     # Define parameters for the data files.  These should not be changed
     # unless the data model changes.  They will be saved in the npz file
     # with the downloaded data.
@@ -216,19 +217,24 @@ def fetch_species_distributions(data_home=None,
                         Ny=1592,
                         grid_size=0.05)
     dtype = np.int16
+
     if not exists(join(data_home, DATA_ARCHIVE_NAME)):
         print 'Downloading species data from %s to %s' % (SAMPLES_URL,
                                                           data_home)
         X = np.load(StringIO(urllib2.urlopen(SAMPLES_URL).read()))
+
         for f in X.files:
             fhandle = StringIO(X[f])
             if 'train' in f:
                 train = _load_csv(fhandle)
             if 'test' in f:
                 test = _load_csv(fhandle)
+
         print 'Downloading coverage data from %s to %s' % (COVERAGES_URL,
                                                            data_home)
+
         X = np.load(StringIO(urllib2.urlopen(COVERAGES_URL).read()))
+
         coverages = []
         for f in X.files:
             fhandle = StringIO(X[f])
@@ -236,6 +242,7 @@ def fetch_species_distributions(data_home=None,
             coverages.append(_load_coverage(fhandle))
         coverages = np.asarray(coverages,
                                dtype=dtype)
+
         bunch = Bunch(coverages=coverages,
                       test=test,
                       train=train,
@@ -243,13 +250,6 @@ def fetch_species_distributions(data_home=None,
         joblib.dump(bunch, join(data_home, DATA_ARCHIVE_NAME))
     else:
         bunch = joblib.load(join(data_home, DATA_ARCHIVE_NAME))
+
     return bunch
-
-
-
-
-
-
-
-
 

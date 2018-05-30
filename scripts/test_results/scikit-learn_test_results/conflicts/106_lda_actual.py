@@ -53,15 +53,19 @@ class LDA(BaseEstimator, ClassifierMixin):
     QDA
 
     """
+
     def __init__(self, n_components=None, priors=None):
         self.n_components = n_components
         self.priors = np.asarray(priors) if priors is not None else None
+
         if self.priors is not None:
             if (self.priors < 0).any():
                 raise ValueError('priors must be non-negative')
             if self.priors.sum() != 1:
                 print 'warning: the priors do not sum to 1. Renormalizing'
                 self.priors = self.priors / self.priors.sum()
+            
+
     def fit(self, X, y, store_covariance=False, tol=1.0e-4, **params):
         """
         Fit the LDA model according to the given training data and parameters.
@@ -107,6 +111,7 @@ class LDA(BaseEstimator, ClassifierMixin):
             self.priors_ = counts / float(n_samples)
         else:
             self.priors_ = self.priors
+        
         # Group means n_classes*n_features matrix
         means = []
         Xc = []
@@ -125,8 +130,10 @@ class LDA(BaseEstimator, ClassifierMixin):
         if store_covariance:
             cov /= (n_samples - n_classes)
             self.covariance_ = cov
+
         self.means_ = np.asarray(means)
         Xc = np.concatenate(Xc, 0)
+
         # ----------------------------
         # 1) within (univariate) scaling by with classes std-dev
         scaling = 1. / Xc.std(0)
@@ -136,33 +143,39 @@ class LDA(BaseEstimator, ClassifierMixin):
         X = np.sqrt(fac) * (Xc * scaling)
         # SVD of centered (within)scaled data
         U, S, V = linalg.svd(X, full_matrices=0)
+
         rank = np.sum(S > tol)
         if rank < n_features:
             warnings.warn("Variables are collinear")
         # Scaling of within covariance is: V' 1/S
         scaling = (scaling * V.T[:, :rank].T).T / S[:rank]
+        
         ## ----------------------------
         ## 3) Between variance scaling
         # Overall mean
-        xbar = np.dot(self.priors_, self.means_)
+        xbar = np.dot(self.priors_, means)
         # Scale weighted centers
-        X = np.dot(((np.sqrt((n_samples * self.priors_) * fac)) *
-                    (means - xbar).T).T, scaling)
+        X = np.dot(((np.sqrt((n_samples * self.priors_)*fac)) *
+                          (means - xbar).T).T, scaling)
+        
         # Centers are living in a space with n_classes-1 dim (maximum)
         # Use svd to find projection in the space spanned by the
         # (n_classes) centers
         _, S, V = linalg.svd(X, full_matrices=0)
+
         rank = np.sum(S > tol * S[0])
         print S, rank
         # compose the scalings
         self.scaling = np.dot(scaling, V.T[:, :rank])
         self.xbar_ = xbar
         # weight vectors / centroids
-        self.coef_ = np.dot(self.means_ - self.xbar_, self.scaling)
+        self.coef_ = np.dot(means - self.xbar_, self.scaling)
         self.intercept_ = -0.5 * np.sum(self.coef_ ** 2, axis=1) + \
                            np.log(self.priors_)
+
         self.classes = classes
         return self
+
     def decision_function(self, X):
         """
         This function return the decision function values related to each
@@ -180,6 +193,7 @@ class LDA(BaseEstimator, ClassifierMixin):
         # center and scale data
         X = np.dot(X - self.xbar_, self.scaling)
         return np.dot(X, self.coef_.T) + self.intercept_
+
     def transform(self, X):
         """
         This function return the decision function values related to each
@@ -198,6 +212,7 @@ class LDA(BaseEstimator, ClassifierMixin):
         X = np.dot(X - self.xbar_, self.scaling)
         n_comp = X.shape[1] if self.n_components is None else self.n_components
         return np.dot(X, self.coef_[:, :n_comp].T) + self.intercept_
+
     def predict(self, X):
         """
         This function does classification on an array of test vectors X.
@@ -215,6 +230,7 @@ class LDA(BaseEstimator, ClassifierMixin):
         d = self.decision_function(X)
         y_pred = self.classes[d.argmax(1)]
         return y_pred
+
     def predict_proba(self, X):
         """
         This function return posterior probabilities of classification
@@ -234,6 +250,7 @@ class LDA(BaseEstimator, ClassifierMixin):
         likelihood = np.exp(values - values.max(axis=1)[:, np.newaxis])
         # compute posterior probabilities
         return likelihood / likelihood.sum(axis=1)[:, np.newaxis]
+
     def predict_log_proba(self, X):
         """
         This function return posterior log-probabilities of classification
@@ -251,21 +268,4 @@ class LDA(BaseEstimator, ClassifierMixin):
         loglikelihood = (values - values.max(axis=1)[:, np.newaxis])
         normalization = np.logaddexp.reduce(loglikelihood, axis=1)
         return loglikelihood - normalization[:, np.newaxis]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -108,22 +108,22 @@ def randomized_range_finder(A, size, n_iterations, random_state=None):
     Halko, et al., 2009 (arXiv:909) http://arxiv.org/pdf/0909.4061
     """
     random_state = check_random_state(random_state)
+
     # generating random gaussian vectors r with shape: (A.shape[1], size)
     R = random_state.normal(size=(A.shape[1], size))
+
     # sampling the range of A using by linear projection of r
     Y = safe_sparse_dot(A, R)
     del R
+
     # perform power iterations with Y to further 'imprint' the top
     # singular vectors of A in Y
     for i in xrange(n_iterations):
         Y = safe_sparse_dot(A, safe_sparse_dot(A.T, Y))
+
     # extracting an orthonormal basis of the A range samples
     Q, R = qr_economic(Y)
     return Q
-
-
-
-
 
 
 def randomized_svd(M, n_components, n_oversamples=10, n_iterations=0,
@@ -176,28 +176,28 @@ def randomized_svd(M, n_components, n_oversamples=10, n_iterations=0,
     random_state = check_random_state(random_state)
     n_random = n_components + n_oversamples
     n_samples, n_features = M.shape
+
     if transpose == 'auto' and n_samples > n_features:
         transpose = True
     if transpose:
         # this implementation is a bit faster with smaller shape[1]
         M = M.T
+
     Q = randomized_range_finder(M, n_random, n_iterations, random_state)
+
     # project M to the (k + p) dimensional space using the basis vectors
     B = safe_sparse_dot(Q.T, M)
+
     # compute the SVD on the thin matrix: (k + p) wide
     Uhat, s, V = linalg.svd(B, full_matrices=False)
     del B
     U = np.dot(Q, Uhat)
+
     if transpose:
         # transpose back the results according to the input convention
         return V[:n_components, :].T, s[:n_components], U[:, :n_components].T
     else:
         return U[:, :n_components], s[:n_components], V[:n_components, :]
-
-
-
-
-
 
 
 @deprecated("fast_svd is deprecated in 0.10 and will be removed in 0.12: "
@@ -287,8 +287,10 @@ def weighted_mode(a, w, axis=0):
         a = np.asarray(a)
         w = np.asarray(w)
         axis = axis
+
     if a.shape != w.shape:
         w = np.zeros(a.shape, dtype=w.dtype) + w
+
     scores = np.unique(np.ravel(a))       # get ALL unique values
     testshape = list(a.shape)
     testshape[axis] = 1
@@ -303,8 +305,6 @@ def weighted_mode(a, w, axis=0):
         oldcounts = np.maximum(counts, oldcounts)
         oldmostfreq = mostfrequent
     return mostfrequent, oldcounts
-
-
 
 
 def symmetric_pinv(a, cond=None, rcond=None):
@@ -348,6 +348,7 @@ def symmetric_pinv(a, cond=None, rcond=None):
     a = np.asarray_chkfinite(a)
     s, u = linalg.eigh(a)
     # eigh returns eigvals in reverse order, but this doesn't affect anything.
+
     t = u.dtype.char
     if rcond is not None:
         cond = rcond
@@ -359,10 +360,21 @@ def symmetric_pinv(a, cond=None, rcond=None):
     n = a.shape[0]
     cutoff = cond * np.maximum.reduce(s)
     psigma_diag = np.zeros(n, dtype=t)
-    i_cutoff = np.searchsorted(s, cutoff)
-    psigma_diag[i_cutoff:] = 1.0 / s[i_cutoff:]
-    return np.dot(u * psigma_diag, u.T)
+<<<<<<< REMOTE
+i_cutoff = np.searchsorted(s, cutoff)
+=======
+above_cutoff = np.where(s > cutoff)
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+psigma_diag[i_cutoff:] = 1.0 / s[i_cutoff:]
+=======
+psigma[above_cutoff] = 1.0 / np.conjugate(s[above_cutoff])
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+return np.dot(u * psigma_diag, u.T)
+=======
+return np.transpose(np.conjugate(np.dot(u * psigma, u.T.conjugate())))
+>>>>>>> LOCAL
     #XXX: use lapack/blas routines for dot
     #XXX: above comment is from scipy, but I (@vene)'ll take a look
-
 

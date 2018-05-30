@@ -57,6 +57,7 @@ def load_config_file():
     path1 = os.path.expanduser(os.environ.get('ANSIBLE_CONFIG', "~/.ansible.cfg"))
     path2 = os.getcwd() + "/ansible.cfg"
     path3 = "/etc/ansible/ansible.cfg"
+
     if os.path.exists(path1):
         p.read(path1)
     elif os.path.exists(path2):
@@ -66,7 +67,6 @@ def load_config_file():
     else:
         return None
     return p
-
 
 def shell_expand_path(path):
     ''' shell_expand_path is needed as os.path.expanduser does not work

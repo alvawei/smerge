@@ -60,6 +60,7 @@ def load_config_file():
     path1 = os.getcwd() + "/ansible.cfg"
     path2 = os.path.expanduser(os.environ.get('ANSIBLE_CONFIG', "~/.ansible.cfg"))
     path3 = "/etc/ansible/ansible.cfg"
+
     if os.path.exists(path1):
         p.read(path1)
     elif os.path.exists(path2):
@@ -69,7 +70,6 @@ def load_config_file():
     else:
         return None
     return p
-
 
 def shell_expand_path(path):
     ''' shell_expand_path is needed as os.path.expanduser does not work
@@ -148,9 +148,15 @@ ACCELERATE_PORT                = get_config(p, 'accelerate', 'accelerate_port', 
 ACCELERATE_TIMEOUT             = get_config(p, 'accelerate', 'accelerate_timeout', 'ACCELERATE_TIMEOUT', 30, integer=True)
 ACCELERATE_CONNECT_TIMEOUT     = get_config(p, 'accelerate', 'accelerate_connect_timeout', 'ACCELERATE_CONNECT_TIMEOUT', 1.0, floating=True)
 PARAMIKO_PTY                   = get_config(p, 'paramiko_connection', 'pty', 'ANSIBLE_PARAMIKO_PTY', True, boolean=True)
-
+# LOOKUP PLUGIN RELATED
+<<<<<<< REMOTE
+ANSIBLE_ETCD_URL               = get_config(p, DEFAULTS, 'etcd_url', 'ANSIBLE_ETCD_URL', 'http://127.0.0.1:4001')
+=======
 # characters included in auto-generated passwords
+>>>>>>> LOCAL
 DEFAULT_PASSWORD_CHARS = ascii_letters + digits + ".,:-_"
+
+
 
 # non-configurable things
 DEFAULT_SUDO_PASS         = None

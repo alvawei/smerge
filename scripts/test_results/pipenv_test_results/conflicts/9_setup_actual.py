@@ -16,9 +16,6 @@ about = {}
 with open(os.path.join(here, "pipenv", "__version__.py")) as f:
     exec(f.read(), about)
 
-if sys.argv[-1] == "publish":
-    os.system("python setup.py sdist bdist_wheel upload")
-    sys.exit()
 required = [
     'virtualenv',
     'pew>=0.1.26',
@@ -41,7 +38,9 @@ required = [
     'backports.shutil_get_terminal_size',
     'ptyprocess'
 ]
-
+if sys.argv[-1] == "publish":
+    os.system("python setup.py sdist bdist_wheel upload")
+    sys.exit()
 
 <<<<<<< REMOTE
 setup(
@@ -106,6 +105,7 @@ setup(
     ],
 )
 >>>>>>> LOCAL
+
 if sys.version_info < (2, 7):
     required.append('requests[security]')
     required.append('ordereddict')

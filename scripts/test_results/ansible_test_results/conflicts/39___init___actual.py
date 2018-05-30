@@ -49,11 +49,13 @@ except ImportError:
 
 def _executor_hook(job_queue, result_queue):
     ''' callback used by multiprocessing pool '''
+
     # attempt workaround of https://github.com/newsapps/beeswithmachineguns/issues/17
     # does not occur for everyone, some claim still occurs on newer paramiko
     # this function not present in CentOS 6
     if HAS_ATFORK:
         atfork()
+
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     while not job_queue.empty():
         try:
@@ -64,26 +66,29 @@ def _executor_hook(job_queue, result_queue):
             pass
         except:
             traceback.print_exc()
-
-
  
 ################################################
 
 class ReturnData(object):
     __slots__ = [ 'result', 'comm_ok', 'executed_str', 'host' ]
+
     def __init__(self, host=None, result=None, comm_ok=True, executed_str=''):
         self.host = host
         self.result = result
         self.comm_ok = comm_ok
         self.executed_str = executed_str
+
         if type(self.result) in [ str, unicode ]:
             self.result = utils.parse_json(self.result)
+
         if host is None:
             raise Exception("host not set")
         if type(self.result) != dict:
             raise Exception("dictionary result expected")
+
     def communicated_ok(self):
         return self.comm_ok
+
     def is_successful(self):
         if not self.comm_ok:
             return False
@@ -93,11 +98,6 @@ class ReturnData(object):
             if self.result.get('rc',0) != 0:
                 return False
             return True
-
-
-
-
-
 
 
 class Runner(object):
@@ -137,23 +137,30 @@ class Runner(object):
         is_playbook  : indicates Runner is being used by a playbook.  affects behavior in various ways.
         inventory    : inventory object, if host_list is not provided
         """
+
         if setup_cache is None:
             setup_cache = {}
         if basedir is None:
             basedir = os.getcwd()
+
         if callbacks is None:
             callbacks = ans_callbacks.DefaultRunnerCallbacks()
         self.callbacks = callbacks
+
         self.generated_jid = str(random.randint(0, 999999999999))
+
         self.sudo_user = sudo_user
         self.transport = transport
         self.connector = connection.Connection(self, self.transport, self.sudo_user)
+
         if inventory is None:
             self.inventory = ansible.inventory.Inventory(host_list)
         else:
             self.inventory = inventory
+
         if module_vars is None:
             module_vars = {}
+
         self.setup_cache = setup_cache
         self.conditional = conditional
         self.module_path = module_path
@@ -173,48 +180,66 @@ class Runner(object):
         self.sudo        = sudo
         self.sudo_pass   = sudo_pass
         self.is_playbook = is_playbook
+
         euid = pwd.getpwuid(os.geteuid())[0]
         if self.transport == 'local' and self.remote_user != euid:
             raise Exception("User mismatch: expected %s, but is %s" % (self.remote_user, euid))
         if type(self.module_args) not in [str, unicode, dict]:
             raise Exception("module_args must be a string or dict: %s" % self.module_args)
+
         self._tmp_paths  = {}
         random.seed()
+
+
     # *****************************************************
+
     def _delete_remote_files(self, conn, files):
         ''' deletes one or more remote files '''
+
         if type(files) == str:
             files = [ files ]
         for filename in files:
             if filename.find('/tmp/') == -1:
                 raise Exception("not going to happen")
             self._low_level_exec_command(conn, "rm -rf %s" % filename, None)
+
     # *****************************************************
+
     def _transfer_module(self, conn, tmp, module):
         ''' transfers a module file to the remote side to execute it, but does not execute it yet '''
+
         outpath = self._copy_module(conn, tmp, module)
         self._low_level_exec_command(conn, "chmod +x %s" % outpath, tmp)
         return outpath
+
     # *****************************************************
+
     def _transfer_str(self, conn, tmp, name, data):
         ''' transfer string to remote file '''
+
         if type(data) == dict:
             data = utils.smjson(data)
+
         afd, afile = tempfile.mkstemp()
         afo = os.fdopen(afd, 'w')
         afo.write(data.encode("utf8"))
         afo.flush()
         afo.close()
+
         remote = os.path.join(tmp, name)
         conn.put_file(afile, remote)
         os.unlink(afile)
         return remote
+
     # *****************************************************
+
     def _add_setup_vars(self, inject, args):
         ''' setup module variables need special handling '''
+
         is_dict = False
         if type(args) == dict:
             is_dict = True
+
         # TODO: keep this as a dict through the whole path to simplify this code
         for (k,v) in inject.iteritems():
             if not k.startswith('facter_') and not k.startswith('ohai_') and not k.startswith('ansible_'):
@@ -225,12 +250,16 @@ class Runner(object):
                 else:
                     args[k]=v
         return args
+ 
     # *****************************************************
+
     def _add_setup_metadata(self, args):
         ''' automatically determine where to store variables for the setup module '''
+        
         is_dict = False
         if type(args) == dict:
             is_dict = True
+
         # TODO: keep this as a dict through the whole path to simplify this code
         if not is_dict:
             if args.find("metadata=") == -1:
@@ -245,53 +274,74 @@ class Runner(object):
                 else:
                     args['metadata'] = "%s/.ansible/setup" % C.DEFAULT_REMOTE_TMP
         return args
+ 
     # *****************************************************
+
     def _execute_module(self, conn, tmp, remote_module_path, args, 
         async_jid=None, async_module=None, async_limit=None):
         ''' runs a module that has already been transferred '''
+
         inject = self.setup_cache.get(conn.host,{}).copy()
         host_variables = self.inventory.get_variables(conn.host)
         inject.update(host_variables)
         inject.update(self.module_vars)
+
         if self.module_name == 'setup':
             if not args:
                 args = {}
             args = self._add_setup_vars(inject, args)
             args = self._add_setup_metadata(args)
+
         if type(args) == dict:
             args = utils.bigjson(args)
         args = utils.template(args, inject, self.setup_cache)
+
+
         module_name_tail = remote_module_path.split("/")[-1]
         argsfile = self._transfer_str(conn, tmp, 'arguments', args)
         if async_jid is None:
             cmd = "%s %s" % (remote_module_path, argsfile)
         else:
             cmd = " ".join([str(x) for x in [remote_module_path, async_jid, async_limit, async_module, argsfile]])
+
         res = self._low_level_exec_command(conn, cmd, tmp, sudoable=True)
         result1 = utils.parse_json(res)
+
         executed_str = "%s %s" % (module_name_tail, args.strip())
+
+
         return ReturnData(host=conn.host, result=res, executed_str=executed_str)
+
+
     # *****************************************************
+
     def _save_setup_result_to_disk(self, conn, result):
        ''' cache results of calling setup '''
+
        dest = os.path.expanduser("~/.ansible_setup_data")
        user = getpass.getuser()
        if user == 'root':
            dest = "/var/lib/ansible/setup_data"
        if not os.path.exists(dest):
            os.makedirs(dest)
+
        fh = open(os.path.join(dest, conn.host), "w")
        fh.write(result)
        fh.close()
+
        return result
+
     # *****************************************************
+
     def _add_result_to_setup_cache(self, conn, result):
         ''' allows discovered variables to be used in templates and action statements '''
+
         host = conn.host
         if 'ansible_facts' in result:
             var_result = result['ansible_facts']
         else:
             var_result = {}
+
         # note: do not allow variables from playbook to be stomped on
         # by variables coming up from facter/ohai/etc.  They
         # should be prefixed anyway
@@ -300,42 +350,55 @@ class Runner(object):
         for (k, v) in var_result.iteritems():
             if not k in self.setup_cache[host]:
                 self.setup_cache[host][k] = v
+
+
     # *****************************************************
+
     def _execute_raw(self, conn, tmp):
         ''' execute a non-module command for bootstrapping, or if there's no python on a device '''
         stdout = self._low_level_exec_command( conn, self.module_args, tmp, sudoable = True )
         data = dict(stdout=stdout)
         return ReturnData(host=conn.host, results=data)
+
     # ***************************************************
+
     def _execute_normal_module(self, conn, tmp, module_name):
         ''' transfer & execute a module that is not 'copy' or 'template' '''
+
         # shell and command are the same module
         if module_name == 'shell':
             module_name = 'command'
             self.module_args += " #USE_SHELL"
+
         module = self._transfer_module(conn, tmp, module_name)
         exec_rc = self._execute_module(conn, tmp, module, self.module_args)
         if exec_rc.is_successful():
             self._add_result_to_setup_cache(conn, exec_rc.result)
         return exec_rc
+
     # *****************************************************
     def _execute_async_module(self, conn, tmp, module_name):
         ''' transfer the given module name, plus the async module, then run it '''
+
         # shell and command module are the same
         module_args = self.module_args
         if module_name == 'shell':
             module_name = 'command'
             module_args += " #USE_SHELL"
+
         async  = self._transfer_module(conn, tmp, 'async_wrapper')
         module = self._transfer_module(conn, tmp, module_name)
+
         return self._execute_module(conn, tmp, async, module_args,
            async_module=module, 
            async_jid=self.generated_jid, 
            async_limit=self.background
         )
+
     # *****************************************************
     def _execute_copy(self, conn, tmp):
         ''' handler for file transfer operations '''
+
         # load up options
         options = utils.parse_kv(self.module_args)
         source = options.get('src', None)
@@ -343,8 +406,10 @@ class Runner(object):
         if (source is None and not 'first_available_file' in self.module_vars) or dest is None:
             result=dict(failed=True, msg="src and dest are required")
             return ReturnData(host=conn.host, result=result)
+
         # apply templating to source argument
         inject = self.setup_cache.get(conn.host,{})
+        
         # if we have first_available_file in our vars
         # look up the files and use the first one we find as src
         if 'first_available_file' in self.module_vars:
@@ -358,25 +423,34 @@ class Runner(object):
             if not found:
                 results=dict(failed=True, msg="could not find src in first_available_file list")
                 return ReturnData(host=conn.host, is_error=True, results=results)
+        
         if self.module_vars is not None:
             inject.update(self.module_vars)
+
         source = utils.template(source, inject, self.setup_cache)
+
         # transfer the file to a remote tmp location
         tmp_src = tmp + source.split('/')[-1]
         conn.put_file(utils.path_dwim(self.basedir, source), tmp_src)
+
         # install the copy  module
         self.module_name = 'copy'
         module = self._transfer_module(conn, tmp, 'copy')
+
         # run the copy module
         args = "src=%s dest=%s" % (tmp_src, dest)
         exec_rc = self._execute_module(conn, tmp, module, args)
+
         if exec_rc.is_successful():
             return self._chain_file_module(conn, tmp, exec_rc, options)
         else:
             return exec_rc
+
     # *****************************************************
+
     def _execute_fetch(self, conn, tmp):
         ''' handler for fetch operations '''
+
         # load up options
         options = utils.parse_kv(self.module_args)
         source = options.get('src', None)
@@ -384,25 +458,31 @@ class Runner(object):
         if source is None or dest is None:
             results = dict(failed=True, msg="src and dest are required")
             return ReturnData(host=conn.host, result=results)
+
         # apply templating to source argument
         inject = self.setup_cache.get(conn.host,{})
         if self.module_vars is not None:
             inject.update(self.module_vars)
         source = utils.template(source, inject, self.setup_cache)
+
         # apply templating to dest argument
         dest = utils.template(dest, inject, self.setup_cache)
+       
         # files are saved in dest dir, with a subdir for each host, then the filename
         dest   = "%s/%s/%s" % (utils.path_dwim(self.basedir, dest), conn.host, source)
         dest   = dest.replace("//","/")
+
         # compare old and new md5 for support of change hooks
         local_md5 = None
         if os.path.exists(dest):
             local_md5 = os.popen("md5sum %s" % dest).read().split()[0]
         remote_md5 = self._low_level_exec_command(conn, "md5sum %s" % source, tmp, True).split()[0]
+
         if remote_md5 != local_md5:
             # create the containing directories, if needed
             if not os.path.isdir(os.path.dirname(dest)):
                 os.makedirs(os.path.dirname(dest))
+
             # fetch the file and check for changes
             conn.fetch_file(source, dest)
             new_md5 = os.popen("md5sum %s" % dest).read().split()[0]
@@ -414,23 +494,50 @@ class Runner(object):
         else:
             result = dict(changed=False, md5sum=local_md5)
             return ReturnData(host=conn.host, result=result)
+        
+        
     # *****************************************************
+
+    def _execute_assemble(self, conn, tmp):
+        ''' handler for assemble operations '''
+        module_name = 'assemble'
+        options = utils.parse_kv(self.module_args)
+        module = self._transfer_module(conn, tmp, module_name)
+        exec_rc = self._execute_module(conn, tmp, module, self.module_args)
+
+        if exec_rc.is_successful():
+            return self._chain_file_module(conn, tmp, exec_rc, options)
+        else:
+            return exec_rc
+
+
     def _chain_file_module(self, conn, tmp, exec_rc, options):
         ''' handles changing file attribs after copy/template operations '''
+
         old_changed = exec_rc.result.get('changed', False)
         module = self._transfer_module(conn, tmp, 'file')
         args = ' '.join([ "%s=%s" % (k,v) for (k,v) in options.items() ])
         exec_rc2 = self._execute_module(conn, tmp, module, args)
+
         new_changed = False
         if exec_rc2.is_successful():
             new_changed = exec_rc2.result.get('changed', False)
             exec_rc.result.update(exec_rc2.result)
+
         if old_changed or new_changed:
             exec_rc.result['changed'] = True
+
         return exec_rc
+
+
+
+
     # *****************************************************
+
+
     def _execute_template(self, conn, tmp):
         ''' handler for template operations '''
+
         # load up options
         options  = utils.parse_kv(self.module_args)
         source   = options.get('src', None)
@@ -439,8 +546,10 @@ class Runner(object):
         if (source is None and 'first_available_file' not in self.module_vars) or dest is None:
             result = dict(failed=True, msg="src and dest are required")
             return ReturnData(host=conn.host, comm_ok=False, result=result)
+
         # apply templating to source argument so vars can be used in the path
         inject = self.setup_cache.get(conn.host,{})
+
         # if we have first_available_file in our vars
         # look up the files and use the first one we find as src
         if 'first_available_file' in self.module_vars:
@@ -454,10 +563,15 @@ class Runner(object):
             if not found:
                 result = dict(failed=True, msg="could not find src in first_available_file list")
                 return ReturnData(host=conn.host, comm_ok=False, result=result)
+
+
         if self.module_vars is not None:
             inject.update(self.module_vars)
+
         source = utils.template(source, inject, self.setup_cache)
+
         #(host, ok, data, err) = (None, None, None, None)
+
         if not self.is_playbook:
             # not running from a playbook so we have to fetch the remote
             # setup file contents before proceeding...
@@ -467,8 +581,10 @@ class Runner(object):
                 else:
                     # path is expanded on remote side
                     metadata = "~/.ansible/setup"
+            
             # install the template module
             slurp_module = self._transfer_module(conn, tmp, 'slurp')
+
             # run the slurp module to get the metadata file
             args = "src=%s" % metadata
             result1  = self._execute_module(conn, tmp, slurp_module, args)
@@ -477,8 +593,12 @@ class Runner(object):
                 return result1
             content = base64.b64decode(result1.result['content'])
             inject = utils.json_loads(content)
+
+
+
         # install the template module
         copy_module = self._transfer_module(conn, tmp, 'copy')
+
         # template the source data locally
         try:
             resultant = utils.template_from_file(utils.path_dwim(self.basedir, source),
@@ -486,17 +606,24 @@ class Runner(object):
         except Exception, e:
             result = dict(failed=True, msg=str(e))
             return ReturnData(host=conn.host, comm_ok=False, result=result)
+
         xfered = self._transfer_str(conn, tmp, 'source', resultant)
+            
         # run the COPY module
         args = "src=%s dest=%s" % (xfered, dest)
         exec_rc = self._execute_module(conn, tmp, copy_module, args)
+ 
         # modify file attribs if needed
         if exec_rc.comm_ok:
             exec_rc.executed_str = exec_rc.executed_str.replace("copy","template",1)
             return self._chain_file_module(conn, tmp, exec_rc, options)
         else:
             return exec_rc
+
+
     # *****************************************************
+
+
     def _executor(self, host):
         try:
             exec_rc = self._executor_internal(host)
@@ -513,20 +640,28 @@ class Runner(object):
             msg = traceback.format_exc()
             self.callbacks.on_unreachable(host, msg)
             return ReturnData(host=host, comm_ok=False, result=dict(failed=True, msg=msg))
+
+    # *****************************************************
+
     def _executor_internal(self, host):
         ''' callback executed in parallel for each host. returns (hostname, connected_ok, extra) '''
+
         host_variables = self.inventory.get_variables(host)
         port = host_variables.get('ansible_ssh_port', self.remote_port)
+
         conn = None
         try:
             conn = self.connector.connect(host, port)
         except errors.AnsibleConnectionFailed, e:
             result = dict(failed=True, msg="FAILED: %s" % str(e))
             return ReturnData(host=host, comm_ok=False, result=result)
+
         cache = self.setup_cache.get(host, {})
         module_name = utils.template(self.module_name, inject, self.setup_cache)
+
         tmp = self._make_tmp_path(conn)
         result = None
+
         if self.module_name == 'copy':
             result = self._execute_copy(conn, tmp)
         elif self.module_name == 'fetch':
@@ -540,10 +675,10 @@ class Runner(object):
                 result = self._execute_normal_module(conn, tmp, module_name)
         else:
                 result = self._execute_async_module(conn, tmp, module_name)
-        elif self.module_name == 'fetch':
-            result = self._execute_fetch(conn, tmp)
+
         self._delete_remote_files(conn, tmp)
         conn.close()
+
         if not result.comm_ok:
             # connection or parsing errors...
             self.callbacks.on_unreachable(host, result.result)
@@ -555,65 +690,91 @@ class Runner(object):
                 self.callbacks.on_failed(result.host, result.result)
         else:
             self.callbacks.on_unreachable(host, result.result)
+
         return result
+
     # *****************************************************
     def _low_level_exec_command(self, conn, cmd, tmp, sudoable=False):
         ''' execute a command string over SSH, return the output '''
         sudo_user = self.sudo_user
         stdin, stdout, stderr = conn.exec_command(cmd, tmp, sudo_user, sudoable=sudoable)
         out=None
+
         if type(stdout) != str:
             out="\n".join(stdout.readlines())
-        else:
+            else:
             out=stdout
+
         # sudo mode paramiko doesn't capture stderr, so not relaying here either...
         return out
+
     # *****************************************************
     def _make_tmp_path(self, conn):
-        ''' gets a temporary path on a remote box '''
-        basetmp = C.DEFAULT_REMOTE_TMP
+        ''' make and return a temporary path on a remote box '''
+        basefile = 'ansible-%s-%s' % (time.time(), random.randint(0, 2**48))
+        basetmp = os.path.join(C.DEFAULT_REMOTE_TMP, basefile)
+
+        cmd = 'mkdir -p %s' % basetmp
+        cmd += ' && echo %s' % basetmp
         if self.remote_user == 'root':
             basetmp = os.path.join('/var/tmp', basefile)
-        cmd = "mktemp -d %s/ansible.XXXXXX" % basetmp
+
+
         if self.remote_user != 'root':
             cmd += ' && chmod a+x %s' % basetmp
+
         result = self._low_level_exec_command(conn, cmd, None, sudoable=False)
         cleaned = result.split("\n")[0].strip() + '/'
-        if self.remote_user != 'root':
-            cmd = 'chmod a+x %s' % cleaned
-            self._low_level_exec_command(conn, cmd, None, sudoable=False)
-        cleaned = result.split("\n")[0].strip() + '/'
         return cleaned
+
+
     # *****************************************************
-    def _get_tmp_path(self, conn):
-        ''' gets a temporary path on a remote box '''
-        basetmp = C.DEFAULT_REMOTE_TMP
-        if self.remote_user == 'root':
-            basetmp ="/var/tmp"
-        cmd = "mktemp -d %s/ansible.XXXXXX" % basetmp
-        if self.remote_user != 'root':
-            cmd = "mkdir -p %s && %s" % (basetmp, cmd)
-        result = self._low_level_exec_command(conn, cmd, None, sudoable=False)
-        cleaned = result.split("\n")[0].strip() + '/'
-        if self.remote_user != 'root':
-            cmd = 'chmod a+x %s' % cleaned
-            self._low_level_exec_command(conn, cmd, None, sudoable=False)
-        return cleaned
     def _copy_module(self, conn, tmp, module):
         ''' transfer a module over SFTP, does not run it '''
-        if module.startswith("/"):
-            raise errors.AnsibleFileNotFound("%s is not a module" % module)
+
+        # Search module path(s) for named module.
+        for module_path in self.module_path.split(os.pathsep):
             in_path = os.path.expanduser(os.path.join(module_path, module))
             if os.path.exists(in_path):
-            raise errors.AnsibleFileNotFound("module not found: %s" % in_path)
-        out_path = os.path.join(tmp, module)
+                break
+<<<<<<< REMOTE
+out_path = os.path.join(tmp, module)
+=======
+        else:
+            raise errors.AnsibleFileNotFound("module %s not found in %s" % (module, self.module_path))
+
+
+>>>>>>> LOCAL
+
+<<<<<<< REMOTE
+
+=======
+# use the correct python interpreter for the host
+>>>>>>> LOCAL
+        host_variables = self.inventory.get_variables(conn.host)
+        if 'ansible_python_interpreter' in host_variables:
+            interpreter = host_variables['ansible_python_interpreter']
+            with open(in_path) as f:
+                module_lines = f.readlines()
+            if '#!' and 'python' in module_lines[0]:
+                module_lines[0] = "#!%s" % interpreter
+            self._transfer_str(conn, tmp, module, '\n'.join(module_lines))
+        else:
             conn.put_file(in_path, out_path)
+
+        if module.startswith("/"):
+            raise errors.AnsibleFileNotFound("%s is not a module" % module)
+
+
         return out_path
     # *****************************************************
     def _parallel_exec(self, hosts):
         ''' handles mulitprocessing when more than 1 fork is required '''
+
         job_queue = multiprocessing.Manager().Queue()
+
         [job_queue.put(i) for i in hosts]
+
         result_queue = multiprocessing.Manager().Queue()
         workers = []
         for i in range(self.forks):
@@ -621,6 +782,7 @@ class Runner(object):
                 args=(job_queue, result_queue))
             prc.start()
             workers.append(prc)
+
         try:
             for worker in workers:
                 worker.join()
@@ -628,6 +790,8 @@ class Runner(object):
             for worker in workers:
                 worker.terminate()
                 worker.join()
+
+
         results = []
         while not result_queue.empty():
             results.append(result_queue.get(block=False))
@@ -635,9 +799,12 @@ class Runner(object):
     # *****************************************************
     def _partition_results(self, results):
         ''' seperate results by ones we contacted & ones we didn't '''
+
+
         results2 = dict(contacted={}, dark={})
         if results is None:
             return None
+
         for result in results:
             host = result.host
             if host is None:
@@ -646,190 +813,38 @@ class Runner(object):
                 results2["contacted"][host] = result.result
             else:
                 results2["dark"][host] = result.result
+
         # hosts which were contacted but never got a chance to return
+
         for host in self.inventory.list_hosts(self.pattern):
             if not (host in results2['dark'] or host in results2['contacted']):
                 results2["dark"][host] = {}
+
         return results2
     # *****************************************************
     def run(self):
         ''' xfer & run module on all matched hosts '''
+       
         # find hosts that match the pattern
         hosts = self.inventory.list_hosts(self.pattern)
         if len(hosts) == 0:
             self.callbacks.on_no_hosts()
             return dict(contacted={}, dark={})
+ 
         hosts = [ (self,x) for x in hosts ]
         results = None
-        if self.forks > 1:
-            results = self._parallel_exec(hosts)
         else:
             results = [ self._executor(h[1]) for h in hosts ]
+        if self.forks > 1:
+            results = self._parallel_exec(hosts)
+
         return self._partition_results(results)
     def run_async(self, time_limit):
         ''' Run this module asynchronously and return a poller. '''
         self.background = time_limit
         results = self.run()
+
+
         return results, poller.AsyncPoller(results, self)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
-
-        
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-        
-
-
-
-
-
-
-
-
-
-       
-
-
-
-        
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            
-
-
-
-
-
-            
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-       
- 
-
-
-
-
-
-
-       
- 
-
-
 
 

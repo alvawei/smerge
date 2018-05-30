@@ -20,6 +20,8 @@ import tensorflow as tf
 
 from object_detection.core import prefetcher
 
+rt_shape_str = '_runtime_shapes'
+
 
 class BatchQueue(object):
   """BatchQueue class.
@@ -62,6 +64,7 @@ class BatchQueue(object):
   for evaluation, when it is critical to run all the examples through your
   network use the input pipeline example mentioned in core/prefetcher.py.
   """
+
   def __init__(self, tensor_dict, batch_size, batch_queue_capacity,
                num_batch_queue_threads, prefetch_queue_capacity):
     """Constructs a batch queue holding tensor_dict.
@@ -79,9 +82,19 @@ class BatchQueue(object):
     static_shapes = collections.OrderedDict(
         {key: tensor.get_shape() for key, tensor in tensor_dict.items()})
     # Remember runtime shapes to unpad tensors after batching.
-    runtime_shapes = collections.OrderedDict(
-        {(key + rt_shape_str): tf.shape(tensor)
+    <<<<<<< REMOTE
+runtime_shapes = collections.OrderedDict(
+        {(key, 'runtime_shapes'): tf.shape(tensor)
          for key, tensor in tensor_dict.items()})
+=======
+runtime_shapes = collections.OrderedDict(
+        {(key, 'runtime_shapes'): tf.shape(tensor)
+         for key, tensor in tensor_dict.iteritems()})
+=======
+runtime_shapes = collections.OrderedDict(
+        {(key + rt_shape_str): tf.shape(tensor)
+         for key, tensor in tensor_dict.iteritems()})
+>>>>>>> LOCAL
     all_tensors = tensor_dict
     all_tensors.update(runtime_shapes)
     batched_tensors = tf.train.batch(
@@ -90,10 +103,12 @@ class BatchQueue(object):
         batch_size=batch_size,
         dynamic_pad=True,
         num_threads=num_batch_queue_threads)
+
     self._queue = prefetcher.prefetch(batched_tensors,
                                       prefetch_queue_capacity)
     self._static_shapes = static_shapes
     self._batch_size = batch_size
+
   def dequeue(self):
     """Dequeues a batch of tensor_dict from the BatchQueue.
 
@@ -111,9 +126,9 @@ class BatchQueue(object):
       for i, unbatched_tensor in enumerate(unbatched_tensor_list):
         if rt_shape_str in key:
           shapes[(key[:-len(rt_shape_str)], i)] = unbatched_tensor
-          shapes[(key[:-len(rt_shape_str)], i)] = unbatched_tensor
         else:
           tensors[(key, i)] = unbatched_tensor
+
     # Undo that padding using shapes and create a list of size `batch_size` that
     # contains tensor dictionaries.
     tensor_dict_list = []
@@ -126,10 +141,6 @@ class BatchQueue(object):
                                     shapes[(key, batch_id)])
         tensor_dict[key].set_shape(self._static_shapes[key])
       tensor_dict_list.append(tensor_dict)
+
     return tensor_dict_list
-
-
-
-
-
 

@@ -24,22 +24,22 @@ def test_spectral_clustering():
                   [0, 0, 0, 1, 3, 1, 4],
                   [0, 0, 0, 1, 2, 4, 1],
                  ])
+
     for mat in (S, sparse.csr_matrix(S)):
         model = SpectralClustering(random_state=0, n_clusters=2,
                 affinity='precomputed').fit(mat)
         labels = model.labels_
         if labels[0] == 0:
             labels = 1 - labels
+
         assert_equal(labels, [1, 1, 1, 0, 0, 0, 0])
+
         model_copy = loads(dumps(model))
         assert_equal(model_copy.n_clusters, model.n_clusters)
         assert_equal(model_copy.mode, model.mode)
         assert_equal(model_copy.random_state.get_state(),
                      model.random_state.get_state())
         assert_equal(model_copy.labels_, model.labels_)
-
-
-
 
 
 def test_spectral_amg_mode():
@@ -106,15 +106,15 @@ def test_spectral_clustering_sparse():
                   [0, 0, 0, 0, 1, 3, 3, 2, 1, 4],
                   [0, 0, 0, 0, 1, 2, 4, 4, 4, 1],
                  ])
+
     S = sparse.coo_matrix(S)
+
     labels = SpectralClustering(random_state=0, n_clusters=2,
             affinity='precomputed').fit(S).labels_
     if labels[0] == 0:
         labels = 1 - labels
+
     assert_greater(np.mean(labels == [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]), .9)
-
-
-
 
 
 def test_affinities():
@@ -125,8 +125,8 @@ def test_affinities():
             random_state=0)
     labels = sp.fit(X).labels_
     assert_equal(adjusted_rand_score(y, labels), 1)
+
     sp = SpectralClustering(n_clusters=2, gamma=2, random_state=0)
     labels = sp.fit(X).labels_
     assert_greater(adjusted_rand_score(y, labels), 0.8)
-
 

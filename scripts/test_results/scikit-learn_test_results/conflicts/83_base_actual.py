@@ -23,16 +23,15 @@ import numpy as np
 
 from ..utils import check_random_state
 
-###############################################################################
 
 class Bunch(dict):
     """ Container object for datasets: dictionnary-like object that
         exposes its keys as attributes.
     """
+
     def __init__(self, **kwargs):
         dict.__init__(self, kwargs)
         self.__dict__ = self
-
 
 
 def get_data_home(data_home=None):
@@ -57,7 +56,6 @@ def get_data_home(data_home=None):
     if not exists(data_home):
         makedirs(data_home)
     return data_home
-
 
 
 def clear_data_home(data_home=None):
@@ -139,10 +137,13 @@ def load_files(container_path, description=None, categories=None,
     target = []
     target_names = []
     filenames = []
+
     folders = [f for f in sorted(listdir(container_path))
                if isdir(join(container_path, f))]
+
     if categories is not None:
         folders = [f for f in folders if f in categories]
+
     for label, folder in enumerate(folders):
         target_names.append(folder)
         folder_path = join(container_path, folder)
@@ -150,32 +151,29 @@ def load_files(container_path, description=None, categories=None,
                      for d in sorted(listdir(folder_path))]
         target.extend(len(documents) * [label])
         filenames.extend(documents)
+
     # convert to array for fancy indexing
     filenames = np.array(filenames)
     target = np.array(target)
+
     if shuffle:
         random_state = check_random_state(random_state)
         indices = np.arange(filenames.shape[0])
         random_state.shuffle(indices)
         filenames = filenames[indices]
         target = target[indices]
+
     if load_content:
         data = [open(filename).read() for filename in filenames]
         return Bunch(data=data,
                      target_names=target_names,
                      target=target,
                      DESCR=description)
+
     return Bunch(filenames=filenames,
                  target_names=target_names,
                  target=target,
                  DESCR=description)
-
-
-
-
-
-
-
 
 
 ###############################################################################
@@ -204,6 +202,7 @@ def load_iris():
     ['setosa', 'versicolor', 'virginica']
 
     """
+
     module_path = dirname(__file__)
     data_file = csv.reader(open(join(module_path, 'data', 'iris.csv')))
     fdescr = open(join(module_path, 'descr', 'iris.rst'))
@@ -220,7 +219,6 @@ def load_iris():
                  DESCR=fdescr.read(),
                  feature_names=['sepal length (cm)', 'sepal width (cm)',
                                 'petal length (cm)', 'petal width (cm)'])
-
 
 
 def load_digits(n_class=10):
@@ -251,6 +249,7 @@ def load_digits(n_class=10):
         pl.matshow(digits.raw_data[0])
 
     """
+
     module_path = dirname(__file__)
     data = np.loadtxt(join(module_path, 'data', 'digits.csv.gz'),
                       delimiter=',')
@@ -259,17 +258,16 @@ def load_digits(n_class=10):
     flat_data = data[:, :-1]
     images = flat_data.view()
     images.shape = (-1, 8, 8)
+
     if n_class < 10:
         idx = target < n_class
         flat_data, target = flat_data[idx], target[idx]
         images = images[idx]
+
     return Bunch(data=flat_data, target=target.astype(np.int),
                  target_names=np.arange(10),
                  images=images,
                  DESCR=descr)
-
-
-
 
 
 def load_diabetes():
@@ -320,6 +318,7 @@ def load_linnerud():
                  header_physiological=header_physiological,
                  DESCR=fdescr.read())
 
+
 def load_boston():
     """load the boston house prices dataset and returns it.
 
@@ -350,8 +349,8 @@ def load_boston():
     for i, d in enumerate(data_file):
         data[i] = np.asanyarray(d[:-1], dtype=np.float)
         target[i] = np.asanyarray(d[-1], dtype=np.float)
+
     return Bunch(data=data, target=target,
                  feature_names=feature_names,
                  DESCR=fdescr.read())
-      
 

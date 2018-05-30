@@ -31,7 +31,7 @@ each element of the label indicator matrix as a binary prediction
 print(__doc__)
 
 import numpy as np
-import pylab as pl
+import matplotlib.pyplot as plt
 from sklearn import svm, datasets
 from sklearn.metrics import roc_curve, auc
 from sklearn.cross_validation import train_test_split
@@ -72,20 +72,60 @@ for i in range(n_classes):
 # Compute micro-average ROC curve and ROC area
 fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_score.ravel())
 roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+<<<<<<< REMOTE
+# Compute macro-average ROC curve and ROC area
+=======
+# Plot of a ROC curve for a specific class
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+fpr["macro"] = np.mean([fpr[i] for i in range(n_classes)], axis=0)
+=======
+plt.figure()
+>>>>>>> LOCAL
+tpr["macro"] = np.mean([tpr[i] for i in range(n_classes)], axis=0)
+roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
+<<<<<<< REMOTE
+pl.title('Receiver operating characteristic example')
+=======
+plt.figure()
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+pl.show()
+=======
+# Compute macro-average ROC curve and ROC area
+>>>>>>> LOCAL
+<<<<<<< REMOTE
 
-# Plot of one ROC curve
+=======
+fpr["macro"] = np.mean([fpr[i] for i in range(n_classes)], axis=0)
+>>>>>>> LOCAL
+tpr["macro"] = np.mean([tpr[i] for i in range(n_classes)], axis=0)
+roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
+
+<<<<<<< REMOTE
+pl.plot(fpr["macro"], tpr["macro"],
+        label='macro-average ROC curve (area = {0:0.2f})'
+              ''.format(roc_auc["macro"]))
+=======
+# Plot ROC curve
+>>>>>>> LOCAL
+plt.plot(fpr["micro"], tpr["micro"],
+        label='micro-average ROC curve (area = {0:0.2f})'
+              ''.format(roc_auc["micro"]))
+plt.plot(fpr["macro"], tpr["macro"],
+        label='macro-average ROC curve (area = {0:0.2f})'
+              ''.format(roc_auc["macro"]))
+
+plt.clf()
 plt.plot(fpr[2], tpr[2], label='ROC curve (area = %0.2f)' % roc_auc[2])
 plt.plot([0, 1], [0, 1], 'k--')
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
-plt.title('Receiver operating characteristic example')
 plt.legend(loc="lower right")
-plt.show()
 
 # Plot ROC curve
-pl.clf()
 plt.plot(fpr["micro"], tpr["micro"],
          label='micro-average ROC curve (area = {0:0.2f})'
                ''.format(roc_auc["micro"]))
@@ -96,7 +136,6 @@ for i in range(n_classes):
 plt.plot([0, 1], [0, 1], 'k--')
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
-plt.clf()
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title('Some extension of Receiver operating characteristic to multi-class')

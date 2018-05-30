@@ -10,55 +10,70 @@ coordinate descent.
 # Author: Alexandre Gramfort <alexandre.gramfort@inria.fr>
 # License: BSD Style.
 
-# $Id$
-
 from datetime import datetime
 from itertools import cycle
+from itertools import cycle
+import numpy as np
 import numpy as np
 import pylab as pl
 
-from scikits.learn.glm.coordinate_descent import Lasso, ElasticNet, lasso_path, \
-                                    enet_path
+from scikits.learn.glm import lasso_path, enet_path
+n_samples, n_features = 100, 10
+<<<<<<< REMOTE
 
-n_samples, n_features, maxit = 5, 10, 30
-
-np.random.seed(0)
-y = np.random.randn(n_samples)
-X = np.random.randn(n_samples, n_features)
-################################################################################
-
-# Fit models
-################################################################################
-
-################################################################################
-# Demo path functions
-################################################################################
-
-eps = 1e-2 # the smaller it is the longer is the path
-
+=======
+models = lasso_path(X, y, eps=eps)
+>>>>>>> LOCAL
+<<<<<<< REMOTE
 print "Computing regularization path using the lasso..."
+=======
+alphas_lasso = np.array([model.alpha for model in models])
+>>>>>>> LOCAL
+<<<<<<< REMOTE
 start = datetime.now()
-alphas_lasso, weights_lasso = lasso_path(X, y, intercept=False, eps=eps)
-print "This took ", datetime.now() - start
+=======
+coefs_lasso = np.array([model.coef_ for model in models])
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+alphas_lasso = np.array([model.alpha for model in models])
+=======
+models = enet_path(X, y, eps=eps, rho=0.6)
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+coefs_lasso = np.array([model.coef_ for model in models])
+=======
+alphas_enet = np.array([model.alpha for model in models])
+>>>>>>> LOCAL
+<<<<<<< REMOTE
 
-print "Computing regularization path using the elastic net..."
-start = datetime.now()
-alphas_enet, weights_enet = enet_path(X, y, intercept=False, rho=0.6, eps=eps)
+=======
+coefs_enet = np.array([model.coef_ for model in models])
+>>>>>>> LOCAL
+models = enet_path(X, y, eps=eps, intercept=False, rho=0.6)
+<<<<<<< REMOTE
 print "This took ", datetime.now() - start
+=======
+for color, coef_lasso, coef_enet in zip(color_iter,
+                            coefs_lasso.T, coefs_enet.T):
+    pl.plot(-np.log10(alphas_lasso), coef_lasso, color)
+    pl.plot(-np.log10(alphas_enet), coef_enet, color + 'x')
+
+
+>>>>>>> LOCAL
+alphas_enet = np.array([model.alpha for model in models])
+coefs_enet = np.array([model.coef_ for model in models])
+for color, coef_lasso, coef_enet in zip(color_iter,
+                            coefs_lasso.T, coefs_enet.T):
+    pl.plot(-np.log10(alphas_lasso), coef_lasso, color)
+    pl.plot(-np.log10(alphas_enet), coef_enet, color + 'x')
 
 
 # Display results
 color_iter = cycle(['b', 'g', 'r', 'c', 'm', 'y', 'k'])
-for color, weight_lasso, weight_enet in zip(color_iter,
-                            weights_lasso.T, weights_enet.T):
-    pl.plot(-np.log10(alphas_lasso), coef_lasso, color)
-    pl.plot(-np.log10(alphas_enet), coef_enet, color + 'x')
-
 pl.xlabel('-Log(lambda)')
 pl.ylabel('weights')
 pl.title('Lasso and Elastic-Net Paths')
 pl.legend(['Lasso','Elastic-Net'])
 pl.axis('tight')
 pl.show()
-
 

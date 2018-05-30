@@ -120,6 +120,7 @@ def sample_gaussian(mean, covar, cvtype='diag', n=1):
     rand = np.random.randn(ndim, n)
     if n == 1:
         rand.shape = (ndim,)
+
     if cvtype == 'spherical':
         rand *= np.sqrt(covar)
     elif cvtype == 'diag':
@@ -129,9 +130,8 @@ def sample_gaussian(mean, covar, cvtype='diag', n=1):
         sqrtS = np.diag(np.sqrt(s))
         sqrt_covar = np.dot(U, np.dot(sqrtS, V))
         rand = np.dot(sqrt_covar, rand)
+
     return (rand.T + mean).T
-
-
 
 
 class GMM(BaseEstimator):
@@ -222,6 +222,7 @@ class GMM(BaseEstimator):
     >>> print np.round(g.weights, 2)
     [ 0.5  0.5]
     """
+
     def __init__(self, n_states=1, n_dim=1, cvtype='diag', weights=None,
                  means=None, covars=None):
         """Create a Gaussian mixture model
@@ -240,22 +241,29 @@ class GMM(BaseEstimator):
             use.  Must be one of 'spherical', 'tied', 'diag', 'full'.
             Defaults to 'diag'.
         """
+
         self._n_states = n_states
         self._n_dim = n_dim
         self._cvtype = cvtype
+
         if not cvtype in ['spherical', 'tied', 'diag', 'full']:
             raise ValueError('bad cvtype')
+
         if weights is None:
             weights = np.tile(1.0 / n_states, n_states)
         self.weights = weights
+
         if means is None:
             means = np.zeros((n_states, n_dim))
         self.means = means
+
         if covars is None:
             covars = _distribute_covar_matrix_to_match_cvtype(
                 np.eye(n_dim), cvtype, n_states)
         self.covars = covars
+
         self.labels = [None] * n_states
+
     # Read-only properties.
     @property
     def cvtype(self):
@@ -264,14 +272,17 @@ class GMM(BaseEstimator):
         Must be one of 'spherical', 'tied', 'diag', 'full'.
         """
         return self._cvtype
+
     @property
     def n_dim(self):
         """Dimensionality of the mixture components."""
         return self._n_dim
+
     @property
     def n_states(self):
         """Number of mixture components in the model."""
         return self._n_states
+
     def _get_covars(self):
         """Return covars as a full matrix."""
         if self.cvtype == 'full':
@@ -282,30 +293,40 @@ class GMM(BaseEstimator):
             return [self._covars] * self._n_states
         elif self.cvtype == 'spherical':
             return [np.eye(self._n_states) * f for f in self._covars]
+
     def _set_covars(self, covars):
         covars = np.asanyarray(covars)
         _validate_covars(covars, self._cvtype, self._n_states, self._n_dim)
         self._covars = covars
+
     covars = property(_get_covars, _set_covars)
+
     def _get_means(self):
         """Mean parameters for each mixture component."""
         return self._means
+
     def _set_means(self, means):
         means = np.asarray(means)
         if means.shape != (self._n_states, self._n_dim):
             raise ValueError('means must have shape (n_states, n_dim)')
         self._means = means.copy()
+
     means = property(_get_means, _set_means)
+
     def _get_weights(self):
         """Mixing weights for each mixture component."""
         return np.exp(self._log_weights)
+
     def _set_weights(self, weights):
         if len(weights) != self._n_states:
             raise ValueError('weights must have length n_states')
         if not np.allclose(np.sum(weights), 1.0):
             raise ValueError('weights must sum to 1.0')
+
         self._log_weights = np.log(np.asarray(weights).copy())
+
     weights = property(_get_weights, _set_weights)
+
     def eval(self, obs):
         """Evaluate the model on data
 
@@ -333,8 +354,30 @@ class GMM(BaseEstimator):
         logprob = logsum(lpr, axis=1)
         posteriors = np.exp(lpr - logprob[:,np.newaxis])
         return logprob, posteriors
+
+
+    def decode(self, obs):
+        """Find most likely mixture components for each point in `obs`.
+
+        Parameters
+        ----------
+        obs : array_like, shape (n, n_dim)
+            List of n_dim-dimensional data points.  Each row corresponds to a
+            single data point.
+
+        Returns
+        -------
+        logprobs : array_like, shape (n,)
+            Log probability of each point in `obs` under the model.
+        components : array_like, shape (n,)
+            Index of the most likelihod mixture components for each observation
+        """
+        logprob, posteriors = self.eval(obs)
+        return logprob, posteriors.argmax(axis=1)
+
+
     def score(self, obs):
-        """Compute the log probability under the model.
+        """Find most likely mixture components for each point in `obs`.
 
         Parameters
         ----------
@@ -344,44 +387,14 @@ class GMM(BaseEstimator):
 
         Returns
         -------
-        logprob : array_like, shape (n,)
-            Log probabilities of each data point in `obs`
+        logprobs : array_like, shape (n,)
+            Log probability of each point in `obs` under the model.
+        components : array_like, shape (n,)
+            Index of the most likelihod mixture components for each observation
         """
         logprob, posteriors = self.eval(obs)
-        return logprob
-    def lpdf(self, obs):
-        """Compute the log probability under the model.
+        return logprob, posteriors.argmax(axis=1)
 
-        Parameters
-        ----------
-        obs : array_like, shape (n, n_dim)
-            List of n_dim-dimensional data points.  Each row corresponds to a
-            single data point.
-
-        Returns
-        -------
-        logprob : array_like, shape (n,)
-            Log probabilities of each data point in `obs`
-        """
-        logprob, posteriors = self.eval(obs)
-        return logprob
-    score = lpdf
-    def score(self, obs):
-        """Compute the log probability under the model.
-
-        Parameters
-        ----------
-        obs : array_like, shape (n, n_dim)
-            List of n_dim-dimensional data points.  Each row corresponds to a
-            single data point.
-
-        Returns
-        -------
-        logprob : array_like, shape (n,)
-            Log probabilities of each data point in `obs`
-        """
-        logprob, posteriors = self.eval(obs)
-        return logprob
     def predict(self, X):
         """Predict label for data.
 
@@ -395,6 +408,7 @@ class GMM(BaseEstimator):
         """
         logprob, components = self.decode(X)
         return components
+
     def rvs(self, n=1):
         """Generate random samples from the model.
 
@@ -410,6 +424,7 @@ class GMM(BaseEstimator):
         """
         weight_pdf = self.weights
         weight_cdf = np.cumsum(weight_pdf)
+
         obs = np.empty((n, self._n_dim))
         for x in xrange(n):
             rand = np.random.rand()
@@ -454,36 +469,45 @@ class GMM(BaseEstimator):
         kwargs : keyword, optional
             Keyword arguments passed to scipy.cluster.vq.kmeans2
         """
+
         ## initialization step
         X = np.asanyarray(X, dtype=np.float64)
         if 'm' in init_params:
             if not 'minit' in kwargs:
                 kwargs.update({'minit': 'points'})
             self._means, tmp = cluster.vq.kmeans2(X, self._n_states, **kwargs)
+
         if 'w' in init_params:
             self.weights = np.tile(1.0 / self._n_states, self._n_states)
+
         if 'c' in init_params:
             cv = np.cov(X.T)
             if not cv.shape:
                 cv.shape = (1, 1)
             self._covars = _distribute_covar_matrix_to_match_cvtype(
                 cv, self._cvtype, self._n_states)
+
         # EM algorithm
+
         logprob = []
         for i in xrange(n_iter):
             # Expectation step
             curr_logprob, posteriors = self.eval(X)
             logprob.append(curr_logprob.sum())
+
             # Check for convergence.
             if i > 0 and abs(logprob[-1] - logprob[-2]) < thresh:
                 break
+
             # Maximization step
+
             self._do_mstep(X, posteriors, params, min_covar)
         return self
     def _do_mstep(self, X, posteriors, params, min_covar=0):
             w = posteriors.sum(axis=0)
             avg_obs = np.dot(posteriors.T, X)
             norm = 1.0 / w[:,np.newaxis]
+
             if 'w' in params:
                 self._log_weights = np.log(w / w.sum())
             if 'm' in params:
@@ -492,58 +516,12 @@ class GMM(BaseEstimator):
                 covar_mstep_func = _covar_mstep_funcs[self._cvtype]
                 self._covars = covar_mstep_func(self, X, posteriors,
                                                 avg_obs, norm, min_covar)
+
+
             return w
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<<<<<<< REMOTE
-
-=======
-## some helper routines
->>>>>>> LOCAL
 ##
 ## some helper routines
 ##
-
 
 def _lmvnpdfdiag(obs, means=0.0, covars=1.0):
     nobs, ndim = obs.shape
@@ -556,13 +534,11 @@ def _lmvnpdfdiag(obs, means=0.0, covars=1.0):
                   + np.dot(obs ** 2, (1.0 / covars).T))
     return lpr
 
-
 def _lmvnpdfspherical(obs, means=0.0, covars=1.0):
     cv = covars.copy()
     if covars.ndim == 1:
         cv = cv[:,np.newaxis]
     return _lmvnpdfdiag(obs, means, np.tile(cv, (1, obs.shape[-1])))
-
 
 def _lmvnpdftied(obs, means, covars):
     nobs, ndim = obs.shape
@@ -573,7 +549,6 @@ def _lmvnpdftied(obs, means, covars):
                   - 2 * np.dot(np.dot(obs, icv), means.T)
                   + np.sum(means * np.dot(means, icv), 1))
     return lpr
-
 
 def _lmvnpdffull(obs, means, covars):
     # FIXME: this representation of covars is going to lose for caching
@@ -591,7 +566,6 @@ def _lmvnpdffull(obs, means, covars):
         #lpr[:,c] = -0.5 * (np.dot(np.dot(dzm, np.linalg.inv(cv)), dzm.T)
         #                   + np.log(2 * np.pi) + np.linalg.det(cv)).diagonal()
     return lpr
-
 
 def _validate_covars(covars, cvtype, nmix, ndim):
     if cvtype == 'spherical':
@@ -621,7 +595,6 @@ def _validate_covars(covars, cvtype, nmix, ndim):
                 raise ValueError("component %d of 'full' covars must be "
                                  "symmetric, positive-definite" % n)
 
-
 def _distribute_covar_matrix_to_match_cvtype(tiedcv, cvtype, n_states):
     if cvtype == 'spherical':
         cv = np.tile(np.diag(tiedcv).mean(), n_states)
@@ -635,7 +608,6 @@ def _distribute_covar_matrix_to_match_cvtype(tiedcv, cvtype, n_states):
         raise (ValueError,
                "cvtype must be one of 'spherical', 'tied', 'diag', 'full'")
     return cv
-
 
 def _covar_mstep_diag(gmm, obs, posteriors, avg_obs, norm, min_covar):
     # For column vectors:
@@ -651,10 +623,8 @@ def _covar_mstep_diag(gmm, obs, posteriors, avg_obs, norm, min_covar):
     avg_obs_means = gmm._means * avg_obs * norm
     return avg_obs2 - 2 * avg_obs_means + avg_means2 + min_covar
 
-
 def _covar_mstep_spherical(*args):
     return _covar_mstep_diag(*args).mean(axis=1)
-
 
 def _covar_mstep_full(gmm, obs, posteriors, avg_obs, norm, min_covar):
     print "THIS IS BROKEN"
@@ -671,10 +641,8 @@ def _covar_mstep_full(gmm, obs, posteriors, avg_obs, norm, min_covar):
                  + min_covar * np.eye(gmm._n_dim))
     return cv
 
-
 def _covar_mstep_tied2(*args):
     return _covar_mstep_full(*args).mean(axis=0)
-
 
 def _covar_mstep_tied(gmm, obs, posteriors, avg_obs, norm, min_covar):
     print "THIS IS BROKEN"
@@ -682,7 +650,6 @@ def _covar_mstep_tied(gmm, obs, posteriors, avg_obs, norm, min_covar):
     avg_obs2 = np.dot(obs.T, obs)
     avg_means2 = np.dot(gmm._means.T, gmm._means)
     return (avg_obs2 - avg_means2 + min_covar * np.eye(gmm._n_dim))
-
 
 def _covar_mstep_slow(gmm, obs, posteriors, avg_obs, norm, min_covar):
     w = posteriors.sum(axis=0)
@@ -706,7 +673,6 @@ def _covar_mstep_slow(gmm, obs, posteriors, avg_obs, norm, min_covar):
         elif gmm.cvtype == 'tied':
             covars += cv / gmm._n_states
     return covars
-
 
 _covar_mstep_funcs = {'spherical': _covar_mstep_spherical,
                       'diag': _covar_mstep_diag,

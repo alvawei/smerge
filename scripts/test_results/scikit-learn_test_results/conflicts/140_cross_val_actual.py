@@ -19,6 +19,7 @@ class LeaveOneOut(object):
     Leave-One-Out cross validation iterator:
     Provides train/test indexes to split data in train test sets
     """
+
     def __init__(self, n):
         """
         Leave-One-Out cross validation iterator:
@@ -49,6 +50,7 @@ class LeaveOneOut(object):
         [[1 2]] [[3 4]] [1] [2]
         """
         self.n = n
+
     def __iter__(self):
         n = self.n
         for i in xrange(n):
@@ -56,19 +58,15 @@ class LeaveOneOut(object):
             test_index[i] = True
             train_index = np.logical_not(test_index)
             yield train_index, test_index
+
     def __repr__(self):
         return '%s.%s(n=%i)' % (self.__class__.__module__,
                                 self.__class__.__name__,
                                 self.n,
                                 )
+
     def __len__(self):
         return self.n
-
-
-
-
-
-
 
 
 ##############################################################################
@@ -78,6 +76,7 @@ class LeavePOut(object):
     Provides train/test indexes to split data in train test sets
 
     """
+
     def __init__(self, n, p):
         """
         Leave-P-Out cross validation iterator:
@@ -112,6 +111,7 @@ class LeavePOut(object):
         """
         self.n = n
         self.p = p
+
     def __iter__(self):
         n = self.n
         p = self.p
@@ -121,6 +121,7 @@ class LeavePOut(object):
             test_index[np.array(idx)] = True
             train_index = np.logical_not(test_index)
             yield train_index, test_index
+
     def __repr__(self):
         return '%s.%s(n=%i, p=%i)' % (
                                 self.__class__.__module__,
@@ -128,16 +129,10 @@ class LeavePOut(object):
                                 self.n,
                                 self.p,
                                 )
+
     def __len__(self):
         return factorial(self.n) / factorial(self.n - self.p) \
                / factorial(self.p)
-
-
-
-
-##############################################################################
-
-
 
 
 ##############################################################################
@@ -146,6 +141,7 @@ class KFold(object):
     K-Folds cross validation iterator:
     Provides train/test indexes to split data in train test sets
     """
+
     def __init__(self, n, k):
         """
         K-Folds cross validation iterator:
@@ -181,12 +177,14 @@ class KFold(object):
         assert k>0, ('cannot have k below 1')
         assert k<n, ('cannot have k=%d greater than the number '
                             'of samples: %d'% (k, n))
+
         self.n = n
         self.k = k
     def __iter__(self):
         n = self.n
         k = self.k
         j = ceil(n / k)
+
         for i in xrange(k):
             test_index  = np.zeros(n, dtype=np.bool)
             if i<k-1:
@@ -195,6 +193,7 @@ class KFold(object):
                 test_index[i*j:] = True
             train_index = np.logical_not(test_index)
             yield train_index, test_index
+
     def __repr__(self):
         return '%s.%s(n=%i, k=%i)' % (
                                 self.__class__.__module__,
@@ -202,15 +201,9 @@ class KFold(object):
                                 self.n,
                                 self.k,
                                 )
+
     def __len__(self):
         return self.k
-
-
-
-
-
-
-
 
 
 ##############################################################################
@@ -224,6 +217,7 @@ class StratifiedKFold(object):
     the percentage of samples for each class.
 
     """
+
     # XXX: Should maybe have an argument to raise when
     # folds are not balanced
     def __init__(self, y, k):
@@ -273,13 +267,16 @@ assert k <= np.min(np.bincount(y_sorted))
 =======
 assert k<np.min(np.bincount(y_sorted))
 >>>>>>> LOCAL
+
         self.y = y
         self.k = k
     def __iter__(self):
         y = self.y.copy()
         k = self.k
         n = y.size
+
         classes = np.unique(y)
+
         idx_c = dict()
         j_c = dict()
         n_c = dict()
@@ -287,6 +284,7 @@ assert k<np.min(np.bincount(y_sorted))
             idx_c[c] = np.where(y == c)[0]
             n_c[c] = len(idx_c[c])
             j_c[c] = int(ceil(n_c[c] / k))
+
         for i in xrange(k):
             test_index  = np.zeros(n, dtype=np.bool)
             for c in classes:
@@ -295,8 +293,10 @@ assert k<np.min(np.bincount(y_sorted))
                 else:
                     test_index_c = range(i*j_c[c], n_c[c])
                 test_index[idx_c[c][test_index_c]] = True
+
             train_index = np.logical_not(test_index)
             yield train_index, test_index
+
     def __repr__(self):
         return '%s.%s(labels=%s, k=%i)' % (
                                 self.__class__.__module__,
@@ -304,18 +304,9 @@ assert k<np.min(np.bincount(y_sorted))
                                 self.y,
                                 self.k,
                                 )
+
     def __len__(self):
         return self.k
-
-
-
-
-
-
-
-
-
-
 
 
 ##############################################################################
@@ -324,6 +315,7 @@ class LeaveOneLabelOut(object):
     Leave-One-Label_Out cross-validation iterator:
     Provides train/test indexes to split data in train test sets
     """
+
     def __init__(self, labels):
         """
         Leave-One-Label_Out cross validation:
@@ -362,6 +354,7 @@ class LeaveOneLabelOut(object):
         """
         self.labels = labels
         self.n_labels = np.unique(labels).size
+
     def __iter__(self):
         # We make a copy here to avoid side-effects during iteration
         labels = np.array(self.labels, copy=True)
@@ -370,20 +363,16 @@ class LeaveOneLabelOut(object):
             test_index[labels==i] = True
             train_index = np.logical_not(test_index)
             yield train_index, test_index
+
     def __repr__(self):
         return '%s.%s(labels=%s)' % (
                                 self.__class__.__module__,
                                 self.__class__.__name__,
                                 self.labels,
                                 )
+
     def __len__(self):
         return self.n_labels
-
-
-
-
-
-
 
 
 ##############################################################################
@@ -392,6 +381,7 @@ class LeavePLabelOut(object):
     Leave-P-Label_Out cross-validation iterator:
     Provides train/test indexes to split data in train test sets
     """
+
     def __init__(self, labels, p):
         """
         Leave-P-Label_Out cross validation:
@@ -433,12 +423,14 @@ class LeavePLabelOut(object):
         self.unique_labels = np.unique(self.labels)
         self.n_labels = self.unique_labels.size
         self.p = p
+
     def __iter__(self):
         # We make a copy here to avoid side-effects during iteration
         labels = np.array(self.labels, copy=True)
         unique_labels = np.unique(labels)
         n_labels = unique_labels.size
         comb = combinations(range(n_labels), self.p)
+
         for idx in comb:
             test_index = np.zeros(labels.size, dtype=np.bool)
             idx = np.array(idx)
@@ -446,6 +438,7 @@ class LeavePLabelOut(object):
                 test_index[labels == l] = True
             train_index = np.logical_not(test_index)
             yield train_index, test_index
+
     def __repr__(self):
         return '%s.%s(labels=%s, p=%s)' % (
                                 self.__class__.__module__,
@@ -453,16 +446,12 @@ class LeavePLabelOut(object):
                                 self.labels,
                                 self.p,
                                 )
+
     def __len__(self):
         return factorial(self.n_labels) / factorial(self.n_labels - self.p) \
                / factorial(self.p)
 
 
-
-
-
-
-    
 ##############################################################################
 
 def _cross_val_score(estimator, X, y, score_func, train, test):
@@ -541,4 +530,5 @@ def split(train_indices, test_indices, *args):
         ret.append(arg_train)
         ret.append(arg_test)
     return ret
+
 

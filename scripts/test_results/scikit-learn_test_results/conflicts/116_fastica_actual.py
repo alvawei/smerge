@@ -54,12 +54,15 @@ def _ica_def(X, tol, g, gprime, fun_args, max_iter, w_init):
 
     Used internally by FastICA.
     """
+
     n_components = w_init.shape[0]
     W = np.zeros((n_components, n_components), dtype=float)
+
     # j is the index of the extracted component
     for j in range(n_components):
         w = w_init[j, :].copy()
         w /= np.sqrt((w**2).sum())
+
         n_iterations = 0
         # we set lim to tol+1 to be sure to enter at least once in next while
         lim = tol + 1
@@ -68,21 +71,18 @@ def _ica_def(X, tol, g, gprime, fun_args, max_iter, w_init):
             gwtx = g(wtx, fun_args)
             g_wtx = gprime(wtx, fun_args)
             w1 = (X * gwtx).mean(axis=1) - g_wtx.mean() * w
+
             _gs_decorrelation(w1, W, j)
+
             w1 /= np.sqrt((w1**2).sum())
+
             lim = np.abs(np.abs((w1 * w).sum()) - 1)
             w = w1
             n_iterations = n_iterations + 1
+
         W[j, :] = w
+
     return W
-
-
-
-
-
-
-
-
 
 
 def _ica_par(X, tol, g, gprime, fun_args, max_iter, w_init):
@@ -92,7 +92,9 @@ def _ica_par(X, tol, g, gprime, fun_args, max_iter, w_init):
 
     """
     n, p = X.shape
+
     W = _sym_decorrelation(w_init)
+
     # we set lim to tol+1 to be sure to enter at least once in next while
     lim = tol + 1
     it = 0
@@ -102,16 +104,14 @@ def _ica_par(X, tol, g, gprime, fun_args, max_iter, w_init):
         g_wtx = gprime(wtx, fun_args)
         W1 = np.dot(gwtx, X.T)/float(p) \
              - np.dot(np.diag(g_wtx.mean(axis=1)), W)
+
         W1 = _sym_decorrelation(W1)
+
         lim = max(abs(abs(np.diag(np.dot(W1, W.T))) - 1))
         W = W1
         it += 1
+
     return W
-
-
-
-
-
 
 
 <<<<<<< REMOTE
@@ -189,9 +189,11 @@ def fastica(X, n_comp=None, algorithm="parallel", whiten=True,
     """
     algorithm_funcs = {'parallel': _ica_par,
                        'deflation': _ica_def}
+
     alpha = fun_args.get('alpha',1.0)
     if (alpha < 1) or (alpha > 2):
         raise ValueError("alpha must be in [1,2]")
+
     if type(fun) is types.StringType:
         # Some standard nonlinear functions
         # XXX: these should be optimized, as they can be a bottleneck.
@@ -223,17 +225,22 @@ def fastica(X, n_comp=None, algorithm="parallel", whiten=True,
             return fun(x, **fun_args)
         def gprime(x, fun_args):
             return fun_prime(x, **fun_args)
+
     n, p = X.shape
+
     if n_comp is None:
         n_comp = min(n, p)
     if (n_comp > min(n, p)):
         n_comp = min(n, p)
         print("n_comp is too large: it will be set to %s" % n_comp)
+
     if whiten:
         # Centering the columns (ie the variables)
         X = X - X.mean(axis=-1)[:, np.newaxis]
+
         # Whitening and preprocessing by PCA
         u, d, _ = linalg.svd(X, full_matrices=False)
+
         del _
         K = (u/d).T[:n_comp]  # see (6.33) p.140
         del u, d
@@ -243,6 +250,7 @@ def fastica(X, n_comp=None, algorithm="parallel", whiten=True,
     else:
         X1 = X.copy()
     X1 *= np.sqrt(p)
+
     if w_init is None:
         w_init = np.random.normal(size=(n_comp, n_comp))
     else:
@@ -250,21 +258,27 @@ def fastica(X, n_comp=None, algorithm="parallel", whiten=True,
         if w_init.shape != (n_comp, n_comp):
             raise ValueError("w_init has invalid shape -- should be %(shape)s"
                              % {'shape': (n_comp, n_comp)})
+
     kwargs = {'tol': tol,
               'g': g,
               'gprime': gprime,
               'fun_args': fun_args,
               'max_iter': max_iter,
               'w_init': w_init}
+
     func = algorithm_funcs.get(algorithm, 'parallel')
+
     W = func(X1, **kwargs)
     del X1
+
     if whiten:
         S = np.dot(np.dot(W, K), X)
         return K, W, S
     else:
         S = np.dot(W, X)
         return W, S
+
+
 
 =======
 def fastica(X, n_comp=None, algorithm="parallel", whiten=True,
@@ -341,9 +355,11 @@ def fastica(X, n_comp=None, algorithm="parallel", whiten=True,
     """
     algorithm_funcs = {'parallel': _ica_par,
                        'deflation': _ica_def}
+
     alpha = fun_args.get('alpha',1.0)
     if (alpha < 1) or (alpha > 2):
         raise ValueError("alpha must be in [1,2]")
+
     if type(fun) is types.StringType:
         # Some standard nonlinear functions
         # XXX: these should be optimized, as they can be a bottleneck.
@@ -375,17 +391,22 @@ def fastica(X, n_comp=None, algorithm="parallel", whiten=True,
             return fun(x, **fun_args)
         def gprime(x, fun_args):
             return fun_prime(x, **fun_args)
+
     n, p = X.shape
+
     if n_components is None:
         n_components = min(n, p)
     if (n_components > min(n, p)):
         n_components = min(n, p)
         print("n_components is too large: it will be set to %s" % n_components)
+
     if whiten:
         # Centering the columns (ie the variables)
         X = X - X.mean(axis=-1)[:, np.newaxis]
+
         # Whitening and preprocessing by PCA
         u, d, _ = linalg.svd(X, full_matrices=False)
+
         del _
         K = (u/d).T[:n_components]  # see (6.33) p.140
         del u, d
@@ -395,6 +416,7 @@ def fastica(X, n_comp=None, algorithm="parallel", whiten=True,
     else:
         X1 = X.copy()
     X1 *= np.sqrt(p)
+
     if w_init is None:
         w_init = np.random.normal(size=(n_components, n_components))
     else:
@@ -402,21 +424,27 @@ def fastica(X, n_comp=None, algorithm="parallel", whiten=True,
         if w_init.shape != (n_components, n_components):
             raise ValueError("w_init has invalid shape -- should be %(shape)s"
                              % {'shape': (n_components, n_components)})
+
     kwargs = {'tol': tol,
               'g': g,
               'gprime': gprime,
               'fun_args': fun_args,
               'max_iter': max_iter,
               'w_init': w_init}
+
     func = algorithm_funcs.get(algorithm, 'parallel')
+
     W = func(X1, **kwargs)
     del X1
+
     if whiten:
         S = np.dot(np.dot(W, K), X)
         return K, W, S
     else:
         S = np.dot(W, X)
         return W, S
+
+
 
 =======
 def fastica(X, n_components=None, algorithm="parallel", whiten=True,
@@ -493,9 +521,11 @@ def fastica(X, n_components=None, algorithm="parallel", whiten=True,
     """
     algorithm_funcs = {'parallel': _ica_par,
                        'deflation': _ica_def}
+
     alpha = fun_args.get('alpha',1.0)
     if (alpha < 1) or (alpha > 2):
         raise ValueError("alpha must be in [1,2]")
+
     if type(fun) is types.StringType:
         # Some standard nonlinear functions
         # XXX: these should be optimized, as they can be a bottleneck.
@@ -527,17 +557,22 @@ def fastica(X, n_components=None, algorithm="parallel", whiten=True,
             return fun(x, **fun_args)
         def gprime(x, fun_args):
             return fun_prime(x, **fun_args)
+
     n, p = X.shape
+
     if n_components is None:
         n_components = min(n, p)
     if (n_components > min(n, p)):
         n_components = min(n, p)
         print("n_components is too large: it will be set to %s" % n_components)
+
     if whiten:
         # Centering the columns (ie the variables)
         X = X - X.mean(axis=-1)[:, np.newaxis]
+
         # Whitening and preprocessing by PCA
         u, d, _ = linalg.svd(X, full_matrices=False)
+
         del _
         K = (u/d).T[:n_components]  # see (6.33) p.140
         del u, d
@@ -547,6 +582,7 @@ def fastica(X, n_components=None, algorithm="parallel", whiten=True,
     else:
         X1 = X.copy()
     X1 *= np.sqrt(p)
+
     if w_init is None:
         w_init = np.random.normal(size=(n_components, n_components))
     else:
@@ -554,21 +590,27 @@ def fastica(X, n_components=None, algorithm="parallel", whiten=True,
         if w_init.shape != (n_components, n_components):
             raise ValueError("w_init has invalid shape -- should be %(shape)s"
                              % {'shape': (n_components, n_components)})
+
     kwargs = {'tol': tol,
               'g': g,
               'gprime': gprime,
               'fun_args': fun_args,
               'maxit': maxit,
               'w_init': w_init}
+
     func = algorithm_funcs.get(algorithm, 'parallel')
+
     W = func(X1, **kwargs)
     del X1
+
     if whiten:
         S = np.dot(np.dot(W, K), X)
         return K, W, S
     else:
         S = np.dot(W, X)
         return W, S
+
+
 
 >>>>>>> LOCAL
     """Perform Fast Independent Component Analysis.
@@ -642,9 +684,11 @@ def fastica(X, n_components=None, algorithm="parallel", whiten=True,
     """
     algorithm_funcs = {'parallel': _ica_par,
                        'deflation': _ica_def}
+
     alpha = fun_args.get('alpha',1.0)
     if (alpha < 1) or (alpha > 2):
         raise ValueError("alpha must be in [1,2]")
+
     if type(fun) is types.StringType:
         # Some standard nonlinear functions
         # XXX: these should be optimized, as they can be a bottleneck.
@@ -676,17 +720,22 @@ def fastica(X, n_components=None, algorithm="parallel", whiten=True,
             return fun(x, **fun_args)
         def gprime(x, fun_args):
             return fun_prime(x, **fun_args)
+
     n, p = X.shape
+
     if n_components is None:
         n_components = min(n, p)
     if (n_components > min(n, p)):
         n_components = min(n, p)
         print("n_components is too large: it will be set to %s" % n_components)
+
     if whiten:
         # Centering the columns (ie the variables)
         X = X - X.mean(axis=-1)[:, np.newaxis]
+
         # Whitening and preprocessing by PCA
         u, d, _ = linalg.svd(X, full_matrices=False)
+
         del _
         K = (u/d).T[:n_components]  # see (6.33) p.140
         del u, d
@@ -696,6 +745,7 @@ def fastica(X, n_components=None, algorithm="parallel", whiten=True,
     else:
         X1 = X.copy()
     X1 *= np.sqrt(p)
+
     if w_init is None:
         w_init = np.random.normal(size=(n_components, n_components))
     else:
@@ -703,33 +753,25 @@ def fastica(X, n_components=None, algorithm="parallel", whiten=True,
         if w_init.shape != (n_components, n_components):
             raise ValueError("w_init has invalid shape -- should be %(shape)s"
                              % {'shape': (n_components, n_components)})
+
     kwargs = {'tol': tol,
               'g': g,
               'gprime': gprime,
               'fun_args': fun_args,
               'max_iter': max_iter,
               'w_init': w_init}
+
     func = algorithm_funcs.get(algorithm, 'parallel')
+
     W = func(X1, **kwargs)
     del X1
+
     if whiten:
         S = np.dot(np.dot(W, K), X)
         return K, W, S
     else:
         S = np.dot(W, X)
         return W, S
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class FastICA(BaseEstimator):
@@ -775,6 +817,7 @@ class FastICA(BaseEstimator):
     pp. 411-430
 
     """
+
     <<<<<<< REMOTE
     def __init__(self, n_comp=None, algorithm='parallel', whiten=True,
                 fun='logcosh', fun_prime='', fun_args={}, max_iter=200, tol=1e-4,
@@ -790,6 +833,7 @@ class FastICA(BaseEstimator):
         self.tol = tol
         self.w_init = w_init
 
+
 =======
     def __init__(self, n_comp=None, algorithm='parallel', whiten=True,
                 fun='logcosh', fun_prime='', fun_args={}, maxit=200, tol=1e-4,
@@ -804,6 +848,7 @@ class FastICA(BaseEstimator):
         self.fun_args = fun_args
         self.tol = tol
         self.w_init = w_init
+
 
 =======
     def __init__(self, n_components=None, algorithm='parallel', whiten=True,
@@ -820,6 +865,7 @@ class FastICA(BaseEstimator):
         self.tol = tol
         self.w_init = w_init
 
+
 >>>>>>> LOCAL
         super(FastICA, self).__init__()
         self.n_components = n_components
@@ -831,6 +877,7 @@ class FastICA(BaseEstimator):
         self.fun_args = fun_args
         self.tol = tol
         self.w_init = w_init
+
     def fit(self, X, **params):
         self._set_params(**params)
         <<<<<<< REMOTE
@@ -851,19 +898,17 @@ whitening_, unmixing_, sources_ = fastica(X, self.n_components,
 >>>>>>> LOCAL
         self.unmixing_matrix_ = np.dot(unmixing_, whitening_)
         return self
+
     def transform(self, X):
         """Apply un-mixing matrix "W" to X to recover the sources
 
         S = W * X
         """
         return np.dot(self.unmixing_matrix_, X)
+
     def get_mixing_matrix(self):
         """Compute the mixing matrix
         """
         return linalg.pinv(self.unmixing_matrix_)
-
-
-
-
 
 

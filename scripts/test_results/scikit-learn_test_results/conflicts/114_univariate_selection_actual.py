@@ -8,11 +8,102 @@ Univariate features selection.
 import numpy as np
 from scipy import stats
 
-from ..base import BaseEstimator
+from ..base import BaseEstimator, TransformerMixin
 
 ######################################################################
-# Scoring functions
+
+<<<<<<< REMOTE
 ######################################################################
+=======
+class _AbstractUnivariateFilter(BaseEstimator, TransformerMixin):
+    """ Abstract class, not meant to be used directly
+    """
+
+    def __init__(self, score_func):
+        """ Initialize the univariate feature selection.
+
+        Parameters
+        ===========
+        score_func: callable
+            function taking two arrays X and y, and returning 2 arrays:
+            both scores and pvalues
+        """
+        assert callable(score_func), ValueError(
+                "The score function should be a callable, '%s' (type %s) "
+                "was passed." % (score_func, type(score_func))
+            )
+        self.score_func = score_func
+
+
+    def fit(self, X, y, **params):
+        """
+        Evaluate the function
+        """
+        self._set_params(**params)
+        _scores = self.score_func(X, y)
+        self._scores = _scores[0]
+        self._pvalues = _scores[1]
+        return self
+
+
+    def transform(self, X, **params):
+        """
+        Transform a new matrix using the selected features
+        """
+        self._set_params(**params)
+        return X[:, self.get_support()]
+
+
+    def inverse_transform(self, X_red):
+        """ Transform reduced data back in original feature space
+        """
+        n_samples, _ = X_red.shape
+        support = self.get_support()
+        if n_samples == 1:
+            X = np.zeros((support.shape[0]), dtype=X_red.dtype)
+            X[support] = X_red
+        else:
+            X = np.zeros((n_samples, support.shape[0]), dtype=X_red.dtype)
+            X[:, support] = X_red
+        return X
+
+
+
+>>>>>>> LOCAL
+
+<<<<<<< REMOTE
+class SelectFpr(_AbstractUnivariateFilter):
+    """
+    Filter : Select the pvalues below alpha
+    """
+
+    def __init__(self, score_func, alpha=5e-2):
+        """ Initialize the univariate feature selection.
+
+        Parameters
+        ===========
+        score_func: callable
+            function taking two arrays X and y, and returning 2 arrays:
+            both scores and pvalues
+        alpha: float, optional
+            the highest p-value for features to keep
+        """
+        self.alpha = alpha
+        _AbstractUnivariateFilter.__init__(self, score_func)
+
+    def get_support(self):
+        alpha = self.alpha
+        return (self._pvalues < alpha)
+
+
+
+=======
+
+>>>>>>> LOCAL
+# Scoring functions
+
+######################################################################
+
 
 # The following function is a rewriting of scipy.stats.f_oneway
 # Contrary to the scipy.stats.f_oneway implementation it does not
@@ -140,16 +231,19 @@ def f_regression(X, y, center=True):
     pval : array of shape(m)
         the set of p-values
     """
+
     # orthogonalize everything wrt to confounds
     y = y.copy().ravel()
     X = X.copy()
     if center:
         y -= np.mean(y)
         X -= np.mean(X, 0)
+
     # compute the correlation
     X /= np.sqrt(np.sum(X**2, 0))
     y /= np.sqrt(np.sum(y**2))
     corr = np.dot(y, X)
+
     # convert to p-value
     dof = y.size - 2
     F = corr**2 / (1 - corr**2) * dof
@@ -157,70 +251,16 @@ def f_regression(X, y, center=True):
     return F, pv
 
 
-
-
-
 ######################################################################
 # General class for filter univariate selection
 ######################################################################
-
-
-class _AbstractUnivariateFilter(BaseEstimator):
-    """ Abstract class, not meant to be used directly
-    """
-    def __init__(self, score_func):
-        """ Initialize the univariate feature selection.
-
-        Parameters
-        ===========
-        score_func: callable
-            function taking two arrays X and y, and returning 2 arrays:
-            both scores and pvalues
-        """
-        assert callable(score_func), ValueError(
-                "The score function should be a callable, '%s' (type %s) "
-                "was passed." % (score_func, type(score_func)))
-        self.score_func = score_func
-    def fit(self, X, y):
-        """
-        Evaluate the function
-        """
-        _scores = self.score_func(X, y)
-        self._scores = _scores[0]
-        self._pvalues = _scores[1]
-        return self
-    def transform(self, X, **params):
-        """
-        Transform a new matrix using the selected features
-        """
-        self._set_params(**params)
-        return X[:, self.get_support()]
-    def inverse_transform(self, X, **params):
-        """
-        Transform a new matrix using the selected features
-        """
-        self._set_params(**params)
-        support_ = self.get_support()
-        if X.ndim == 1:
-            X = X[None, :]
-        Xt = np.zeros((X.shape[0], support_.size))
-        Xt[:, support_] = X
-        return Xt
-
-
-
-
-
-
-
-######################################################################
 # Specific filters
 ######################################################################
-
 class SelectPercentile(_AbstractUnivariateFilter):
     """
     Filter : Select the best percentile of the p_values
     """
+
     def __init__(self, score_func, percentile=10):
         """ Initialize the univariate feature selection.
 
@@ -234,6 +274,7 @@ class SelectPercentile(_AbstractUnivariateFilter):
         """
         self.percentile = percentile
         _AbstractUnivariateFilter.__init__(self, score_func)
+
     def get_support(self):
         percentile = self.percentile
         assert percentile<=100, ValueError('percentile should be \
@@ -245,8 +286,6 @@ class SelectPercentile(_AbstractUnivariateFilter):
             return np.zeros(len(self._pvalues), dtype=np.bool)
         alpha = stats.scoreatpercentile(self._pvalues, percentile)
         return (self._pvalues <= alpha)
-
-
 
 
 class SelectKBest(_AbstractUnivariateFilter):
@@ -266,36 +305,13 @@ class SelectKBest(_AbstractUnivariateFilter):
         """
         self.k = k
         _AbstractUnivariateFilter.__init__(self, score_func)
+
     def get_support(self):
         k = self.k
         assert k<=len(self._pvalues), ValueError('cannot select %d features'
                                     ' among %d ' % (k, len(self._pvalues)))
         alpha = np.sort(self._pvalues)[k-1]
         return (self._pvalues <= alpha)
-
-
-
-class SelectFpr(_AbstractUnivariateFilter):
-    """
-    Filter : Select the pvalues below alpha
-    """
-    def __init__(self, score_func, alpha=5e-2):
-        """ Initialize the univariate feature selection.
-
-        Parameters
-        ===========
-        score_func: callable
-            function taking two arrays X and y, and returning 2 arrays:
-            both scores and pvalues
-        alpha: float, optional
-            the highest p-value for features to keep
-        """
-        self.alpha = alpha
-        _AbstractUnivariateFilter.__init__(self, score_func)
-    def get_support(self):
-        alpha = self.alpha
-        return (self._pvalues < alpha)
-
 
 
 class SelectFdr(_AbstractUnivariateFilter):
@@ -316,12 +332,12 @@ class SelectFdr(_AbstractUnivariateFilter):
         """
         self.alpha = alpha
         _AbstractUnivariateFilter.__init__(self, score_func)
+
     def get_support(self):
         alpha = self.alpha
         sv = np.sort(self._pvalues)
         threshold = sv[sv < alpha*np.arange(len(self._pvalues))].max()
         return (self._pvalues < threshold)
-
 
 
 class SelectFwe(_AbstractUnivariateFilter):
@@ -341,16 +357,13 @@ class SelectFwe(_AbstractUnivariateFilter):
         """
         self.alpha = alpha
         _AbstractUnivariateFilter.__init__(self, score_func)
+
     def get_support(self):
         alpha = self.alpha
         return (self._pvalues < alpha/len(self._pvalues))
 
 
-
-######################################################################
 # Generic filter
-######################################################################
-
 class GenericUnivariateSelect(_AbstractUnivariateFilter):
     _selection_modes = {'percentile':   SelectPercentile,
                         'k_best':       SelectKBest,
@@ -358,6 +371,7 @@ class GenericUnivariateSelect(_AbstractUnivariateFilter):
                         'fdr':          SelectFdr,
                         'fwe':          SelectFwe,
                         }
+
     def __init__(self, score_func, mode='percentile', param=1e-5):
         """ Initialize the univariate feature selection.
 
@@ -382,6 +396,8 @@ class GenericUnivariateSelect(_AbstractUnivariateFilter):
         self.score_func = score_func
         self.mode = mode
         self.param = param
+
+
     def get_support(self):
         selector = self._selection_modes[self.mode](lambda x: x)
         selector._pvalues = self._pvalues
@@ -392,10 +408,6 @@ class GenericUnivariateSelect(_AbstractUnivariateFilter):
         possible_params.remove('score_func')
         selector._set_params(**{possible_params[0]: self.param})
         return selector.get_support()
-
-
-
-
 
 
 

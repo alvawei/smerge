@@ -56,14 +56,14 @@ def test_ovr_fit_predict():
     ovr = OneVsRestClassifier(LinearSVC())
     pred = ovr.fit(iris.data, iris.target).predict(iris.data)
     assert_equal(len(ovr.estimators_), n_classes)
+
     pred2 = LinearSVC().fit(iris.data, iris.target).predict(iris.data)
     assert_equal(np.mean(iris.target == pred), np.mean(iris.target == pred2))
+
     # A classifier which implements predict_proba.
     ovr = OneVsRestClassifier(MultinomialNB())
     pred = ovr.fit(iris.data, iris.target).predict(iris.data)
     assert_true(np.mean(iris.target == pred) >= 0.65)
-
-
 
 
 def test_ovr_multilabel():
@@ -74,19 +74,19 @@ def test_ovr_multilabel():
                   [1, 1, 1],
                   [1, 0, 1],
                   [1, 0, 0]])
+
     for base_clf in (MultinomialNB(), LinearSVC()):
         # test input as lists of tuples
         clf = OneVsRestClassifier(base_clf).fit(X, y)
         y_pred = clf.predict([[0, 4, 4]])[0]
         assert_equal(set(y_pred), set([1, 2]))
         assert_true(clf.multilabel_)
+
         # test input as label indicator matrix
         clf = OneVsRestClassifier(base_clf).fit(X, Y)
         y_pred = clf.predict([[0, 4, 4]])[0]
         assert_array_equal(y_pred, [0, 1, 1])
         assert_true(clf.multilabel_)
-
-
 
 
 def test_ovr_multilabel_dataset():
@@ -125,11 +125,11 @@ def test_ovo_fit_predict():
     ovo = OneVsOneClassifier(LinearSVC())
     ovo.fit(iris.data, iris.target).predict(iris.data)
     assert_equal(len(ovo.estimators_), n_classes * (n_classes - 1) / 2)
+
     # A classifier which implements predict_proba.
     ovo = OneVsOneClassifier(MultinomialNB())
     ovo.fit(iris.data, iris.target).predict(iris.data)
     assert_equal(len(ovo.estimators_), n_classes * (n_classes - 1) / 2)
-
 
 
 def test_ovo_gridsearch():
@@ -151,11 +151,11 @@ def test_ecoc_fit_predict():
     ecoc = OutputCodeClassifier(LinearSVC(), code_size=2)
     ecoc.fit(iris.data, iris.target).predict(iris.data)
     assert_equal(len(ecoc.estimators_), n_classes * 2)
+
     # A classifier which implements predict_proba.
     ecoc = OutputCodeClassifier(MultinomialNB(), code_size=2)
     ecoc.fit(iris.data, iris.target).predict(iris.data)
     assert_equal(len(ecoc.estimators_), n_classes * 2)
-
 
 
 def test_ecoc_gridsearch():

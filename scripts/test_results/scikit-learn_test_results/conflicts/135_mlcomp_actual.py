@@ -4,7 +4,7 @@
 
 import os
 import numpy as np
-from scikits.learn.datasets.base import Bunch
+from scikits.learn.datasets.base import load_text_files
 from scikits.learn.feature_extraction.text import HashingVectorizer
 from scikits.learn.feature_extraction.text import SparseHashingVectorizer
 
@@ -15,19 +15,13 @@ def _load_document_classification(dataset_path, metadata, set_=None):
     return load_text_files(dataset_path, metadata.get('description'))
 
 
-
-
-
-
-
 LOADERS = {
     'DocumentClassification': _load_document_classification,
     # TODO: implement the remaining domain formats
 }
 
 
-def load_mlcomp(name_or_id, set_="raw", mlcomp_root=None, sparse=False,
-                **kwargs):
+def load_mlcomp(name_or_id, set_="raw", mlcomp_root=None, **kwargs):
     """Load a datasets as downloaded from http://mlcomp.org
 
     Parameters
@@ -60,16 +54,20 @@ def load_mlcomp(name_or_id, set_="raw", mlcomp_root=None, sparse=False,
 
     TODO: implement zip dataset loading too
     """
+
     if mlcomp_root is None:
         try:
             mlcomp_root = os.environ['MLCOMP_DATASETS_HOME']
         except KeyError:
             raise ValueError("MLCOMP_DATASETS_HOME env variable is undefined")
+
     mlcomp_root = os.path.expanduser(mlcomp_root)
     mlcomp_root = os.path.abspath(mlcomp_root)
     mlcomp_root = os.path.normpath(mlcomp_root)
+
     if not os.path.exists(mlcomp_root):
         raise ValueError("Could not find folder: " + mlcomp_root)
+
     # dataset lookup
     if isinstance(name_or_id, int):
         # id lookup
@@ -89,6 +87,7 @@ def load_mlcomp(name_or_id, set_="raw", mlcomp_root=None, sparse=False,
         if dataset_path is None:
             raise ValueError("Could not find dataset with metadata line: " +
                              expected_name_line)
+
     # loading the dataset metadata
     metadata = dict()
     metadata_file = os.path.join(dataset_path, 'metadata')
@@ -98,17 +97,12 @@ def load_mlcomp(name_or_id, set_="raw", mlcomp_root=None, sparse=False,
         if ":" in line:
             key, value = line.split(":", 1)
             metadata[key.strip()] = value.strip()
+
     format = metadata.get('format', 'unknow')
     loader = LOADERS.get(format)
     if loader is None:
         raise ValueError("No loader implemented for format: " + format)
-    return loader(dataset_path, metadata, set_=set_, sparse=sparse, **kwargs)
-
-
-
-
-
-
+    return loader(dataset_path, metadata, set_=set_, **kwargs)
 
 
 

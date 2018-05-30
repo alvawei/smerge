@@ -20,7 +20,8 @@ from jinja2 import Environment, PackageLoader, FileSystemLoader
 from werkzeug import Request as RequestBase, Response as ResponseBase, \
      LocalStack, LocalProxy, create_environ, SharedDataMiddleware, \
      ImmutableDict, cached_property, wrap_file, Headers, \
-     import_string
+import_string
+import_string
 from werkzeug.routing import Map, Rule
 from werkzeug.exceptions import HTTPException, InternalServerError
 from werkzeug.contrib.securecookie import SecureCookie
@@ -99,15 +100,15 @@ class Session(SecureCookie):
     """Expands the session with support for switching between permanent
     and non-permanent sessions.
     """
+
     def _get_permanent(self):
         return self.get('_permanent', False)
+
     def _set_permanent(self, value):
         self['_permanent'] = bool(value)
+
     permanent = property(_get_permanent, _set_permanent)
     del _get_permanent, _set_permanent
-
-
-
 
 
 class _NullSession(Session):
@@ -115,6 +116,7 @@ class _NullSession(Session):
     available.  Will still allow read-only access to the empty session
     but fail on setting.
     """
+
     def _fail(self, *args, **kwargs):
         raise RuntimeError('the session is unavailable because no secret '
                            'key was set.  Set the secret_key on the '
@@ -124,13 +126,13 @@ class _NullSession(Session):
     del _fail
 
 
-
 class _RequestContext(object):
     """The request context contains all request relevant information.  It is
     created at the beginning of the request and pushed to the
     `_request_ctx_stack` and removed at the end of it.  It will create the
     URL adapter and request object for the WSGI environment provided.
     """
+
     def __init__(self, app, environ):
         self.app = app
         self.url_adapter = app.url_map.bind_to_environ(environ)
@@ -140,34 +142,31 @@ class _RequestContext(object):
             self.session = _NullSession()
         self.g = _RequestGlobals()
         self.flashes = None
+
         try:
             self.request.endpoint, self.request.view_args = \
                 self.url_adapter.match()
         except HTTPException, e:
             self.request.routing_exception = e
+
     def push(self):
         """Binds the request context."""
         _request_ctx_stack.push(self)
-        """Binds the request context."""
-        _request_ctx_stack.push(self)
+
     def pop(self):
         """Pops the request context."""
-            _request_ctx_stack.pop()
-        """Pops the request context."""
         _request_ctx_stack.pop()
+
     def __enter__(self):
         self.push()
         return self
+
     def __exit__(self, exc_type, exc_value, tb):
         # do not pop the request stack if we are in debug mode and an
         # exception happened.  This will allow the debugger to still
         # access the request object in the interactive shell.
         if tb is None or not self.app.debug:
             self.pop()
-
-
-
-
 
 
 def url_for(endpoint, **values):
@@ -353,6 +352,7 @@ def send_file(filename_or_fp, mimetype=None, as_attachment=False,
         mimetype = mimetypes.guess_type(filename or attachment_filename)[0]
     if mimetype is None:
         mimetype = 'application/octet-stream'
+
     headers = Headers()
     if as_attachment:
         if attachment_filename is None:
@@ -362,6 +362,7 @@ def send_file(filename_or_fp, mimetype=None, as_attachment=False,
             attachment_filename = os.path.basename(filename)
         headers.add('Content-Disposition', 'attachment',
                     filename=attachment_filename)
+
     if current_app.use_x_sendfile and filename:
         if file is not None:
             file.close()
@@ -371,11 +372,9 @@ def send_file(filename_or_fp, mimetype=None, as_attachment=False,
         if file is None:
             file = open(filename, 'rb')
         data = wrap_file(request.environ, file)
+
     return Response(data, mimetype=mimetype, headers=headers,
                     direct_passthrough=True)
-
-
-
 
 
 def render_template(template_name, **context):
@@ -431,12 +430,16 @@ def _get_package_path(name):
 
 # figure out if simplejson escapes slashes.  This behaviour was changed
 # from one version to another without reason.
+
+
+
+class ConfigAttribute(object):
+class Config(dict):
 if not json_available or '\\/' not in json.dumps('/'):
     def _tojson_filter(*args, **kwargs):
         if __debug__:
             _assert_have_json()
         return json.dumps(*args, **kwargs).replace('/', '\\/')
-
 else:
     _tojson_filter = json.dumps
 
@@ -446,8 +449,10 @@ class _PackageBoundObject(object):
         #: the name of the package or module.  Do not change this once
         #: it was set by the constructor.
         self.import_name = import_name
+
         #: where is the app root located?
         self.root_path = _get_package_path(self.import_name)
+
     def open_resource(self, resource):
         """Opens a resource from the application's resource folder.  To see
         how this works, consider the following folder structure::
@@ -477,12 +482,13 @@ class _PackageBoundObject(object):
 
 
 
-
+# script interface to run a development server
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
 class _ModuleSetupState(object):
     def __init__(self, app, url_prefix=None):
         self.app = app
         self.url_prefix = url_prefix
-
 
 
 class Module(_PackageBoundObject):
@@ -532,6 +538,7 @@ class Module(_PackageBoundObject):
     For a gentle introduction into modules, checkout the
     :ref:`working-with-modules` section.
     """
+
     def __init__(self, import_name, name=None, url_prefix=None):
         if name is None:
             assert '.' in import_name, 'name required if package name ' \
@@ -541,6 +548,7 @@ class Module(_PackageBoundObject):
         self.name = name
         self.url_prefix = url_prefix
         self._register_events = []
+
     def route(self, rule, **options):
         """Like :meth:`Flask.route` but for a module.  The endpoint for the
         :func:`url_for` function is prefixed with the name of the module.
@@ -549,6 +557,7 @@ class Module(_PackageBoundObject):
             self.add_url_rule(rule, f.__name__, f, **options)
             return f
         return decorator
+
     def add_url_rule(self, rule, endpoint, view_func=None, **options):
         """Like :meth:`Flask.add_url_rule` but for a module.  The endpoint for
         the :func:`url_for` function is prefixed with the name of the module.
@@ -560,6 +569,7 @@ class Module(_PackageBoundObject):
             state.app.add_url_rule(the_rule, '%s.%s' % (self.name, endpoint),
                                    view_func, **options)
         self._record(register_rule)
+
     def before_request(self, f):
         """Like :meth:`Flask.before_request` but for a module.  This function
         is only executed before each request that is handled by a function of
@@ -568,6 +578,7 @@ class Module(_PackageBoundObject):
         self._record(lambda s: s.app.before_request_funcs
             .setdefault(self.name, []).append(f))
         return f
+
     def before_app_request(self, f):
         """Like :meth:`Flask.before_request`.  Such a function is executed
         before each request, even if outside of a module.
@@ -575,6 +586,7 @@ class Module(_PackageBoundObject):
         self._record(lambda s: s.app.before_request_funcs
             .setdefault(None, []).append(f))
         return f
+
     def after_request(self, f):
         """Like :meth:`Flask.after_request` but for a module.  This function
         is only executed after each request that is handled by a function of
@@ -583,6 +595,7 @@ class Module(_PackageBoundObject):
         self._record(lambda s: s.app.after_request_funcs
             .setdefault(self.name, []).append(f))
         return f
+
     def after_app_request(self, f):
         """Like :meth:`Flask.after_request` but for a module.  Such a function
         is executed after each request, even if outside of the module.
@@ -590,6 +603,7 @@ class Module(_PackageBoundObject):
         self._record(lambda s: s.app.after_request_funcs
             .setdefault(None, []).append(f))
         return f
+
     def context_processor(self, f):
         """Like :meth:`Flask.context_processor` but for a module.  This
         function is only executed for requests handled by a module.
@@ -597,6 +611,7 @@ class Module(_PackageBoundObject):
         self._record(lambda s: s.app.template_context_processors
             .setdefault(self.name, []).append(f))
         return f
+
     def app_context_processor(self, f):
         """Like :meth:`Flask.context_processor` but for a module.  Such a
         function is executed each request, even if outside of the module.
@@ -604,18 +619,9 @@ class Module(_PackageBoundObject):
         self._record(lambda s: s.app.template_context_processors
             .setdefault(None, []).append(f))
         return f
+
     def _record(self, func):
         self._register_events.append(func)
-
-
-
-
-
-
-
-
-
-
 
 
 class Flask(_PackageBoundObject):
@@ -637,173 +643,106 @@ class Flask(_PackageBoundObject):
         from flask import Flask
         app = Flask(__name__)
     """
+
     #: the class that is used for request objects.  See :class:`~flask.Request`
     #: for more information.
+
     request_class = Request
     #: the class that is used for response objects.  See
+
     #: :class:`~flask.Response` for more information.
     response_class = Response
     #: path for the static files.  If you don't want to use static files
-    #: you can set this value to `None` in which case no URL rule is added
-    #: and the development server will no longer serve any static files.
-    static_path = '/static'
-<<<<<<< REMOTE
-#: the debug flag.  Set this to `True` to enable debugging of
-=======
-#: the debug flag.  Set this to `True` to enable debugging of
->>>>>>> LOCAL
-<<<<<<< REMOTE
-#: application.  In debug mode the debugger will kick in when an unhandled
-=======
-#: application.  In debug mode the debugger will kick in when an unhandled
->>>>>>> LOCAL
-<<<<<<< REMOTE
-#: exception ocurrs and the integrated server will automatically reload
-=======
-#: exception ocurrs and the integrated server will automatically reload
->>>>>>> LOCAL
-<<<<<<< REMOTE
-#: the application if changes in the code are detected.
-=======
-#: the application if changes in the code are detected.
->>>>>>> LOCAL
+
+    #: the debug flag.  Set this to `True` to enable debugging of the
+    #: application.  In debug mode the debugger will kick in when an unhandled
+    #: exception ocurrs and the integrated server will automatically reload
+    #: the application if changes in the code are detected.
 <<<<<<< REMOTE
 debug = ConfigAttribute('debug')
 =======
 debug = ConfigAttribute('DEBUG')
 >>>>>>> LOCAL
-    #: if a secret key is set, cryptographic components can use this to
-    #: sign cookies and other things.  Set this to a complex random value
-    #: when you want to use the secure cookie for instance.
+
 <<<<<<< REMOTE
 secret_key = ConfigAttribute('secret_key')
 =======
 secret_key = ConfigAttribute('SECRET_KEY')
 >>>>>>> LOCAL
+
 <<<<<<< REMOTE
 session_cookie_name = ConfigAttribute('session_cookie_name')
 =======
 session_cookie_name = ConfigAttribute('SESSION_COOKIE_NAME')
 >>>>>>> LOCAL
-    #: The secure cookie uses this for the name of the session cookie
-    #: A :class:`~datetime.timedelta` which is used to set the expiration
+
 <<<<<<< REMOTE
 permanent_session_lifetime = ConfigAttribute('permanent_session_lifetime')
 =======
 permanent_session_lifetime = ConfigAttribute('PERMANENT_SESSION_LIFETIME')
 >>>>>>> LOCAL
-    #: date of a permanent session.  The default is 31 days which makes a
-    #: permanent session survive for roughly one month.
-    #: Enable this if you want to use the X-Sendfile feature.  Keep in
-    #: mind that the server has to support this.  This only affects files
+
 <<<<<<< REMOTE
 use_x_sendfile = ConfigAttribute('use_x_sendfile')
 =======
 use_x_sendfile = ConfigAttribute('USE_X_SENDFILE')
 >>>>>>> LOCAL
-    #: sent with the :func:`send_file` method.
-    #:
-    #: .. versionadded:: 0.2
-    #: the logging format used for the debug logger.  This is only used when
-    #: the application is in debug mode, otherwise the attached logging
-    #: handler does the formatting.
-    #:
-    #: .. versionadded:: 0.5
-    debug_log_format = (
-        '-' * 80 + '\n' +
-        '%(levelname)s in %(module)s, %(pathname)s:%(lineno)d]:\n' +
-        '%(message)s\n' +
-        '-' * 80
-    )
-    #: options that are passed directly to the Jinja2 environment
-<<<<<<< REMOTE
-#: default configuration parameters
-=======
-#: default configuration parameters
->>>>>>> LOCAL
+
+
+
+    #: default configuration parameters
 <<<<<<< REMOTE
 default_config = ImmutableDict({
+        'debug':                                False,
+        'secret_key':                           None,
+        'session_cookie_name':                  'session',
+        'permanent_session_lifetime':           timedelta(days=31),
+        'use_x_sendfile':                       False
+    })
 =======
 default_config = ImmutableDict({
+        'DEBUG':                                False,
+        'SECRET_KEY':                           None,
+        'SESSION_COOKIE_NAME':                  'session',
+        'PERMANENT_SESSION_LIFETIME':           timedelta(days=31),
+        'USE_X_SENDFILE':                       False
+    })
 >>>>>>> LOCAL
-<<<<<<< REMOTE
-'debug':                                False,
-=======
-'DEBUG':                                False,
->>>>>>> LOCAL
-<<<<<<< REMOTE
-'secret_key':                           None,
-=======
-'SECRET_KEY':                           None,
->>>>>>> LOCAL
-<<<<<<< REMOTE
-'session_cookie_name':                  'session',
-=======
-'SESSION_COOKIE_NAME':                  'session',
->>>>>>> LOCAL
-<<<<<<< REMOTE
-'permanent_session_lifetime':           timedelta(days=31),
-=======
-'PERMANENT_SESSION_LIFETIME':           timedelta(days=31),
->>>>>>> LOCAL
-<<<<<<< REMOTE
-'use_x_sendfile':                       False
-=======
-'USE_X_SENDFILE':                       False
->>>>>>> LOCAL
-<<<<<<< REMOTE
-})
-=======
-})
->>>>>>> LOCAL
-    jinja_options = ImmutableDict(
-        autoescape=True,
-        extensions=['jinja2.ext.autoescape', 'jinja2.ext.with_']
-    )
+
+    #: you can set this value to `None` in which case no URL rule is added
+    #: and the development server will no longer serve any static files.
+    static_path = '/static'
     def __init__(self, import_name):
         _PackageBoundObject.__init__(self, import_name)
-<<<<<<< REMOTE
-#: the configuration dictionary as :class:`Config`.  This behaves
-=======
-#: the configuration dictionary as :class:`Config`.  This behaves
->>>>>>> LOCAL
-<<<<<<< REMOTE
-#: exactly like a regular dictionary but supports additional methods
-=======
-#: exactly like a regular dictionary but supports additional methods
->>>>>>> LOCAL
-<<<<<<< REMOTE
-#: to load a config from files.
-=======
-#: to load a config from files.
->>>>>>> LOCAL
-<<<<<<< REMOTE
-self.config = Config(self.root_path, self.default_config)
-=======
-self.config = Config(self.root_path, self.default_config)
->>>>>>> LOCAL
+
+        #: the configuration dictionary as :class:`Config`.  This behaves
+        #: exactly like a regular dictionary but supports additional methods
+        #: to load a config from files.
+        self.config = Config(self.root_path, self.default_config)
+
+
         #: a dictionary of all view functions registered.  The keys will
+
         #: be function names which are also used to generate URLs and
         #: the values are the function objects themselves.
-        #: to register a view function, use the :meth:`route` decorator.
         self.view_functions = {}
         #: a dictionary of all registered error handlers.  The key is
+
         #: be the error code as integer, the value the function that
         #: should handle that error.
         #: To register a error handler, use the :meth:`errorhandler`
-        #: decorator.
         self.error_handlers = {}
+
         #: a dictionary with lists of functions that should be called at the
         #: beginning of the request.  The key of the dictionary is the name of
         #: the module this function is active for, `None` for all requests.
         #: This can for example be used to open database connections or
-        #: getting hold of the currently logged in user.  To register a
         #: function here, use the :meth:`before_request` decorator.
         self.before_request_funcs = {}
+
         #: a dictionary with lists of functions that should be called after
         #: each request.  The key of the dictionary is the name of the module
         #: this function is active for, `None` for all requests.  This can for
-        #: example be used to open database connections or getting hold of the
         #: currently logged in user.  To register a function here, use the
         #: :meth:`before_request` decorator.
         self.after_request_funcs = {}
@@ -812,6 +751,7 @@ self.config = Config(self.root_path, self.default_config)
         #: name of the module this function is active for, `None` for all
         #: requests.  Each returns a dictionary that the template context is
         #: updated with.  To register a function here, use the
+
         #: :meth:`context_processor` decorator.
         self.template_context_processors = {
             None: [_default_template_ctx_processor]
@@ -819,14 +759,13 @@ self.config = Config(self.root_path, self.default_config)
         #: the :class:`~werkzeug.routing.Map` for this instance.  You can use
         #: this to change the routing converters after the class was created
         #: but before any routes are connected.  Example::
-        #:
+
         #:    from werkzeug import BaseConverter
         #:
         #:    class ListConverter(BaseConverter):
         #:        def to_python(self, value):
         #:            return value.split(',')
         #:        def to_url(self, values):
-        #:            return ','.join(BaseConverter.to_url(value)
         #:                            for value in values)
         #:
         #:    app = Flask(__name__)
@@ -839,16 +778,10 @@ self.config = Config(self.root_path, self.default_config)
                 target = (self.import_name, 'static')
             else:
                 target = os.path.join(self.root_path, 'static')
-                target = os.path.join(self.root_path, 'static')
-            else:
-            d = module.__dict__
+
             self.wsgi_app = SharedDataMiddleware(self.wsgi_app, {
-<<<<<<< REMOTE
-})
-=======
-})
->>>>>>> LOCAL
                 self.static_path: target
+            })
         #: the Jinja2 environment.  It is created from the
         #: :attr:`jinja_options` and the loader that is returned
         #: by the :meth:`create_jinja_loader` function.
@@ -883,6 +816,7 @@ self.config = Config(self.root_path, self.default_config)
         logger = getLogger(self.import_name)
         logger.addHandler(handler)
         return logger
+
     def create_jinja_loader(self):
         """Creates the Jinja loader.  By default just a package loader for
         the configured package is returned that looks up templates in the
@@ -892,6 +826,7 @@ self.config = Config(self.root_path, self.default_config)
         if pkg_resources is None:
             return FileSystemLoader(os.path.join(self.root_path, 'templates'))
         return PackageLoader(self.import_name)
+
     def update_template_context(self, context):
         """Update the template context with some commonly used variables.
         This injects request, session and g into the template context.
@@ -905,6 +840,7 @@ self.config = Config(self.root_path, self.default_config)
             funcs = chain(funcs, self.template_context_processors[mod])
         for func in funcs:
             context.update(func())
+
     def run(self, host='127.0.0.1', port=5000, **options):
         """Runs the application on a local development server.  If the
         :attr:`debug` flag is set the server will automatically reload
@@ -923,12 +859,14 @@ self.config = Config(self.root_path, self.default_config)
         options.setdefault('use_reloader', self.debug)
         options.setdefault('use_debugger', self.debug)
         return run_simple(host, port, self, **options)
+
     def test_client(self):
         """Creates a test client for this application.  For information
         about unit testing head over to :ref:`testing`.
         """
         from werkzeug import Client
         return Client(self, self.response_class, use_cookies=True)
+
     def open_session(self, request):
         """Creates or opens a new session.  Default implementation stores all
         session data in a signed cookie.  This requires that the
@@ -940,6 +878,7 @@ self.config = Config(self.root_path, self.default_config)
         if key is not None:
             return Session.load_cookie(request, self.session_cookie_name,
                                        secret_key=key)
+
     def save_session(self, session, response):
         """Saves the session if it needs updates.  For the default
         implementation, check :meth:`open_session`.
@@ -954,6 +893,7 @@ self.config = Config(self.root_path, self.default_config)
             expires = datetime.utcnow() + self.permanent_session_lifetime
         session.save_cookie(response, self.session_cookie_name,
                             expires=expires, httponly=True)
+
     def register_module(self, module, **options):
         """Registers a module with this application.  The keyword argument
         of this function are the same as the ones for the constructor of the
@@ -964,6 +904,7 @@ self.config = Config(self.root_path, self.default_config)
         state = _ModuleSetupState(self, **options)
         for func in module._register_events:
             func(state)
+
     def add_url_rule(self, rule, endpoint=None, view_func=None, **options):
         """Connects a URL rule.  Works exactly like the :meth:`route`
         decorator.  If a view_func is provided it will be registered with the
@@ -1007,6 +948,7 @@ self.config = Config(self.root_path, self.default_config)
         self.url_map.add(Rule(rule, **options))
         if view_func is not None:
             self.view_functions[endpoint] = view_func
+
     def route(self, rule, **options):
         """A decorator that is used to register a view function for a
         given URL rule.  Example::
@@ -1076,6 +1018,7 @@ self.config = Config(self.root_path, self.default_config)
             self.add_url_rule(rule, None, f, **options)
             return f
         return decorator
+
     def errorhandler(self, code):
         """A decorator that is used to register a function give a given
         error code.  Example::
@@ -1098,6 +1041,7 @@ self.config = Config(self.root_path, self.default_config)
             self.error_handlers[code] = f
             return f
         return decorator
+
     def template_filter(self, name=None):
         """A decorator that is used to register custom template filter.
         You can specify a name for the filter, otherwise the function
@@ -1114,18 +1058,22 @@ self.config = Config(self.root_path, self.default_config)
             self.jinja_env.filters[name or f.__name__] = f
             return f
         return decorator
+
     def before_request(self, f):
         """Registers a function to run before each request."""
         self.before_request_funcs.setdefault(None, []).append(f)
         return f
+
     def after_request(self, f):
         """Register a function to be run after each request."""
         self.after_request_funcs.setdefault(None, []).append(f)
         return f
+
     def context_processor(self, f):
         """Registers a template context processor function."""
         self.template_context_processors[None].append(f)
         return f
+
     def handle_http_exception(self, e):
         """Handles an HTTP exception.  By default this will invoke the
         registered error handlers and fall back to returning the
@@ -1137,6 +1085,7 @@ self.config = Config(self.root_path, self.default_config)
         if handler is None:
             return e
         return handler(e)
+
     def handle_exception(self, e):
         """Default exception handling that kicks in when an exception
         occours that is not catched.  In debug mode the exception will
@@ -1156,6 +1105,7 @@ self.config = Config(self.root_path, self.default_config)
         if handler is None:
             return InternalServerError()
         return handler(e)
+
     def dispatch_request(self):
         """Does the request dispatching.  Matches the URL and returns the
         return value of the view or error handler.  This does not have to
@@ -1169,6 +1119,7 @@ self.config = Config(self.root_path, self.default_config)
             return self.view_functions[req.endpoint](**req.view_args)
         except HTTPException, e:
             return self.handle_http_exception(e)
+
     def make_response(self, rv):
         """Converts the return value from a view function to a real
         response object that is an instance of :attr:`response_class`.
@@ -1191,37 +1142,11 @@ self.config = Config(self.root_path, self.default_config)
 
         :param rv: the return value from the view function
         """
-<<<<<<< REMOTE
-if rv is None:
-=======
-if rv is None:
->>>>>>> LOCAL
-        if obj is None:
-<<<<<<< REMOTE
-return self
-=======
-return self
->>>>>>> LOCAL
-<<<<<<< REMOTE
-if isinstance(rv, basestring):
-=======
-if isinstance(rv, basestring):
->>>>>>> LOCAL
+        if rv is None:
+        if isinstance(rv, basestring):
         if isinstance(rv, self.response_class):
             return rv
-        <<<<<<< REMOTE
-if isinstance(module, basestring):
-=======
-if isinstance(rv, basestring):
-=======
-if isinstance(obj, basestring):
->>>>>>> LOCAL
-<<<<<<< REMOTE
-d = import_string(module).__dict__
-=======
-obj = import_string(obj)
->>>>>>> LOCAL
-            return self.response_class(rv)
+
         if isinstance(rv, tuple):
             return self.response_class(*rv)
         return self.response_class.force_type(rv, request.environ)
@@ -1240,6 +1165,7 @@ obj = import_string(obj)
             rv = func()
             if rv is not None:
                 return rv
+
     def process_response(self, response):
         """Can be overridden in order to modify the response object
         before it's sent to the WSGI server.  By default this will
@@ -1261,6 +1187,7 @@ obj = import_string(obj)
         for handler in funcs:
             response = handler(response)
         return response
+
     def wsgi_app(self, environ, start_response):
         """The actual WSGI application.  This is not implemented in
         `__call__` so that middlewares can be applied without losing a
@@ -1283,16 +1210,13 @@ obj = import_string(obj)
         with self.request_context(environ):
             try:
                 rv = self.preprocess_request()
-<<<<<<< REMOTE
-if rv is None:
-=======
-if rv is None:
->>>>>>> LOCAL
+                if rv is None:
                 response = self.make_response(rv)
                 response = self.process_response(response)
             except Exception, e:
                 response = self.make_response(self.handle_exception(e))
             return response(environ, start_response)
+
     def request_context(self, environ):
         """Creates a request context from the given environment and binds
         it to the current context.  This must be used in combination with
@@ -1330,6 +1254,7 @@ if rv is None:
 
         :param environ: a WSGI environment
         """
+
         return _RequestContext(self, environ)
     def test_request_context(self, *args, **kwargs):
         """Creates a WSGI environment from the given values (see
@@ -1337,53 +1262,10 @@ if rv is None:
         function accepts the same arguments).
         """
         return self.request_context(create_environ(*args, **kwargs))
+
     def __call__(self, environ, start_response):
         """Shortcut for :attr:`wsgi_app`."""
         return self.wsgi_app(environ, start_response)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # context locals

@@ -47,15 +47,18 @@ def test_dataset_classif(n_samples=100, n_features=100, param=[1, 1],
     """
     if k > 0 and n_informative == 0:
         n_informative = k
+
     if n_informative > n_features:
         raise ValueError('cannot have %d informative features and'
                          ' %d features' % (n_informative, n_features))
+
     if isinstance(seed, np.random.RandomState):
         random = seed
     elif seed is not None:
         random = np.random.RandomState(seed)
     else:
         random = np.random
+
     x = random.randn(n_samples, n_features)
     y = np.zeros(n_samples)
     param = np.ravel(np.array(param)).astype(np.float)
@@ -63,9 +66,6 @@ def test_dataset_classif(n_samples=100, n_features=100, param=[1, 1],
         y[n] = np.nonzero(random.multinomial(1, param / param.sum()))[0]
     x[:, :k] += 3 * y[:, np.newaxis]
     return x, y
-
-
-
 
 
 def test_dataset_reg(n_samples=100, n_features=100, n_informative=0, k=0,
@@ -100,22 +100,22 @@ def test_dataset_reg(n_samples=100, n_features=100, n_informative=0, k=0,
     """
     if k > 0 and n_informative == 0:
         n_informative = k
+
     if n_informative > n_features:
         raise ValueError('cannot have %d informative features and'
                          ' %d features' % (n_informative, n_features))
+
     if isinstance(seed, np.random.RandomState):
         random = seed
     elif seed is not None:
         random = np.random.RandomState(seed)
     else:
         random = np.random
+
     x = random.randn(n_samples, n_features)
     y = random.randn(n_samples)
     x[:, :k] += y[:, np.newaxis]
     return x, y
-
-
-
 
 
 def sparse_uncorrelated(n_samples=100, n_features=10):
@@ -229,24 +229,24 @@ def low_rank_fat_tail(n_samples=100, n_features=100, effective_rank=10,
         random = np.random.RandomState(seed)
     else:
         random = np.random
+
     n = min(n_samples, n_features)
+
     # random (ortho normal) vectors
     from ..utils.fixes import qr_economic
     u, _ = qr_economic(random.randn(n_samples, n))
     v, _ = qr_economic(random.randn(n_features, n))
+
     # index of the singular values
     singular_ind = np.arange(n, dtype=np.float64)
+
     # build the singular profile by assembling signal and noise components
     low_rank = (1 - tail_strength) * \
                np.exp(-1.0 * (singular_ind / effective_rank) ** 2)
     tail = tail_strength * np.exp(-0.1 * singular_ind / effective_rank)
     s = np.identity(n) * (low_rank + tail)
+
     return np.dot(np.dot(u, s), v.T)
-
-
-
-
-
 
 
 def make_regression_dataset(n_train_samples=100, n_test_samples=100,
@@ -311,6 +311,7 @@ def make_regression_dataset(n_train_samples=100, n_test_samples=100,
         random = np.random.RandomState(seed)
     else:
         random = np.random
+
     if effective_rank is None:
         # randomly generate a well conditioned input set
         X_train = random.randn(n_train_samples, n_features)
@@ -321,30 +322,29 @@ def make_regression_dataset(n_train_samples=100, n_test_samples=100,
             n_samples=n_train_samples, n_features=n_features,
             effective_rank=effective_rank, tail_strength=tail_strength,
             seed=random)
+
         X_test = low_rank_fat_tail(
             n_samples=n_test_samples, n_features=n_features,
             effective_rank=effective_rank, tail_strength=tail_strength,
             seed=random)
+
     # generate a ground truth model with only n_informative features being non
     # zeros (the other features are not correlated to Y and should be ignored
     # by a sparsifying regularizers such as L1 or elastic net)
     ground_truth = np.zeros(n_features)
     ground_truth[:n_informative] = random.randn(n_informative)
     random.shuffle(ground_truth)
+
     # generate the ground truth Y from the reference model and X
     Y_train = np.dot(X_train, ground_truth) + bias
     Y_test = np.dot(X_test, ground_truth) + bias
+
     if noise > 0.0:
         # apply some gaussian noise to the output
         Y_train += random.normal(scale=noise, size=Y_train.shape)
         Y_test += random.normal(scale=noise, size=Y_test.shape)
+
     return X_train, Y_train, X_test, Y_test, ground_truth
-
-
-
-
-
-
 
 
 def swiss_roll(n_samples, noise=0.0):

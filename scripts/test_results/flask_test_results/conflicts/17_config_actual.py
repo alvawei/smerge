@@ -15,13 +15,16 @@ import errno
 
 from werkzeug.utils import import_string
 from ._compat import string_types
+from . import json
 
 
 class ConfigAttribute(object):
     """Makes an attribute forward to the config"""
+
     def __init__(self, name, get_converter=None):
         self.__name__ = name
         self.get_converter = get_converter
+
     def __get__(self, obj, type=None):
         if obj is None:
             return self
@@ -29,11 +32,9 @@ class ConfigAttribute(object):
         if self.get_converter is not None:
             rv = self.get_converter(rv)
         return rv
+
     def __set__(self, obj, value):
         obj.config[self.__name__] = value
-
-
-
 
 
 class Config(dict):
@@ -79,9 +80,11 @@ class Config(dict):
                       the application's :attr:`~flask.Flask.root_path`.
     :param defaults: an optional dictionary of default values
     """
+
     def __init__(self, root_path, defaults=None):
         dict.__init__(self, defaults or {})
         self.root_path = root_path
+
     def from_envvar(self, variable_name, silent=False):
         """Loads a configuration from an environment variable pointing to
         a configuration file.  This is basically just a shortcut with nicer
@@ -104,6 +107,7 @@ class Config(dict):
                                'point to a configuration file' %
                                variable_name)
         return self.from_pyfile(rv, silent=silent)
+
     def from_pyfile(self, filename, silent=False):
         """Updates the values in the config from a Python file.  This function
         behaves as if the file was imported as module with the
@@ -131,6 +135,7 @@ class Config(dict):
             raise
         self.from_object(d)
         return True
+
     def from_object(self, obj):
         """Updates the values from the given object.  An object can be of one
         of the following two types:
@@ -159,16 +164,74 @@ class Config(dict):
         for key in dir(obj):
             if key.isupper():
                 self[key] = getattr(obj, key)
+
 <<<<<<< REMOTE
-def get_namespace(self, namespace, lowercase=True):
+    def get_namespace(self, namespace, lowercase=True):
+        """Returns a dictionary containing a subset of configuration options
+        that match the specified namespace/prefix. Example usage::
+
+            app.config['IMAGE_STORE_TYPE'] = 'fs'
+            app.config['IMAGE_STORE_PATH'] = '/var/app/images'
+            app.config['IMAGE_STORE_BASE_URL'] = 'http://img.website.com'
+            image_store_config = app.config.get_namespace('IMAGE_STORE_')
+
+        The resulting dictionary `image_store` would look like::
+
+            {
+                'type': 'fs',
+                'path': '/var/app/images',
+                'base_url': 'http://img.website.com'
+            }
+
+        This is often useful when configuration options map directly to
+        keyword arguments in functions or class constructors.
+
+        :param namespace: a configuration namespace
+        :param lowercase: a flag indicating if the keys of the resulting
+                          dictionary should be lowercase
+        """
+        rv = {}
+        for k, v in self.iteritems():
+            if not k.startswith(namespace):
+                continue
+            key = k[len(namespace):]
+            if lowercase:
+                key = key.lower()
+            rv[key] = v
+        return rv
+
+
 =======
-def from_json(self, filename, silent=False):
+    def from_json(self, filename, silent=False):
+        """Updates the values in the config from a JSON file. This function
+        behaves as if the JSON object was a dictionary and passed ot the
+        :meth:`from_object` function.
+
+        :param filename: the filename of the JSON file.  This can either be an
+                         absolute filename or a filename relative to the
+                         root path.
+        :param silent: set to `True` if you want silent failure for missing
+                       files.
+
+        .. versionadded:: 1.0
+        """
+        filename = os.path.join(self.root_path, filename)
+
+        try:
+            with open(filename) as json_file:
+                obj = json.loads(json_file.read())
+        except IOError as e:
+            if silent and e.errno in (errno.ENOENT, errno.EISDIR):
+                return False
+            e.strerror = 'Unable to load configuration file (%s)' % e.strerror
+            raise
+        for key in obj.keys():
+            if key.isupper():
+                self[key] = obj[key]
+        return True
+
+
 >>>>>>> LOCAL
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict.__repr__(self))
-
-
-
-
-
 

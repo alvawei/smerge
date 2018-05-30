@@ -18,14 +18,14 @@ from . import cross_val
 from . import ball_tree
 from . import cluster
 from . import covariance
+from . import datasets
+from . import feature_selection
+from . import gaussian_process
 from . import sgd
 from . import glm
-from . import logistic
 from . import lda
 from . import metrics
-from . import gaussian_process
 from . import svm
-from . import features
 
 try:
     from numpy.testing import nosetester
@@ -37,9 +37,9 @@ try:
             return super(NoseTester, self).test(label=label, verbose=verbose,
                                     extra_argv=extra_argv,
                                     doctests=doctests, coverage=coverage)
+        
     test = NoseTester().test
     del nosetester
-        
 except:
     pass
 

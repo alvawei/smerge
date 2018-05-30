@@ -12,13 +12,29 @@
 import os
 import tempfile
 import pytest
+from flaskr.factory import create_app
+from flaskr.blueprints.flaskr import init_db
+
+def app(request):
+    db_fd, temp_db_location = tempfile.mkstemp()
+    config = {
+        'DATABASE': temp_db_location,
+        'TESTING': True,
+        'DB_FD': db_fd
+    }
+
+    app = create_app(config=config)
+
+    with app.app_context():
+        init_db()
+        yield app
+
 
 
 @pytest.fixture
 
 
-
-
+@pytest.fixture
 def login(client, username, password):
     return client.post('/login', data=dict(
         username=username,
@@ -49,6 +65,8 @@ def test_login_logout(client, app):
     rv = login(client, app.config['USERNAME'],
                app.config['PASSWORD'] + 'x')
     assert b'Invalid password' in rv.data
+
+
 def test_messages(client, app):
     """Test that messages work"""
     login(client, app.config['USERNAME'],

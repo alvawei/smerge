@@ -43,9 +43,9 @@ from .environments import (
 if PIPENV_PIPFILE:
     if not os.path.isfile(PIPENV_PIPFILE):
         raise RuntimeError('Given PIPENV_PIPFILE is not found!')
+
     else:
         PIPENV_PIPFILE = normalize_drive(os.path.abspath(PIPENV_PIPFILE))
-
 # (path, file contents) => TOMLFile
 # keeps track of pipfiles that we've seen so we do not need to re-parse 'em
 _pipfile_cache = {}
@@ -53,6 +53,7 @@ _pipfile_cache = {}
 
 class Project(object):
     """docstring for Project"""
+
     def __init__(self, which=None, python_version=None, chdir=True):
         super(Project, self).__init__()
         self._name = None
@@ -70,11 +71,14 @@ class Project(object):
                 os.chdir(self.project_directory)
             except (TypeError, AttributeError):
                 pass
+
     def path_to(self, p):
         """Returns the absolute path to a given relative path."""
         if os.path.isabs(p):
             return p
+
         return os.sep.join([self._original_dir, p])
+
     def _build_package_list(self, package_section):
         """Returns a list of packages for pip-tools to consume."""
         ps = {}
@@ -103,6 +107,7 @@ class Project(object):
                     # If they are editable, do resolve them
                     if 'editable' not in v:
                         continue
+
                     else:
                         ps.update({k: v})
                 else:
@@ -122,14 +127,17 @@ class Project(object):
                 ):
                     ps.update({k: v})
         return ps
+
     @property
     def name(self):
         if self._name is None:
             self._name = self.pipfile_location.split(os.sep)[-2]
         return self._name
+
     @property
     def pipfile_exists(self):
         return bool(self.pipfile_location)
+
     @property
     def required_python_version(self):
         if self.pipfile_exists:
@@ -142,17 +150,21 @@ class Project(object):
                 )
             if required != "*":
                 return required
+
     @property
     def project_directory(self):
         if self.pipfile_location is not None:
             return os.path.abspath(
                 os.path.join(self.pipfile_location, os.pardir)
             )
+
         else:
             return None
+
     @property
     def requirements_exists(self):
         return bool(self.requirements_location)
+
     @property
     def virtualenv_exists(self):
         # TODO: Decouple project from existence of Pipfile.
@@ -164,7 +176,9 @@ class Project(object):
             return os.path.isfile(
                 os.sep.join([self.virtualenv_location] + extra)
             )
+
         return False
+
     @property
     def virtualenv_name(self):
         # Replace dangerous characters into '_'. The length of the sanitized
@@ -187,18 +201,22 @@ class Project(object):
         # the name of its virtualenv will be 'my-project-wyUfYPqE'
         if PIPENV_PYTHON:
             return sanitized + '-' + encoded_hash + '-' + PIPENV_PYTHON
+
         else:
             return sanitized + '-' + encoded_hash
+
     @property
     def virtualenv_location(self):
         # if VIRTUAL_ENV is set, use that.
         if PIPENV_VIRTUALENV:
             return PIPENV_VIRTUALENV
+
         # Use cached version, if available.
         if self._virtualenv_location:
             return self._virtualenv_location
         venv_in_project = PIPENV_VENV_IN_PROJECT or \
             os.path.exists(os.path.join(self.project_directory, '.venv'))
+
         # Default mode.
         if not venv_in_project:
             c = delegator.run(
@@ -215,11 +233,13 @@ class Project(object):
             )
         self._virtualenv_location = loc
         return loc
+
     @property
     def virtualenv_src_location(self):
         loc = os.sep.join([self.virtualenv_location, 'src'])
         mkdir_p(loc)
         return loc
+
     @property
     def download_location(self):
         if self._download_location is None:
@@ -228,6 +248,7 @@ class Project(object):
         # Create the directory, if it doesn't exist.
         mkdir_p(self._download_location)
         return self._download_location
+
     @property
     def proper_names_location(self):
         if self._proper_names_location is None:
@@ -238,18 +259,22 @@ class Project(object):
         # Create the database, if it doesn't exist.
         open(self._proper_names_location, 'a').close()
         return self._proper_names_location
+
     @property
     def proper_names(self):
         with open(self.proper_names_location) as f:
             return f.read().splitlines()
+
     def register_proper_name(self, name):
         """Registers a proper name to the database."""
         with open(self.proper_names_location, 'a') as f:
             f.write('{0}\n'.format(name))
+
     @property
     def pipfile_location(self):
         if PIPENV_PIPFILE:
             return PIPENV_PIPFILE
+
         if self._pipfile_location is None:
             try:
                 loc = pipfile.Pipfile.find(max_depth=PIPENV_MAX_DEPTH)
@@ -257,6 +282,7 @@ class Project(object):
                 loc = None
             self._pipfile_location = normalize_drive(loc)
         return self._pipfile_location
+
     @property
     def requirements_location(self):
         if self._requirements_location is None:
@@ -266,6 +292,7 @@ class Project(object):
                 loc = None
             self._requirements_location = loc
         return self._requirements_location
+
     @property
     def parsed_pipfile(self):
         """Parse Pipfile into a TOMLFile and cache it
@@ -280,14 +307,18 @@ class Project(object):
             parsed = self._parse_pipfile(contents)
             _pipfile_cache[cache_key] = parsed
         return _pipfile_cache[cache_key]
+
     @property
     def pased_pure_pipfile(self):
         with open(self.pipfile_location) as f:
             contents = f.read()
+
         return self._parse_pipfile(contents)
+
     def clear_pipfile_cache(self):
         """Clear pipfile cache (e.g., so we can mutate parsed pipfile)"""
         _pipfile_cache.clear()
+
     def _parse_pipfile(self, contents):
         # If any outline tables are present...
         if ('[packages.' in contents) or ('[dev-packages.' in contents):
@@ -305,14 +336,18 @@ class Project(object):
             # We lose comments here, but it's for the best.)
             try:
                 return contoml.loads(toml.dumps(data, preserve=True))
+
             except RuntimeError:
                 return toml.loads(toml.dumps(data, preserve=True))
+
         else:
             # Fallback to toml parser, for large files.
             try:
                 return contoml.loads(contents)
+
             except Exception:
                 return toml.loads(contents)
+
     @property
     def _pipfile(self):
         """Pipfile divided by PyPI and external dependencies."""
@@ -326,13 +361,16 @@ class Project(object):
                 norm_key = pep423_name(key)
                 p_section[norm_key] = p_section.pop(key)
         return pfile
+
     @property
     def settings(self):
         """A dictionary of the settings added to the Pipfile."""
         return self.parsed_pipfile.get('pipenv', {})
+
     @property
     def scripts(self):
         return dict(self.parsed_pipfile.get('scripts', {}))
+
     def update_settings(self, d):
         settings = self.settings
         changed = False
@@ -346,6 +384,7 @@ class Project(object):
             # Write the changes to disk.
             self.write_toml(p)
             self.clear_pipfile_cache()
+
     @property
     def _lockfile(self):
         """Pipfile.lock divided by PyPI and external dependencies."""
@@ -357,20 +396,26 @@ class Project(object):
                 norm_key = pep423_name(key)
                 lockfile[section][norm_key] = lock_section.pop(key)
         return lockfile
+
     @property
     def lockfile_location(self):
         return '{0}.lock'.format(self.pipfile_location)
+
     @property
     def lockfile_exists(self):
         return os.path.isfile(self.lockfile_location)
+
     @property
     def lockfile_content(self):
         with open(self.lockfile_location) as lock:
             j = json.load(lock)
+
         # Expand environment variables in Pipfile.lock at runtime.
         for i, source in enumerate(j['_meta']['sources'][:]):
             j['_meta']['sources'][i]['url'] = os.path.expandvars(j['_meta']['sources'][i]['url'])
+
         return j
+
     @property
     def editable_packages(self):
         packages = {
@@ -379,6 +424,7 @@ class Project(object):
             if is_editable(v)
         }
         return packages
+
     @property
     def editable_dev_packages(self):
         packages = {
@@ -387,6 +433,7 @@ class Project(object):
             if is_editable(v)
         }
         return packages
+
     @property
     def vcs_packages(self):
         """Returns a list of VCS packages, for not pip-tools to consume."""
@@ -395,6 +442,7 @@ class Project(object):
             if is_vcs(v) or is_vcs(k):
                 ps.update({k: v})
         return ps
+
     @property
     def vcs_dev_packages(self):
         """Returns a list of VCS packages, for not pip-tools to consume."""
@@ -403,32 +451,40 @@ class Project(object):
             if is_vcs(v) or is_vcs(k):
                 ps.update({k: v})
         return ps
+
     @property
     def all_packages(self):
         """Returns a list of all packages."""
         p = dict(self.parsed_pipfile.get('dev-packages', {}))
         p.update(self.parsed_pipfile.get('packages', {}))
         return p
+
     @property
     def packages(self):
         """Returns a list of packages, for pip-tools to consume."""
         return self._build_package_list('packages')
+
     @property
     def dev_packages(self):
         """Returns a list of dev-packages, for pip-tools to consume."""
         return self._build_package_list('dev-packages')
+
     def touch_pipfile(self):
         """Simply touches the Pipfile, for later use."""
         with open('Pipfile', 'a'):
             os.utime('Pipfile', None)
+
     @property
     def pipfile_is_empty(self):
         if not self.pipfile_exists:
             return True
+
         with open(self.pipfile_location, 'r') as f:
             if not f.read():
                 return True
+
         return False
+
     def create_pipfile(self, python=None):
         """Creates the Pipfile, filled with juicy defaults."""
         config_parser = ConfigOptionParser(name=self.name)
@@ -453,6 +509,7 @@ class Project(object):
             for i, index in enumerate(indexes):
                 if not index:
                     continue
+
                 source_name = 'pip_index_{}'.format(i)
                 verify_ssl = index.startswith('https')
                 sources.append(
@@ -476,6 +533,7 @@ class Project(object):
             'python_version': python_version(required_python)[: len('2.7')]
         }
         self.write_toml(data, 'Pipfile')
+
     def write_toml(self, data, path=None):
         """Writes the given data structure out as TOML."""
         if path is None:
@@ -496,6 +554,7 @@ class Project(object):
         formatted_data = cleanup_toml(formatted_data)
         with open(path, 'w') as f:
             f.write(formatted_data)
+
     @property
     def sources(self):
         if self.lockfile_exists:
@@ -503,8 +562,10 @@ class Project(object):
             sources_ = meta_.get('sources')
             if sources_:
                 return sources_
+
         if 'source' in self.parsed_pipfile:
             return self.parsed_pipfile['source']
+
         else:
             return [
                 {
@@ -513,20 +574,25 @@ class Project(object):
                     'name': 'pypi',
                 }
             ]
+
     def get_source(self, name=None, url=None):
         for source in self.sources:
             if name:
                 if source.get('name') == name:
                     return source
+
             elif url:
                 if source.get('url') in url:
                     return source
+
     def destroy_lockfile(self):
         """Deletes the lockfile."""
         try:
             return os.remove(self.lockfile_location)
+
         except OSError:
             pass
+
     def remove_package_from_pipfile(self, package_name, dev=False):
         # Read and append Pipfile.
         p = self._pipfile
@@ -536,6 +602,7 @@ class Project(object):
             del p[key][package_name]
         # Write Pipfile.
         self.write_toml(recase_file(p))
+
     def add_package_to_pipfile(self, package_name, dev=False):
         # Read and append Pipfile.
         p = self._pipfile
@@ -556,6 +623,7 @@ class Project(object):
         p[key][package_name] = package[package_name]
         # Write Pipfile.
         self.write_toml(p)
+
     def add_index_to_pipfile(self, index):
         """Adds a given index to the Pipfile."""
         # Read and append Pipfile.
@@ -568,8 +636,10 @@ class Project(object):
             p['source'].append(source)
         # Write Pipfile.
         self.write_toml(p)
+
     def recase_pipfile(self):
         self.write_toml(recase_file(self._pipfile))
+
     def get_lockfile_hash(self):
         if not os.path.exists(self.lockfile_location):
             return
@@ -577,79 +647,9 @@ class Project(object):
         with codecs.open(self.lockfile_location, 'r') as f:
             lockfile = json.load(f)
         return lockfile['_meta'].get('hash', {}).get('sha256')
+
     def calculate_pipfile_hash(self):
         # Update the lockfile if it is out-of-date.
         p = pipfile.load(self.pipfile_location, inject_env=False)
         return p.hash
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

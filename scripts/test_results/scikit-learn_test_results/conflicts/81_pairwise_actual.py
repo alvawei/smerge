@@ -5,13 +5,54 @@
 # License: BSD Style.
 
 import numpy as np
+from scipy.spatial import distance
 from scipy.sparse import csr_matrix, issparse
 from ..utils import safe_asanyarray, atleast2d_or_csr, deprecated
 from ..utils.extmath import safe_sparse_dot
+def calculate_distances(X, metric="euclidean"):
+    """ Calculates the distance matrix from a vector matrix X.
 
-################################################################################
-# Distances
+    This method takes either a vector array or a distance matrix, and returns
+    a distance matrix. If the input is a vector array, the distances are
+    computed. If the input is a distances matrix, it is returned instead.
 
+    This method provides a safe way to take a distance matrix as input, while
+    preserving compatability with many other algorithms that take a vector
+    array.
+
+    Parameters
+    ----------
+    X: array [n_samples, n_samples] if metric == "precomputed", or,
+             [n_samples, n_features] otherwise
+        Array of pairwise distances between samples, or a feature array.
+    metric: string, or callable
+        The metric to use when calculating distance between instances in a
+        feature array. If metric is a string, it must be one of the options
+        allowed by scipy.spatial.distance.pdist for its metric parameter.
+        If metric is "precomputed", X is assumed to be a distance matrix and
+        must be square.
+        Alternatively, if metric is a callable function, it is called on each
+        pair of instances (rows) and the resulting value recorded. The callable
+        should take two arrays from X as input and return a value indicating
+        the distance between them.
+
+    Returns
+    -------
+    D: array [n_samples, n_samples]
+        A distance matrix D such that D_{i, j} is the distance between the
+        ith and jth vectors of the given matrix X.
+
+    """
+    if metric == "precomputed":
+        if X.shape[0] != X.shape[1]:
+            raise ValueError("X is not square!")
+        return X
+    # In all other cases, the array is to be considered as a feature array.
+    D = distance.squareform(distance.pdist(X, metric=metric))
+    return D
+
+
+<<<<<<< REMOTE
 def euclidean_distances(X, Y, Y_norm_squared=None, squared=False):
     """
     Considering the rows of X (and Y=X) as vectors, compute the
@@ -19,9 +60,9 @@ def euclidean_distances(X, Y, Y_norm_squared=None, squared=False):
 
     Parameters
     ----------
-    X: {array-like, sparse matrix}, shape = [n_samples_1, n_features]
+    X: array-like, shape = [n_samples_1, n_features]
 
-    Y: {array-like, sparse matrix}, shape = [n_samples_2, n_features]
+    Y: array-like, shape = [n_samples_2, n_features]
 
     Y_norm_squared: array-like, shape = [n_samples_2], optional
         Pre-computed (Y**2).sum(axis=1)
@@ -54,12 +95,15 @@ def euclidean_distances(X, Y, Y_norm_squared=None, squared=False):
     else:
         X = safe_asanyarray(X)
         Y = safe_asanyarray(Y)
+
     if X.shape[1] != Y.shape[1]:
         raise ValueError("Incompatible dimension for X and Y matrices")
+
     if issparse(X):
         XX = X.multiply(X).sum(axis=1)
     else:
         XX = np.sum(X * X, axis=1)[:, np.newaxis]
+
     if X is Y:  # shortcut in the common case euclidean_distances(X, X)
         YY = XX.T
     elif Y_norm_squared is None:
@@ -71,25 +115,38 @@ def euclidean_distances(X, Y, Y_norm_squared=None, squared=False):
             YY = np.asarray(YY.sum(axis=1)).T
         else:
             YY = np.sum(Y ** 2, axis=1)[np.newaxis, :]
-    # TODO: a faster Cython implementation would do the clipping of negative
-    # values in a single pass over the output matrix.
-    distances = safe_sparse_dot(X, Y.T, dense_output=True)
-    distances *= -2
-    distances += XX
-    distances += YY
     else:
         YY = atleast2d_or_csr(Y_norm_squared)
         if YY.shape != (1, Y.shape[0]):
             raise ValueError(
                         "Incompatible dimensions for Y and Y_norm_squared")
+
+    # TODO:
+    # a faster cython implementation would do the dot product first,
+    # and then add XX, add YY, and do the clipping of negative values in
+    # a single pass over the output matrix.
+    distances = XX + YY  # Using broadcasting
+    distances -= 2 * safe_sparse_dot(X, Y.T)
     distances = np.maximum(distances, 0)
     return distances if squared else np.sqrt(distances)
 
 
+=======
+@deprecated("use euclidean_distances instead")
+>>>>>>> LOCAL
+def euclidian_distances(*args, **kwargs):
+    return euclidean_distances(*args, **kwargs)
 
 
 
-euclidian_distances = euclidean_distances  # both spelling for backward compat
+
+<<<<<<< REMOTE
+# Kernels
+=======
+
+>>>>>>> LOCAL
+
+# Distances
 
 def l1_distances(X, Y):
     """
@@ -134,13 +191,10 @@ def l1_distances(X, Y):
         n_features = n_features_X
     D = np.abs(X[:, np.newaxis, :] - Y[np.newaxis, :, :])
     D = D.reshape((n_samples_X * n_samples_Y, n_features))
-    return D
 
 
+        return X
 
-
-################################################################################
-# Kernels
 
 def linear_kernel(X, Y):
     """
@@ -179,12 +233,12 @@ def polynomial_kernel(X, Y, degree=3, gamma=0, coef0=1):
     """
     if gamma == 0:
         gamma = 1.0 / X.shape[1]
+
     K = linear_kernel(X, Y)
     K *= gamma
     K += coef0
     K **= degree
     return K
-
 
 
 def sigmoid_kernel(X, Y, gamma=0, coef0=1):
@@ -207,12 +261,12 @@ def sigmoid_kernel(X, Y, gamma=0, coef0=1):
     """
     if gamma == 0:
         gamma = 1.0 / X.shape[1]
+
     K = linear_kernel(X, Y)
     K *= gamma
     K += coef0
     np.tanh(K, K)   # compute tanh in-place
     return K
-
 
 
 def rbf_kernel(X, Y, gamma=0):
@@ -235,9 +289,9 @@ def rbf_kernel(X, Y, gamma=0):
     """
     if gamma == 0:
         gamma = 1.0 / X.shape[1]
+
     K = euclidean_distances(X, Y, squared=True)
     K *= -gamma
     np.exp(K, K)    # exponentiate K in-place
     return K
-
 

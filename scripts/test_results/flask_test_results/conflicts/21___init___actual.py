@@ -31,6 +31,7 @@ def add_to_path(path):
     """
     if not os.path.isdir(path):
         raise RuntimeError('Tried to add nonexisting path')
+
     def _samefile(x, y):
         if x == y:
             return True
@@ -41,7 +42,6 @@ def add_to_path(path):
             return False
     sys.path[:] = [x for x in sys.path if not _samefile(path, x)]
     sys.path.insert(0, path)
-
 
 
 def iter_suites():
@@ -72,6 +72,7 @@ def catch_warnings():
     """Catch warnings in a with block in a list"""
     # make sure deprecation warnings are active in tests
     warnings.simplefilter('default', category=DeprecationWarning)
+
     filters = warnings.filters
     warnings.filters = filters[:]
     old_showwarning = warnings.showwarning
@@ -84,7 +85,6 @@ def catch_warnings():
     finally:
         warnings.filters = filters
         warnings.showwarning = old_showwarning
-
 
 
 @contextmanager
@@ -113,22 +113,29 @@ class FlaskTestCase(unittest.TestCase):
     for testing instead of the camelcased ones in the baseclass for
     consistency.
     """
+
     def ensure_clean_request_context(self):
         # make sure we're not leaking a request context since we are
         # testing flask internally in debug mode in a few cases
         self.assert_equal(flask._request_ctx_stack.top, None)
+
     def setup(self):
         pass
+
     def teardown(self):
         pass
+
     def setUp(self):
         self.setup()
+
     def tearDown(self):
         unittest.TestCase.tearDown(self)
         self.ensure_clean_request_context()
         self.teardown()
+
     def assert_equal(self, x, y):
         return self.assertEqual(x, y)
+
     def assert_raises(self, exc_type, callable=None, *args, **kwargs):
         catcher = _ExceptionCatcher(self, exc_type)
         if callable is None:
@@ -137,19 +144,14 @@ class FlaskTestCase(unittest.TestCase):
             callable(*args, **kwargs)
 
 
-
-
-
-
-
-
-
 class _ExceptionCatcher(object):
     def __init__(self, test_case, exc_type):
         self.test_case = test_case
         self.exc_type = exc_type
+
     def __enter__(self):
         return self
+
     def __exit__(self, exc_type, exc_value, tb):
         exception_name = self.exc_type.__name__
         if exc_type is None:
@@ -161,8 +163,6 @@ class _ExceptionCatcher(object):
 
 
 
-
-
 class BetterLoader(unittest.TestLoader):
     """A nicer loader that solves two problems.  First of all we are setting
     up tests from different sources and we're doing this programmatically
@@ -171,12 +171,15 @@ class BetterLoader(unittest.TestLoader):
     default one so you can just do ``run-tests.py ViewTestCase`` and it
     will work.
     """
+
     def getRootSuite(self):
         return suite()
+
     def loadTestsFromName(self, name, module=None):
         root = self.getRootSuite()
         if name == 'suite':
             return root
+
         all_tests = []
         for testcase, testname in find_all_tests(root):
             if testname == name or \
@@ -184,19 +187,16 @@ class BetterLoader(unittest.TestLoader):
                ('.' + name + '.') in testname or \
                testname.startswith(name + '.'):
                 all_tests.append(testcase)
+
         if not all_tests:
             raise LookupError('could not find test case for "%s"' % name)
+
         if len(all_tests) == 1:
             return all_tests[0]
         rv = unittest.TestSuite()
         for test in all_tests:
             rv.addTest(test)
         return rv
-
-
-
-
-
 
 
 def setup_path():

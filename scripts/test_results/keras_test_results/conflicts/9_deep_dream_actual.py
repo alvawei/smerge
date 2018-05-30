@@ -72,9 +72,12 @@ def preprocess_image(image_path):
 
 # util function to convert a tensor into a valid image
 
+if K.image_data_format() == 'channels_first':
+    img_size = (3, img_width, img_height)
 
 def deprocess_image(x):
     if K.image_data_format() == 'channels_first':
+        x = x.reshape((3, img_width, img_height))
         x = x.transpose((1, 2, 0))
     else:
         x = x.reshape((img_height, img_width, 3))
@@ -107,10 +110,6 @@ layer_dict = dict([(layer.name, layer) for layer in model.layers])
 def continuity_loss(x):
     assert K.ndim(x) == 4
     if K.image_data_format() == 'channels_first':
-        a = K.square(x[:, :, :img_height - 1, :img_width - 1] -
-                     x[:, :, 1:, :img_width - 1])
-        b = K.square(x[:, :, :img_height - 1, :img_width - 1] -
-                     x[:, :, :img_height - 1, 1:])
         a = K.square(x[:, :, :img_width - 1, :img_height - 1] -
                      x[:, :, 1:, :img_height - 1])
         b = K.square(x[:, :, :img_width - 1, :img_height - 1] -
@@ -177,20 +176,20 @@ class Evaluator(object):
     def __init__(self):
         self.loss_value = None
         self.grad_values = None
+
     def loss(self, x):
         assert self.loss_value is None
         loss_value, grad_values = eval_loss_and_grads(x)
         self.loss_value = loss_value
         self.grad_values = grad_values
         return self.loss_value
+
     def grads(self, x):
         assert self.loss_value is not None
         grad_values = np.copy(self.grad_values)
         self.loss_value = None
         self.grad_values = None
         return grad_values
-
-
 
 
 evaluator = Evaluator()
@@ -201,9 +200,11 @@ x = preprocess_image(base_image_path)
 for i in range(5):
     print('Start of iteration', i)
     start_time = time.time()
+
     # add a random jitter to the initial image. This will be reverted at decoding time
     random_jitter = (settings['jitter'] * 2) * (np.random.random(img_size) - 0.5)
     x += random_jitter
+
     # run L-BFGS for 7 steps
     x, min_val, info = fmin_l_bfgs_b(evaluator.loss, x.flatten(),
                                      fprime=evaluator.grads, maxfun=7)
@@ -217,6 +218,4 @@ for i in range(5):
     end_time = time.time()
     print('Image saved as', fname)
     print('Iteration %d completed in %ds' % (i, end_time - start_time))
-
-
 

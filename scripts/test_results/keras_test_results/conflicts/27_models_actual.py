@@ -7,7 +7,47 @@ import warnings, time, copy
 
 from . import optimizers
 from . import objectives
+from . import regularizers
+from . import constraints
+from .layers.core import Merge
+import time, copy
+
+<<<<<<< REMOTE
+def standardize_X(X):
+    if type(X) == list:
+        return X
+    else:
+        return [X]
+
+
+=======
+
+>>>>>>> LOCAL
 from .utils.generic_utils import Progbar, printv
+
+class Autoencoder(Sequential):
+    def __init__(self, encoder, decoder):
+        super(Autoencoder,self).__init__()
+        self.encoder = encoder
+        self.decoder = decoder
+
+        self.add(Merge([self.encoder]))
+        self.add(Merge([self.decoder]))
+
+    def train(self, X, **kwargs):
+        super(Autoencoder,self).train(X,X,**kwargs)
+
+    def test(self, X, **kwargs):
+        super(Autoencoder,self).test(X,X,**kwargs)
+
+    def fit(self, X, **kwargs):
+        super(Autoencoder,self).fit(X,X,**kwargs)
+
+    def freeze_encoder(self):
+        def zero_grad(g, p):
+            return 0.
+        self.encoder.regularizers = [zero_grad for r in self.encoder.regularizers]
+
 from .layers import containers
 from six.moves import range
 
@@ -21,12 +61,6 @@ def standardize_y(y):
 def make_batches(size, batch_size):
     nb_batch = int(np.ceil(size/float(batch_size)))
     return [(i*batch_size, min(size, (i+1)*batch_size)) for i in range(0, nb_batch)]
-
-def standardize_X(X):
-    if type(X) == list:
-        return X
-    else:
-        return [X]
 
 def slice_X(X, start=None, stop=None):
     if type(X) == list:
@@ -65,28 +99,34 @@ class Model(object):
         # input of model
         self.X_train = self.get_input(train=True)
         self.X_test = self.get_input(train=False)
+
         self.y_train = self.get_output(train=True)
         self.y_test = self.get_output(train=False)
+
         # target of model
+
         self.y = T.zeros_like(self.y_train)
+
         train_loss = self.loss(self.y, self.y_train)
         test_score = self.loss(self.y, self.y_test)
+        if hasattr(self, 'cost_updates'):
+            for u in self.loss_updates:
+                train_loss = u.update_loss(train_loss)
+
+
+
         if class_mode == "categorical":
             train_accuracy = T.mean(T.eq(T.argmax(self.y, axis=-1), T.argmax(self.y_train, axis=-1)))
             test_accuracy = T.mean(T.eq(T.argmax(self.y, axis=-1), T.argmax(self.y_test, axis=-1)))
+
         elif class_mode == "binary":
             train_accuracy = T.mean(T.eq(self.y, T.round(self.y_train)))
             test_accuracy = T.mean(T.eq(self.y, T.round(self.y_test)))
         else:
             raise Exception("Invalid class mode:" + str(class_mode))
         self.class_mode = class_mode
-        if hasattr(self, 'cost_updates'):
-            for u in self.loss_updates:
-                train_loss = u.update_loss(train_loss)
-                train_loss = u.update_loss(train_loss)
-            for u in self.loss_updates:
-                train_loss = u.update_loss(train_loss)
-                train_loss = u.update_loss(train_loss)
+
+
         updates = self.optimizer.get_updates(self.params, self.regularizers, self.constraints,  train_loss)
         if type(self.X_train) == list:
             train_ins = self.X_train + [self.y]
@@ -96,6 +136,7 @@ class Model(object):
             train_ins = [self.X_train, self.y]
             test_ins = [self.X_test, self.y]
             predict_ins = [self.X_test]
+
         self._train = theano.function(train_ins, train_loss, 
             updates=updates, allow_input_downcast=True, mode=theano_mode)
         self._train_with_acc = theano.function(train_ins, [train_loss, train_accuracy], 
@@ -109,11 +150,13 @@ class Model(object):
     def train(self, X, y, accuracy=False):
         X = standardize_X(X)
         y = standardize_y(y)
+
         ins = X + [y]
         if accuracy:
             return self._train_with_acc(*ins)
         else:
             return self._train(*ins)
+
     def test(self, X, y, accuracy=False):
         X = standardize_X(X)
         y = standardize_y(y)
@@ -122,10 +165,12 @@ class Model(object):
             return self._test_with_acc(*ins)
         else:
             return self._test(*ins)
+
     def fit(self, X, y, batch_size=128, nb_epoch=100, verbose=1, callbacks=[],
             validation_split=0., validation_data=None, shuffle=True, show_accuracy=False):
         X = standardize_X(X)
         y = standardize_y(y)
+
         do_validation = False
         if validation_data:
             try:
@@ -149,10 +194,12 @@ class Model(object):
                 (y, y_val) = (y[0:split_at], y[split_at:])
                 if verbose:
                     print("Train on %d samples, validate on %d samples" % (len(y), len(y_val)))
+
         index_array = np.arange(len(y))
         if verbose:
             callbacks = [cbks.BaseLogger()] + callbacks
         callbacks = cbks.CallbackList([cbks.History()] + callbacks)
+
         callbacks._set_model(self)
         callbacks._set_params({
             'batch_size': batch_size,
@@ -163,11 +210,13 @@ class Model(object):
             'show_accuracy': show_accuracy
         })
         callbacks.on_train_begin()
+
         self.stop_training = False
         for epoch in range(nb_epoch):
             callbacks.on_epoch_begin(epoch)
             if shuffle:
                 np.random.shuffle(index_array)
+
             batches = make_batches(len(y), batch_size)
             for batch_index, (batch_start, batch_end) in enumerate(batches):
                 batch_ids = index_array[batch_start:batch_end]
@@ -183,6 +232,7 @@ class Model(object):
                     batch_logs['accuracy'] = acc
                 else:
                     loss = self._train(*ins)
+                
                 batch_logs['loss'] = loss
                 callbacks.on_batch_end(batch_index, batch_logs)
                 if batch_index == len(batches) - 1: # last batch
@@ -196,11 +246,14 @@ class Model(object):
                         else:
                             val_loss = self.evaluate(X_val, y_val, batch_size=batch_size, verbose=0)
                         epoch_logs['val_loss'] = val_loss
+
             callbacks.on_epoch_end(epoch, epoch_logs)
             if self.stop_training:
                 break
+
         callbacks.on_train_end()
         return callbacks.callbacks[0] # return history
+
     def predict(self, X, batch_size=128, verbose=1):
         X = standardize_X(X)
         batches = make_batches(len(X[0]), batch_size)
@@ -212,27 +265,33 @@ class Model(object):
             if batch_index == 0:
                 shape = (len(X[0]),) + batch_preds.shape[1:]
                 preds = np.zeros(shape)
+
             preds[batch_start:batch_end] = batch_preds
             if verbose == 1:
                 progbar.update(batch_end)
+
         return preds
+
     def predict_proba(self, X, batch_size=128, verbose=1):
         preds = self.predict(X, batch_size, verbose)
         if preds.min() < 0 or preds.max() > 1:
             warnings.warn("Network returning invalid probability values.")
         return preds
+
     def predict_classes(self, X, batch_size=128, verbose=1):
         proba = self.predict(X, batch_size=batch_size, verbose=verbose)
         if self.class_mode == "categorical":
             return proba.argmax(axis=-1)
         else:
             return (proba > 0.5).astype('int32')
+
     def evaluate(self, X, y, batch_size=128, show_accuracy=False, verbose=1):
         X = standardize_X(X)
         y = standardize_y(y)
         if show_accuracy:
             tot_acc = 0.
         tot_score = 0.
+
         seen = 0
         batches = make_batches(len(y), batch_size)
         if verbose:
@@ -249,59 +308,16 @@ class Model(object):
                 loss = self._test(*ins)
                 log_values = [('loss', loss)]
             tot_score += loss * len(y_batch)
+
             seen += len(y_batch)
             # logging
             if verbose:
                 progbar.update(batch_end, log_values)
+
         if show_accuracy:
             return tot_score / seen, tot_acc / seen
         else:
             return tot_score / seen
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-                
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 class Sequential(Model, containers.Sequential):
     '''
@@ -315,7 +331,7 @@ class Sequential(Model, containers.Sequential):
             - predict_proba
             - predict_classes
         Inherits from containers.Sequential the following methods:
-            - add
+            - add 
             - get_output
             - get_input
             - get_weights
@@ -326,7 +342,13 @@ class Sequential(Model, containers.Sequential):
         self.params = [] # learnable
         self.regularizers = [] # same size as params
         self.constraints = [] # same size as params
-        self.loss_updates = [] # size can vary, no 1-to-1 mapping to params
+<<<<<<< REMOTE
+
+=======
+self.loss_updates = [] # size can vary, no 1-to-1 mapping to params
+>>>>>>> LOCAL
+
+
     def get_config(self, verbose=0):
         layers = []
         for i, l in enumerate(self.layers):
@@ -335,6 +357,7 @@ class Sequential(Model, containers.Sequential):
         if verbose:
             printv(layers)
         return layers
+
     def save_weights(self, filepath, overwrite=False):
         # Save weights from all layers to HDF5
         import h5py
@@ -351,6 +374,7 @@ class Sequential(Model, containers.Sequential):
             if overwrite == 'n':
                 return
             print('[TIP] Next time specify overwrite=True in save_weights!')
+
         f = h5py.File(filepath, 'w')
         f.attrs['nb_layers'] = len(self.layers)
         for k, l in enumerate(self.layers):
@@ -363,6 +387,7 @@ class Sequential(Model, containers.Sequential):
                 param_dset[:] = param
         f.flush()
         f.close()
+
     def load_weights(self, filepath):
         # Loads weights from HDF5 file
         import h5py
@@ -372,10 +397,6 @@ class Sequential(Model, containers.Sequential):
             weights = [g['param_{}'.format(p)] for p in range(g.attrs['nb_params'])]
             self.layers[k].set_weights(weights)
         f.close()
-
-
-
-
 
 
 

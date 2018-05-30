@@ -61,6 +61,7 @@ class LDA(BaseEstimator, ClassifierMixin):
             self.priors = np.asarray(priors)
         else: self.priors = None
         self.use_svd = use_svd
+
     def fit(self, X, y, store_covariance=False, tol=1.0e-4, **params):
     def decision_function(self, X):
     def _svd(self, X):
@@ -73,6 +74,7 @@ class LDA(BaseEstimator, ClassifierMixin):
         V = V.T[S_argsort, :]
         V = V[:X.shape[0], :]
         return S_sort, V
+
     def predict(self, X):
         """
         This function does classification on an array of test vectors X.
@@ -88,7 +90,14 @@ class LDA(BaseEstimator, ClassifierMixin):
         C : array, shape = [n_samples]
         """
         probas = self.decision_function(X)
-        y_pred = self.classes[probas.argmax(1)]
+
+        # take exp of min dist
+        dist = np.exp(-dist + dist.min(1).reshape(X.shape[0], 1))
+        # normalize by p(x)=sum_k p(x|k)
+        probas = dist / dist.sum(1).reshape(X.shape[0], 1)
+        # classify according to the maximun a posteriori
+        return probas
+
         return y_pred
     def predict_proba(self, X):
         """
@@ -107,16 +116,4 @@ class LDA(BaseEstimator, ClassifierMixin):
         likelihood = np.exp(values - values.min(axis=1)[:, np.newaxis])
         # compute posterior probabilities
         return likelihood / likelihood.sum(axis=1)[:, np.newaxis]
-
-
-
-
-
-
-
-
-
-
-
-
 

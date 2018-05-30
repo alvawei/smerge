@@ -33,8 +33,11 @@ The module structure is the following:
 # Authors: Gilles Louppe, Brian Holt
 # License: BSD 3
 
+import itertools
 import numpy as np
 
+from ..feature_selection.selector_mixin import SelectorMixin
+from ..externals.joblib import Parallel, delayed
 from ..base import ClassifierMixin, RegressorMixin
 from ..tree import DecisionTreeClassifier, DecisionTreeRegressor, \
                    ExtraTreeClassifier, ExtraTreeRegressor
@@ -42,19 +45,13 @@ from ..utils import check_random_state
 
 from .base import BaseEnsemble
 
-__all__ = ["RandomForestClassifier",
-           "RandomForestRegressor",
-           "ExtraTreesClassifier",
-           "ExtraTreesRegressor"]
-
-
-class Forest(BaseEnsemble):
+<<<<<<< REMOTE
+class BaseForest(BaseEnsemble, SelectorMixin):
     """Base class for forests of trees.
 
     Warning: This class should not be used directly. Use derived classes
     instead.
     """
-    <<<<<<< REMOTE
     def __init__(self, base_estimator,
                        n_estimators=10,
                        estimator_params=[],
@@ -65,48 +62,13 @@ class Forest(BaseEnsemble):
             base_estimator=base_estimator,
             n_estimators=n_estimators,
             estimator_params=estimator_params)
+
         self.bootstrap = bootstrap
         self.compute_importances = compute_importances
         self.random_state = check_random_state(random_state)
+
         self.feature_importances_ = None
 
-=======
-    def __init__(self, base_estimator,
-                       n_estimators=10,
-                       estimator_params=[],
-                       bootstrap=False,
-                       random_state=None):
-        super(BaseForest, self).__init__(
-            base_estimator=base_estimator,
-            n_estimators=n_estimators,
-            estimator_params=estimator_params)
-        self.bootstrap = bootstrap
-        self.n_jobs = n_jobs
-        self.random_state = check_random_state(random_state)
-
-=======
-    def __init__(self, base_estimator,
-                       n_estimators=10,
-                       estimator_params=[],
-                       bootstrap=False,
-                       n_jobs=1,
-                       random_state=None):
-        super(Forest, self).__init__(
-            base_estimator=base_estimator,
-            n_estimators=n_estimators,
-            estimator_params=estimator_params)
-        self.bootstrap = bootstrap
-        self.n_jobs = n_jobs
-        self.random_state = check_random_state(random_state)
-
->>>>>>> LOCAL
-        super(BaseForest, self).__init__(
-            base_estimator=base_estimator,
-            n_estimators=n_estimators,
-            estimator_params=estimator_params)
-        self.bootstrap = bootstrap
-        self.n_jobs = n_jobs
-        self.random_state = check_random_state(random_state)
     def fit(self, X, y):
         """Build a forest of trees from the training set (X, y).
 
@@ -124,71 +86,109 @@ class Forest(BaseEnsemble):
         self : object
             Returns self.
         """
-        # Precompute some data
+        # Build the forest
         X = np.atleast_2d(X)
-        if self.bootstrap:
-            sample_mask = None
-            X_argsorted = None
-        else:
+        y = np.atleast_1d(y)
+
+        if not self.bootstrap:
             sample_mask = np.ones((X.shape[0],), dtype=np.bool)
             X_argsorted = np.asfortranarray(
                 np.argsort(X.T, axis=1).astype(np.int32).T)
-        y = np.atleast_1d(y)
-        # Assign chunk of trees to jobs
-        n_jobs = min(self.n_jobs, self.n_estimators)
-        n_trees = [self.n_estimators / n_jobs] * n_jobs
-        n_trees[-1] += self.n_estimators % n_jobs
-        # Parallel loop
-        all_trees = Parallel(n_jobs=n_jobs)(
-            delayed(_parallel_build_trees)(
-                n_trees[i],
-                self,
-                X,
-                y,
-                sample_mask,
-                X_argsorted,
-                self.random_state.randint(MAX_INT))
-            for i in xrange(n_jobs))
-        # Reduce
-        self.estimators_ = [tree for tree in itertools.chain(*all_trees)]
+
         if isinstance(self.base_estimator, ClassifierMixin):
             self.classes_ = np.unique(y)
             self.n_classes_ = len(self.classes_)
             y = np.searchsorted(self.classes_, y)
+
+        for i in xrange(self.n_estimators):
+            tree = self._make_estimator()
+            tree.set_params(compute_importances=self.compute_importances)
+
+            if self.bootstrap:
+                n_samples = X.shape[0]
+                indices = self.random_state.randint(0, n_samples, n_samples)
+                tree.fit(X[indices], y[indices],
+                         sample_mask=None, X_argsorted=None)
+
+            else:
+                tree.fit(X, y,
+                         sample_mask=sample_mask, X_argsorted=X_argsorted)
+
+        # Build the importances
+        if self.compute_importances:
+            importances = np.zeros(self.estimators_[0].n_features_)
+
+            for tree in self.estimators_:
+                importances += tree.feature_importances_
+
+            importances /= self.n_estimators
+            self.feature_importances_ = importances
+
         return self
-    def feature_importances(self):
-        """Compute the mean feature importances over the trees in the forest.
-
-        Returns
-        -------
-        importances : array of shape = [n_features]
-            The feature importances.
-        """
-        # Assign chunk of trees to jobs
-        n_jobs = min(self.n_jobs, self.n_estimators)
-        n_trees = [self.n_estimators / n_jobs] * n_jobs
-        n_trees[-1] += self.n_estimators % n_jobs
-        starts = [0] * n_jobs
-        for i in xrange(1, n_jobs):
-            starts[i] = starts[i - 1] + n_trees[i]
-        # Parallel loop
-        all_importances = Parallel(n_jobs=n_jobs)(
-            delayed(_parallel_compute_importances)(
-                self.estimators_[starts[i]:starts[i] + n_trees[i]])
-            for i in xrange(n_jobs))
-        # Reduce
-        importances = sum(all_importances) / self.n_estimators
-        return importances
 
 
 
+=======
+MAX_INT = np.iinfo(np.int32).max
+>>>>>>> LOCAL
+__all__ = ["RandomForestClassifier",
+           "RandomForestRegressor",
+           "ExtraTreesClassifier",
+           "ExtraTreesRegressor"]
 
+def _parallel_build_trees(n_trees, forest, X, y,
+                          sample_mask, X_argsorted, seed):
+    trees = []
+    rs = check_random_state(seed)
 
+    for i in xrange(n_trees):
+        tree = forest._make_estimator(append=False)
+        tree.random_state = check_random_state(rs.randint(MAX_INT))
 
+        if forest.bootstrap:
+            n_samples = X.shape[0]
+            indices = rs.randint(0, n_samples, n_samples)
+            tree.fit(X[indices], y[indices],
+                     sample_mask=sample_mask, X_argsorted=X_argsorted)
 
+        else:
+            tree.fit(X, y,
+                     sample_mask=sample_mask, X_argsorted=X_argsorted)
 
+        trees.append(tree)
 
+    return trees
 
+def _parallel_predict_proba(trees, X, n_classes):
+    p = np.zeros((X.shape[0], n_classes))
+
+    for tree in trees:
+        if n_classes == tree.n_classes_:
+            p += tree.predict_proba(X)
+
+        else:
+            proba = tree.predict_proba(X)
+
+            for j, c in enumerate(tree.classes_):
+                p[:, c] += proba[:, j]
+
+    return p
+
+def _parallel_predict_regr(trees, X):
+    p = trees[0].predict(X)
+
+    for tree in trees[1:]:
+        p += tree.predict(X)
+
+    return p
+
+def _parallel_compute_importances(trees):
+    importances = trees[0].feature_importances()
+
+    for tree in trees[1:]:
+        importances += tree.feature_importances()
+
+    return importances
 
 
 
@@ -214,6 +214,7 @@ class ForestClassifier(BaseForest, ClassifierMixin):
             compute_importances=compute_importances,
             random_state=random_state)
 
+
 =======
     def __init__(self, base_estimator,
                        n_estimators=10,
@@ -226,6 +227,7 @@ class ForestClassifier(BaseForest, ClassifierMixin):
             estimator_params=estimator_params,
             bootstrap=bootstrap,
             random_state=random_state)
+
 
 =======
     def __init__(self, base_estimator,
@@ -241,6 +243,7 @@ class ForestClassifier(BaseForest, ClassifierMixin):
             bootstrap=bootstrap,
             n_jobs=n_jobs,
             random_state=random_state)
+
 
 >>>>>>> LOCAL
         <<<<<<< REMOTE
@@ -267,6 +270,7 @@ super(ForestClassifier, self).__init__(
             n_jobs=n_jobs,
             random_state=random_state)
 >>>>>>> LOCAL
+
     def predict(self, X):
         """Predict class for X.
 
@@ -285,6 +289,7 @@ super(ForestClassifier, self).__init__(
         """
         return self.classes_.take(
             np.argmax(self.predict_proba(X), axis=1),  axis=0)
+
     def predict_proba(self, X):
         """Predict class probabilities for X.
 
@@ -302,18 +307,31 @@ super(ForestClassifier, self).__init__(
             The class probabilities of the input samples. Classes are
             ordered by arithmetical order.
         """
+        # Check data
         X = np.atleast_2d(X)
-        X = np.atleast_2d(X)
-    p = np.zeros((X.shape[0], n_classes))
-        for tree in self.estimators_:
-        if n_classes == tree.n_classes_:
-                p += tree.predict_proba(X)
-        else:
-                proba = tree.predict_proba(X)
-                for j, c in enumerate(tree.classes_):
-                    p[:, c] += proba[:, j]
-        p /= self.n_estimators
-    return p
+
+        # Assign chunk of trees to jobs
+        n_jobs = min(self.n_jobs, self.n_estimators)
+        n_trees = [self.n_estimators / n_jobs] * n_jobs
+        n_trees[-1] += self.n_estimators % n_jobs
+        starts = [0] * n_jobs
+
+        for i in xrange(1, n_jobs):
+            starts[i] = starts[i - 1] + n_trees[i]
+
+        # Parallel loop
+        all_p = Parallel(n_jobs=self.n_jobs)(
+            delayed(_parallel_predict_proba)(
+                self.estimators_[starts[i]:starts[i] + n_trees[i]],
+                X,
+                self.n_classes_)
+            for i in xrange(n_jobs))
+
+        # Reduce
+        p = sum(all_p) / self.n_estimators
+
+        return p
+
     def predict_log_proba(self, X):
         """Predict class log-probabilities for X.
 
@@ -332,14 +350,6 @@ super(ForestClassifier, self).__init__(
             ordered by arithmetical order.
         """
         return np.log(self.predict_proba(X))
-
-
-
-
-
-
-
-
 
 
 class ForestRegressor(BaseForest, RegressorMixin):
@@ -363,6 +373,7 @@ class ForestRegressor(BaseForest, RegressorMixin):
             compute_importances=compute_importances,
             random_state=random_state)
 
+
 =======
     def __init__(self, base_estimator,
                        n_estimators=10,
@@ -375,6 +386,7 @@ class ForestRegressor(BaseForest, RegressorMixin):
             estimator_params=estimator_params,
             bootstrap=bootstrap,
             random_state=random_state)
+
 
 =======
     def __init__(self, base_estimator,
@@ -390,6 +402,7 @@ class ForestRegressor(BaseForest, RegressorMixin):
             bootstrap=bootstrap,
             n_jobs=n_jobs,
             random_state=random_state)
+
 
 >>>>>>> LOCAL
         <<<<<<< REMOTE
@@ -416,6 +429,7 @@ super(ForestRegressor, self).__init__(
             n_jobs=n_jobs,
             random_state=random_state)
 >>>>>>> LOCAL
+
     def predict(self, X):
         """Predict regression target for X.
 
@@ -432,17 +446,29 @@ super(ForestRegressor, self).__init__(
         y: array of shape = [n_samples]
             The predicted values.
         """
+        # Check data
         X = np.atleast_2d(X)
-        X = np.atleast_2d(X)
-        y_hat = np.zeros(X.shape[0])
-        for tree in self.estimators_:
-            y_hat += tree.predict(X)
-        y_hat /= self.n_estimators
+
+        # Assign chunk of trees to jobs
+        n_jobs = min(self.n_jobs, self.n_estimators)
+        n_trees = [self.n_estimators / n_jobs] * n_jobs
+        n_trees[-1] += self.n_estimators % n_jobs
+        starts = [0] * n_jobs
+
+        for i in xrange(1, n_jobs):
+            starts[i] = starts[i - 1] + n_trees[i]
+
+        # Parallel loop
+        all_y_hat = Parallel(n_jobs=self.n_jobs)(
+            delayed(_parallel_predict_regr)(
+                self.estimators_[starts[i]:starts[i] + n_trees[i]],
+                X)
+            for i in xrange(n_jobs))
+
+        # Reduce
+        y_hat = sum(all_y_hat) / self.n_estimators
+
         return y_hat
-
-
-
-
 
 
 class RandomForestClassifier(ForestClassifier):
@@ -516,12 +542,12 @@ class RandomForestClassifier(ForestClassifier):
             bootstrap=bootstrap,
             compute_importances=compute_importances,
             random_state=random_state)
+
         self.criterion = criterion
         self.max_depth = max_depth
         self.min_split = min_split
         self.min_density = min_density
         self.max_features = max_features
-
 
 
 class RandomForestRegressor(ForestRegressor):
@@ -595,12 +621,12 @@ class RandomForestRegressor(ForestRegressor):
             bootstrap=bootstrap,
             compute_importances=compute_importances,
             random_state=random_state)
+
         self.criterion = criterion
         self.max_depth = max_depth
         self.min_split = min_split
         self.min_density = min_density
         self.max_features = max_features
-
 
 
 class ExtraTreesClassifier(ForestClassifier):
@@ -676,12 +702,12 @@ class ExtraTreesClassifier(ForestClassifier):
             bootstrap=bootstrap,
             compute_importances=compute_importances,
             random_state=random_state)
+
         self.criterion = criterion
         self.max_depth = max_depth
         self.min_split = min_split
         self.min_density = min_density
         self.max_features = max_features
-
 
 
 class ExtraTreesRegressor(ForestRegressor):
@@ -757,10 +783,10 @@ class ExtraTreesRegressor(ForestRegressor):
             bootstrap=bootstrap,
             compute_importances=compute_importances,
             random_state=random_state)
+
         self.criterion = criterion
         self.max_depth = max_depth
         self.min_split = min_split
         self.min_density = min_density
         self.max_features = max_features
-
 

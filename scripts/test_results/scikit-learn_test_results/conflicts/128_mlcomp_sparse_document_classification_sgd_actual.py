@@ -57,7 +57,6 @@ from scikits.learn.sgd.sparse import SGD
 
 
 if 'MLCOMP_DATASETS_HOME' not in os.environ:
-
 # Load the training set
 print "Loading 20 newsgroups training set... "
 t0 = time()

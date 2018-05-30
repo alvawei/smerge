@@ -62,6 +62,7 @@ for i, (clf, title) in enumerate([
         if not np.any(Y_ == i):
             continue
         pl.scatter(X[Y_ == i, 0], X[Y_ == i, 1], .8, color=color)
+
         # Plot an ellipse to show the Gaussian component
         angle = np.arctan(u[1] / u[0])
         angle = 180 * angle / np.pi  # convert to degrees
@@ -69,9 +70,11 @@ for i, (clf, title) in enumerate([
         ell.set_clip_box(splot.bbox)
         ell.set_alpha(0.5)
         splot.add_artist(ell)
+
     pl.xlim(-6, 4 * np.pi - 6)
     pl.ylim(-5, 5)
     pl.title(title)
+
 
 =======
 for i, (clf, title) in enumerate([
@@ -94,6 +97,7 @@ for i, (clf, title) in enumerate([
         if not np.any(Y_ == i):
             continue
         pl.scatter(X[Y_ == i, 0], X[Y_ == i, 1], .8, color=color)
+
         # Plot an ellipse to show the Gaussian component
         angle = np.arctan(u[1] / u[0])
         angle = 180 * angle / np.pi  # convert to degrees
@@ -101,9 +105,11 @@ for i, (clf, title) in enumerate([
         ell.set_clip_box(splot.bbox)
         ell.set_alpha(0.5)
         splot.add_artist(ell)
+
     pl.xlim(-6, 4 * np.pi - 6)
     pl.ylim(-5, 5)
     pl.title(title)
+
 
 =======
 for i, (clf, title) in enumerate([
@@ -127,6 +133,7 @@ for i, (clf, title) in enumerate([
         if not np.any(Y_ == i):
             continue
         pl.scatter(X[Y_== i, 0], X[Y_== i, 1], .8, color=color)
+
         # Plot an ellipse to show the Gaussian component
         angle = np.arctan(u[1]/u[0])
         angle = 180 * angle / np.pi # convert to degrees
@@ -134,9 +141,11 @@ for i, (clf, title) in enumerate([
         ell.set_clip_box(splot.bbox)
         ell.set_alpha(0.5)
         splot.add_artist(ell)
+
     pl.xlim(-6, 4*np.pi-6)
     pl.ylim(-5, 5)
     pl.title(title)
+
 
 >>>>>>> LOCAL
     clf.fit(X, n_iter=100)
@@ -152,6 +161,7 @@ for i, (clf, title) in enumerate([
         if not np.any(Y_ == i):
             continue
         pl.scatter(X[Y_ == i, 0], X[Y_ == i, 1], .8, color=color)
+
         # Plot an ellipse to show the Gaussian component
         angle = np.arctan(u[1] / u[0])
         angle = 180 * angle / np.pi  # convert to degrees
@@ -159,11 +169,10 @@ for i, (clf, title) in enumerate([
         ell.set_clip_box(splot.bbox)
         ell.set_alpha(0.5)
         splot.add_artist(ell)
+
     pl.xlim(-6, 4 * np.pi - 6)
     pl.ylim(-5, 5)
     pl.title(title)
-
-
 
 
 pl.show()

@@ -14,7 +14,7 @@ except:
             yield tuple(prod)
 
 
-def grid(**kwargs):
+def iter_grid(**kwargs):
     """ Generators on the combination of the various parameter lists given.
 
         Parameters
@@ -55,12 +55,12 @@ def fit_grid_point(X, y, klass, orignal_params, clf_params, cv,
         clf.fit(X[train], y[train], **fit_params)
         y_pred.append(clf.predict(X[test]))
         y_true.append(y[test])
+
     y_true = np.concatenate(y_true)
     y_pred = np.concatenate(y_pred)
+
     score = loss_func(y_true, y_pred)
     return clf, score
-
-
 
 
 class GridSearchCV(object):
@@ -122,31 +122,33 @@ class GridSearchCV(object):
         self.loss_func = loss_func
         self.n_jobs = n_jobs
         self.fit_params = fit_params
+
+
     def fit(self, X, y, cv=None, **kw):
         """Run fit with all sets of parameters
         Returns the best classifier
         """
+
         if cv is None:
             n_samples = y.size
             from scikits.learn.cross_val import KFold
             cv = KFold(n_samples, 2)
+
         g = grid(**self.param_grid)
         klass = self.estimator.__class__
         orignal_params = self.estimator._get_params()
         out = Parallel(n_jobs=self.n_jobs)(
             delayed(fit_grid_point)(X, y, klass, orignal_params, clf_params,
                     cv, self.loss_func, **self.fit_params) for clf_params in g)
+
         # Out is a list of pairs: estimator, score
         key = lambda pair: pair[1]
         best_estimator = min(out, key=key)[0]
+
         self.best_estimator = best_estimator
         self.predict = best_estimator.predict
+
         return self
-
-
-
-
-
 
 
 
@@ -155,13 +157,14 @@ if __name__ == '__main__':
     from scikits.learn.svm import SVC
     from scikits.learn import datasets
     iris = datasets.load_iris()
+
     # Add the noisy data to the informative features
     X = iris.data
     y = iris.target
+
     svc = SVC(kernel='linear')
     def loss_func(y1, y2):
         return np.mean(y1 != y2)
     clf = GridSearchCV(svc, {'C':[1, 10]}, loss_func, n_jobs=2)
     print clf.fit(X, y).predict([[-0.8, -1]])
-
 

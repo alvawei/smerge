@@ -79,9 +79,11 @@ def lars_path(X, y, Xy=None, Gram=None, max_iter=500,
 
     * http://en.wikipedia.org/wiki/Lasso_(statistics)#LASSO_method
     """
+
     n_features = X.shape[1]
     n_samples = y.size
     max_features = min(max_iter, n_features)
+
     coefs = np.zeros((max_features + 1, n_features))
     alphas = np.zeros(max_features + 1)
     n_iter, n_active = 0, 0
@@ -89,11 +91,13 @@ def lars_path(X, y, Xy=None, Gram=None, max_iter=500,
     # holds the sign of covariance
     sign_active = np.empty(max_features, dtype=np.int8)
     drop = False
+
     # will hold the cholesky factorization. Only lower part is
     # referenced.
     L = np.empty((max_features, max_features), dtype=X.dtype)
     swap, nrm2 = linalg.get_blas_funcs(('swap', 'nrm2'), (X,))
     solve_cholesky, = get_lapack_funcs(('potrs',), (X,))
+
     if Gram is None:
         if copy_X:
             # force copy. setting the array to be fortran-ordered
@@ -106,12 +110,15 @@ def lars_path(X, y, Xy=None, Gram=None, max_iter=500,
             Gram = np.dot(X.T, X)
     elif copy_Gram:
             Gram = Gram.copy()
+
     if Xy is None:
         Cov = np.dot(X.T, y)
     else:
         Cov = Xy.copy()
+
     if verbose:
         print "Step\t\tAdded\t\tDropped\t\tActive set size\t\tC"
+
     while True:
         if Cov.size:
             C_idx = np.argmax(np.abs(Cov))
@@ -119,6 +126,7 @@ def lars_path(X, y, Xy=None, Gram=None, max_iter=500,
             C = np.fabs(C_)
         else:
             C = 0.
+
         alphas[n_iter] = C / n_samples
         if alphas[n_iter] < alpha_min:  # early stopping
             # interpolation factor 0 <= ss < 1
@@ -131,8 +139,10 @@ def lars_path(X, y, Xy=None, Gram=None, max_iter=500,
                                 coefs[n_iter - 1])
             alphas[n_iter] = alpha_min
             break
+
         if n_iter >= max_iter or n_active >= n_features:
             break
+
         if not drop:
             ##########################################################
             # Append x_j to the Cholesky factorization of (Xa * Xa') #
@@ -142,11 +152,14 @@ def lars_path(X, y, Xy=None, Gram=None, max_iter=500,
             #            ( w   z )    and z = ||x_j||                #
             #                                                        #
             ##########################################################
+
             sign_active[n_active] = np.sign(C_)
             m, n = n_active, C_idx + n_active
+
             Cov[C_idx], Cov[0] = swap(Cov[C_idx], Cov[0])
             indices[n], indices[m] = indices[m], indices[n]
             Cov = Cov[1:]  # remove Cov[0]
+
             if Gram is None:
                 X.T[n], X.T[m] = swap(X.T[n], X.T[m])
                 c = nrm2(X.T[n_active]) ** 2
@@ -159,23 +172,30 @@ def lars_path(X, y, Xy=None, Gram=None, max_iter=500,
                 Gram[:, m], Gram[:, n] = swap(Gram[:, m], Gram[:, n])
                 c = Gram[n_active, n_active]
                 L[n_active, :n_active] = Gram[n_active, :n_active]
+
             # Update the cholesky decomposition for the Gram matrix
             arrayfuncs.solve_triangular(L[:n_active, :n_active],
                                         L[n_active, :n_active])
             v = np.dot(L[n_active, :n_active], L[n_active, :n_active])
             diag = max(np.sqrt(np.abs(c - v)), eps)
             L[n_active, n_active] = diag
+
             active.append(indices[n_active])
             n_active += 1
+
             if verbose:
                 print "%s\t\t%s\t\t%s\t\t%s\t\t%s" % (n_iter, active[-1], '',
                                                             n_active, C)
+
+
         # least squares solution
         least_squares, info = solve_cholesky(L[:n_active, :n_active],
                                sign_active[:n_active], lower=True)
+
         # is this really needed ?
         AA = 1. / np.sqrt(np.sum(least_squares * sign_active[:n_active]))
         least_squares *= AA
+
         if Gram is None:
             # equiangular direction of variables in the active set
             eq_dir = np.dot(X.T[:n_active].T, least_squares)
@@ -188,9 +208,11 @@ def lars_path(X, y, Xy=None, Gram=None, max_iter=500,
             # orthogonal (QR) decomposition of X
             corr_eq_dir = np.dot(Gram[:n_active, n_active:].T,
                                  least_squares)
+
         g1 = arrayfuncs.min_pos((C - Cov) / (AA - corr_eq_dir))
         g2 = arrayfuncs.min_pos((C + Cov) / (AA + corr_eq_dir))
         gamma_ = min(g1, g2, C / AA)
+
         # TODO: better names for these variables: z
         drop = False
         z = -coefs[n_iter, active] / least_squares
@@ -198,37 +220,48 @@ def lars_path(X, y, Xy=None, Gram=None, max_iter=500,
         if z_pos < gamma_:
             # some coefficients have changed sign
             idx = np.where(z == z_pos)[0]
+
             # update the sign, important for LAR
             sign_active[idx] = -sign_active[idx]
+
             if method == 'lasso':
                 gamma_ = z_pos
             drop = True
+
         n_iter += 1
+
         if n_iter >= coefs.shape[0]:
             # resize the coefs and alphas array
             add_features = 2 * max(1, (max_features - n_active))
             coefs.resize((n_iter + add_features, n_features))
             alphas.resize(n_iter + add_features)
+
         coefs[n_iter, active] = coefs[n_iter - 1, active] + \
                                 gamma_ * least_squares
+
         # update correlations
         Cov -= gamma_ * corr_eq_dir
+
         # See if any coefficient has changed sign
         if drop and method == 'lasso':
             arrayfuncs.cholesky_delete(L[:n_active, :n_active], idx)
+
             n_active -= 1
             m, n = idx, n_active
             drop_idx = active.pop(idx)
+
             if Gram is None:
                 # propagate dropped variable
                 for i in range(idx, n_active):
                     X.T[i], X.T[i + 1] = swap(X.T[i], X.T[i + 1])
                     indices[i], indices[i + 1] = \
                             indices[i + 1], indices[i]  # yeah this is stupid
+
                 # TODO: this could be updated
                 residual = y - np.dot(X[:, :n_active],
                                       coefs[n_iter, active])
                 temp = np.dot(X.T[n_active], residual)
+
                 Cov = np.r_[temp, Cov]
             else:
                 for i in range(idx, n_active):
@@ -237,63 +270,30 @@ def lars_path(X, y, Xy=None, Gram=None, max_iter=500,
                     Gram[i], Gram[i + 1] = swap(Gram[i], Gram[i + 1])
                     Gram[:, i], Gram[:, i + 1] = swap(Gram[:, i],
                                                       Gram[:, i + 1])
+
                 # Cov_n = Cov_j + x_j * X + increment(betas) TODO:
                 # will this still work with multiple drops ?
+
                 # recompute covariance. Probably could be done better
                 # wrong as Xy is not swapped with the rest of variables
+
                 # TODO: this could be updated
                 residual = y - np.dot(X, coefs[n_iter])
                 temp = np.dot(X.T[drop_idx], residual)
                 Cov = np.r_[temp, Cov]
+
             sign_active = np.delete(sign_active, idx)
             sign_active = np.append(sign_active, 0.)  # just to maintain size
             if verbose:
                 print "%s\t\t%s\t\t%s\t\t%s\t\t%s" % (n_iter, '', drop_idx,
                                                       n_active, abs(temp))
+
+
     # resize coefs in case of early stop
     alphas = alphas[:n_iter + 1]
     coefs = coefs[:n_iter + 1]
+
     return alphas, active, coefs.T
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ###############################################################################
@@ -373,6 +373,7 @@ class Lars(LinearModel):
         self.n_nonzero_coefs = n_nonzero_coefs
         self.eps = eps
         self.copy_X = copy_X
+
     def _get_gram(self):
         # precompute if n_samples > n_features
         precompute = self.precompute
@@ -384,6 +385,7 @@ class Lars(LinearModel):
         else:
             Gram = None
         return Gram
+
     def fit(self, X, y):
         """Fit the model using X, y as training data.
 
@@ -402,6 +404,7 @@ class Lars(LinearModel):
         """
         X = array2d(X)
         y = np.asarray(y)
+
         X, y, X_mean, y_mean, X_std = self._center_data(X, y,
                                                         self.fit_intercept,
                                                         self.normalize,
@@ -412,23 +415,20 @@ class Lars(LinearModel):
             max_iter = self.n_nonzero_coefs
         else:
             max_iter = self.max_iter
+
         Gram = self._get_gram()
+
         self.alphas_, self.active_, self.coef_path_ = lars_path(X, y,
                   Gram=Gram, copy_X=self.copy_X,
                   copy_Gram=False, alpha_min=alpha,
                   method=self.method, verbose=self.verbose,
                   max_iter=max_iter, eps=self.eps)
+
         self.coef_ = self.coef_path_[:, -1]
+
         self._set_intercept(X_mean, y_mean, X_std)
+
         return self
-
-
-
-
-
-
-
-
 
 
 class LassoLars(Lars):
@@ -504,6 +504,7 @@ class LassoLars(Lars):
     LassoLarsCV
     sklearn.decomposition.sparse_encode
     """
+
     def __init__(self, alpha=1.0, fit_intercept=True, verbose=False,
                  normalize=True, precompute='auto', max_iter=500,
                  eps=np.finfo(np.float).eps, copy_X=True):
@@ -516,7 +517,6 @@ class LassoLars(Lars):
         self.precompute = precompute
         self.copy_X = copy_X
         self.eps = eps
-
 
 
 # Deprecated classes
@@ -597,6 +597,7 @@ def _lars_path_residues(X_train, y_train, X_test, y_test, Gram=None,
         y_train = y_train.copy()
         X_test = X_test.copy()
         y_test = y_test.copy()
+
     if fit_intercept:
         X_mean = X_train.mean(axis=0)
         X_train -= X_mean
@@ -604,10 +605,12 @@ def _lars_path_residues(X_train, y_train, X_test, y_test, Gram=None,
         y_mean = y_train.mean(axis=0)
         y_train -= y_mean
         y_test -= y_mean
+
     if normalize:
         norms = np.sqrt(np.sum(X_train ** 2, axis=0))
         nonzeros = np.flatnonzero(norms)
         X_train[:, nonzeros] /= norms[nonzeros]
+
     alphas, active, coefs = lars_path(X_train, y_train, Gram=Gram,
                             copy_X=False, copy_Gram=False,
                             method=method, verbose=verbose,
@@ -617,9 +620,6 @@ def _lars_path_residues(X_train, y_train, X_test, y_test, Gram=None,
     residues = np.array([(np.dot(X_test, coef) - y_test)
                          for coef in coefs.T])
     return alphas, active, coefs, residues
-
-
-
 
 
 class LarsCV(LARS):
@@ -678,7 +678,9 @@ class LarsCV(LARS):
     --------
     lars_path, LassoLARS, LassoLarsCV
     """
+
     method = 'lar'
+
     def __init__(self, fit_intercept=True, verbose=False, max_iter=500,
                  normalize=True, precompute='auto', cv=None, n_jobs=1,
                  eps=np.finfo(np.float).eps, copy_X=True):
@@ -691,6 +693,7 @@ class LarsCV(LARS):
         self.cv = cv
         self.n_jobs = n_jobs
         self.eps = eps
+
     def fit(self, X, y):
         """Fit the model using X, y as training data.
 
@@ -708,9 +711,12 @@ class LarsCV(LARS):
             returns an instance of self.
         """
         X = np.asarray(X)
+
         # init cross-validation generator
         cv = check_cv(self.cv, X, y, classifier=False)
+
         Gram = 'auto' if self.precompute else None
+
         cv_paths = Parallel(n_jobs=self.n_jobs, verbose=self.verbose)(
                     delayed(_lars_path_residues)(X[train], y[train],
                             X[test], y[test], Gram=Gram,
@@ -723,6 +729,7 @@ class LarsCV(LARS):
                     for train, test in cv)
         all_alphas = np.concatenate(zip(*cv_paths)[0])
         all_alphas.sort()
+
         mse_path = np.empty((len(all_alphas), len(cv_paths)))
         for index, (alphas, active, coefs, residues) in enumerate(cv_paths):
             this_residues = interpolate.interp1d(alphas[::-1],
@@ -732,29 +739,22 @@ class LarsCV(LARS):
                                                  axis=0)(all_alphas)
             this_residues **= 2
             mse_path[:, index] = np.mean(this_residues, axis=-1)
+
         mask = np.all(np.isfinite(mse_path), axis=-1)
         all_alphas = all_alphas[mask]
         mse_path = mse_path[mask]
         # Select the alpha that minimizes left-out error
         i_best_alpha = np.argmin(mse_path.mean(axis=-1))
         best_alpha = all_alphas[i_best_alpha]
+
         # Store our parameters
         self.alpha = best_alpha
         self.cv_alphas = all_alphas
         self.cv_mse_path_ = mse_path
+
         # Now compute the full model
         LARS.fit(self, X, y)
         return self
-
-
-
-
-
-
-
-
-
-
 
 
 class LassoLarsCV(LarsCV):
@@ -839,8 +839,8 @@ class LassoLarsCV(LarsCV):
     --------
     lars_path, LassoLars, LarsCV, LassoCV
     """
-    method = 'lasso'
 
+    method = 'lasso'
 
 
 class LassoLarsIC(LassoLars):
@@ -940,6 +940,7 @@ class LassoLarsIC(LassoLars):
         self.copy_X = copy_X
         self.precompute = precompute
         self.eps = eps
+
     def fit(self, X, y, copy_X=True):
         """Fit the model using X, y as training data.
 
@@ -958,26 +959,33 @@ class LassoLarsIC(LassoLars):
         """
         X = array2d(X)
         y = np.asarray(y)
+
         X, y, Xmean, ymean, Xstd = LinearModel._center_data(X, y,
                                                     self.fit_intercept,
                                                     self.normalize,
                                                     self.copy_X)
         max_iter = self.max_iter
+
         Gram = self._get_gram()
+
         alphas_, active_, coef_path_ = lars_path(X, y,
                   Gram=Gram, copy_X=copy_X,
                   copy_Gram=False, alpha_min=0.0,
                   method='lasso', verbose=self.verbose,
                   max_iter=max_iter, eps=self.eps)
+
         n_samples = X.shape[0]
+
         if self.criterion == 'aic':
             K = 2  # AIC
         elif self.criterion == 'bic':
             K = log(n_samples)  # BIC
         else:
             raise ValueError('criterion should be either bic or aic')
+
         R = y[:, np.newaxis] - np.dot(X, coef_path_)  # residuals
         mean_squared_error = np.mean(R ** 2, axis=0)
+
         df = np.zeros(coef_path_.shape[1], dtype=np.int)  # Degrees of freedom
         for k, coef in enumerate(coef_path_.T):
             mask = coef != 0
@@ -987,21 +995,13 @@ class LassoLarsIC(LassoLars):
             # Xc = X[:, mask]
             # Trace(Xc * inv(Xc.T, Xc) * Xc.T) ie the number of non-zero coefs
             df[k] = np.sum(mask)
+
         self.alphas_ = alphas_
         self.criterion_ = n_samples * np.log(mean_squared_error) + K * df
         n_best = np.argmin(self.criterion_)
+
         self.alpha_ = alphas_[n_best]
         self.coef_ = coef_path_[:, n_best]
         self._set_intercept(Xmean, ymean, Xstd)
         return self
-
-
-
-
-
-
-
-
-
-
 

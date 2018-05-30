@@ -20,9 +20,11 @@ from werkzeug.utils import import_string
 
 class ConfigAttribute(object):
     """Makes an attribute forward to the config"""
+
     def __init__(self, name, get_converter=None):
         self.__name__ = name
         self.get_converter = get_converter
+
     def __get__(self, obj, type=None):
         if obj is None:
             return self
@@ -30,11 +32,9 @@ class ConfigAttribute(object):
         if self.get_converter is not None:
             rv = self.get_converter(rv)
         return rv
+
     def __set__(self, obj, value):
         obj.config[self.__name__] = value
-
-
-
 
 
 class Config(dict):
@@ -80,9 +80,11 @@ class Config(dict):
                       the application's :attr:`~flask.Flask.root_path`.
     :param defaults: an optional dictionary of default values
     """
+
     def __init__(self, root_path, defaults=None):
         dict.__init__(self, defaults or {})
         self.root_path = root_path
+
     def from_envvar(self, variable_name, silent=False):
         """Loads a configuration from an environment variable pointing to
         a configuration file.  This is basically just a shortcut with nicer
@@ -105,6 +107,7 @@ class Config(dict):
                                'point to a configuration file' %
                                variable_name)
         return self.from_pyfile(rv, silent=silent)
+
     def from_pyfile(self, filename, silent=False):
         """Updates the values in the config from a Python file.  This function
         behaves as if the file was imported as module with the
@@ -131,6 +134,7 @@ class Config(dict):
             raise
         self.from_object(d)
         return True
+
     def from_object(self, obj):
         """Updates the values from the given object.  An object can be of one
         of the following two types:
@@ -159,11 +163,7 @@ class Config(dict):
         for key in dir(obj):
             if key.isupper():
                 self[key] = getattr(obj, key)
+
     def __repr__(self):
         return '<%s %s>' % (self.__class__.__name__, dict.__repr__(self))
-
-
-
-
-
 

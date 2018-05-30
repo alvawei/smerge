@@ -37,11 +37,20 @@ import numpy as np
 
 from sklearn.decomposition import DictionaryLearningOnline
 from sklearn.feature_extraction.image import extract_patches_2d
-                                             reconstruct_from_patches_2d
+from sklearn.feature_extraction.image import reconstruct_from_patches_2d
 
 ###############################################################################
+print 'done in %.2fs.' % (time() - t0)
+t0 = time()
+
+
+
+t0 = time()
 # Load Lena image and extract patches
+print 'done in %.2fs.' % (time() - t0)
+
 lena = sp.lena() / 256.0
+
 
 # downsample for higher speed
 lena = lena[::2, ::2] + lena[1::2, ::2] + lena[::2, 1::2] + lena[1::2, 1::2]
@@ -93,6 +102,7 @@ def show_with_diff(image, reference, title):
     pl.yticks(())
     pl.subplot(1, 2, 2)
     difference = image - reference
+
     pl.title('Difference (norm: %.2f)' % np.sqrt(np.sum(difference ** 2)))
     pl.imshow(difference, vmin=-0.5, vmax=0.5, cmap=pl.cm.PuOr,
               interpolation='nearest')
@@ -101,11 +111,9 @@ def show_with_diff(image, reference, title):
     pl.suptitle(title, size=16)
     pl.subplots_adjust(0.02, 0.02, 0.98, 0.79, 0.02, 0.2)
 
-
 ###############################################################################
 # Display the distorted image
 show_with_diff(distorted, lena, 'Distorted image')
-
 ###############################################################################
 # Extract noisy patches and reconstruct them using the dictionary
 print 'Extracting noisy patches... '
@@ -113,7 +121,6 @@ data = extract_patches_2d(distorted[:, height / 2:], patch_size)
 data = data.reshape(data.shape[0], -1)
 intercept = np.mean(data, axis=0)
 data -= intercept
-
 <<<<<<< REMOTE
 transform_algorithms = [
     ('Orthogonal Matching Pursuit\n1 atom', 'omp',
@@ -152,9 +159,11 @@ for title, transform_algorithm, kwargs in transform_algorithms:
     dico.set_params(transform_algorithm=transform_algorithm, **kwargs)
     code = dico.transform(data)
     patches = np.dot(code, V)
+
     if transform_algorithm == 'threshold':
         patches -= patches.min()
         patches /= patches.max()
+
     patches += intercept
     patches = patches.reshape(len(data), *patch_size)
     if transform_algorithm == 'threshold':
@@ -166,8 +175,6 @@ for title, transform_algorithm, kwargs in transform_algorithms:
     print 'done in %.2fs.' % dt
     show_with_diff(reconstructions[title], lena,
                    title + ' (time: %.1fs)' % dt)
-
-
 
 pl.show()
 

@@ -65,6 +65,7 @@ def check_fetch_lfw(data_home=None, funneled=True, download_if_missing=True):
     """Helper function to download any missing LFW data"""
     data_home = get_data_home(data_home=data_home)
     lfw_home = join(data_home, "lfw_home")
+
     if funneled:
         archive_path = join(lfw_home, FUNNELED_ARCHIVE_NAME)
         data_folder_path = join(lfw_home, "lfw_funneled")
@@ -73,8 +74,10 @@ def check_fetch_lfw(data_home=None, funneled=True, download_if_missing=True):
         archive_path = join(lfw_home, ARCHIVE_NAME)
         data_folder_path = join(lfw_home, "lfw")
         archive_url = BASE_URL + ARCHIVE_NAME
+
     if not exists(lfw_home):
         makedirs(lfw_home)
+
     for target_filename in TARGET_FILENAMES:
         target_filepath = join(lfw_home, target_filename)
         if not exists(target_filepath):
@@ -85,6 +88,7 @@ def check_fetch_lfw(data_home=None, funneled=True, download_if_missing=True):
                 open(target_filepath, 'wb').write(downloader.read())
             else:
                 raise IOError("%s is missing" % target_filepath)
+
     if not exists(data_folder_path):
         if not exists(archive_path):
             if download_if_missing:
@@ -93,18 +97,14 @@ def check_fetch_lfw(data_home=None, funneled=True, download_if_missing=True):
                 open(archive_path, 'wb').write(downloader.read())
             else:
                 raise IOError("%s is missing" % target_filepath)
+
         import tarfile
         logging.info("Decompressing the data archive to %s", data_folder_path)
         tarfile.open(archive_path, "r:gz").extractall(path=lfw_home)
         remove(archive_path)
+
+
     return lfw_home, data_folder_path
-
-
-
-
-
-
-
 
 
 def _load_imgs(file_paths, slice_, color, resize):
@@ -116,19 +116,23 @@ def _load_imgs(file_paths, slice_, color, resize):
         slice_ = default_slice
     else:
         slice_ = tuple(s or ds for s, ds in zip(slice_, default_slice))
+
     h_slice, w_slice = slice_
     h = (h_slice.stop - h_slice.start) / (h_slice.step or 1)
     w = (w_slice.stop - w_slice.start) / (w_slice.step or 1)
+
     if resize is not None:
         resize = float(resize)
         h = int(resize * h)
         w = int(resize * w)
+
     # allocate some contiguous memory to host the decoded image slices
     n_faces = len(file_paths)
     if not color:
         faces = np.zeros((n_faces, h, w), dtype=np.float32)
     else:
         faces = np.zeros((n_faces, h, w, 3), dtype=np.float32)
+
     if imread is None or imresize is None:
     # iterate over the collected file path to load the jpeg files as numpy
     # arrays
@@ -143,14 +147,10 @@ def _load_imgs(file_paths, slice_, color, resize):
             # average the color channels to compute a gray levels
             # representaion
             face = face.mean(axis=2)
+
         faces[i, ...] = face
+
     return faces
-
-
-
-
-
-
 
 
 #
@@ -176,26 +176,26 @@ def _fetch_lfw_people(data_folder_path, slice_=None, color=False, resize=None,
             person_name = person_name.replace('_', ' ')
             person_names.extend([person_name] * n_pictures)
             file_paths.extend(paths)
+
     n_faces = len(file_paths)
     if n_faces == 0:
         raise ValueError("min_faces_per_person=%d is too restrictive" %
                          min_faces_per_person)
+
     target_names = np.unique(person_names)
     target = np.searchsorted(target_names, person_names)
+
     faces = _load_imgs(file_paths, slice_, color, resize)
+
     # shuffle the faces with a deterministic RNG scheme to avoid having
     # all faces of the same person in a row, as it would break some
     # cross validation and learning algorithms such as SGD and online
     # k-means that make an IID assumption
+
     indices = np.arange(n_faces)
     np.random.RandomState(42).shuffle(indices)
     faces, target = faces[indices], target[indices]
     return faces, target, target_names
-
-
-
-
-
 
 
 def fetch_lfw_people(data_home=None, funneled=True, resize=0.5,
@@ -251,20 +251,20 @@ def fetch_lfw_people(data_home=None, funneled=True, resize=0.5,
         data_home=data_home, funneled=funneled,
         download_if_missing=download_if_missing)
     logging.info('Loading LFW people faces from %s', lfw_home)
+
     # wrap the loader in a memoizing function that will return memmaped data
     # arrays for optimal memory usage
     m = Memory(cachedir=lfw_home, mmap_mode='c', verbose=0)
     load_func = m.cache(_fetch_lfw_people)
+
     # load and memoize the pairs as np arrays
     faces, target, target_names = load_func(
         data_folder_path, resize=resize,
         min_faces_per_person=min_faces_per_person, color=color, slice_=slice_)
+
     # pack the results as a Bunch instance
     return Bunch(data=faces, target=target, target_names=target_names,
                  DESCR="LFW faces dataset")
-
-
-
 
 
 #
@@ -284,6 +284,7 @@ def _fetch_lfw_pairs(index_file_path, data_folder_path, slice_=None,
                       for l in open(index_file_path, 'rb').readlines()]
     pair_specs = [sl for sl in splitted_lines if len(sl) > 2]
     n_pairs = len(pair_specs)
+
     # interating over the metadata lines for each pair to find the filename to
     # decode and load in memory
     target = np.zeros(n_pairs, dtype=np.int)
@@ -308,16 +309,15 @@ def _fetch_lfw_pairs(index_file_path, data_folder_path, slice_=None,
             filenames = list(sorted(listdir(person_folder)))
             file_path = join(person_folder, filenames[idx])
             file_paths.append(file_path)
+
     pairs = _load_imgs(file_paths, slice_, color, resize)
     shape = list(pairs.shape)
     n_faces = shape.pop(0)
     shape.insert(0, 2)
     shape.insert(0, n_faces // 2)
     pairs.shape = shape
+
     return pairs, target, np.array(['Different persons', 'Same person'])
-
-
-
 
 
 def load_lfw_people(download_if_missing=False, **kwargs):
@@ -389,10 +389,12 @@ def fetch_lfw_pairs(subset='train', data_home=None, funneled=True, resize=0.5,
         data_home=data_home, funneled=funneled,
         download_if_missing=download_if_missing)
     logging.info('Loading %s LFW pairs from %s', subset, lfw_home)
+
     # wrap the loader in a memoizing function that will return memmaped data
     # arrays for optimal memory usage
     m = Memory(cachedir=lfw_home, mmap_mode='c', verbose=0)
     load_func = m.cache(_fetch_lfw_pairs)
+
     # select the right metadata file according to the requested subset
     label_filenames = {
         'train': 'pairsDevTrain.txt',
@@ -403,17 +405,15 @@ def fetch_lfw_pairs(subset='train', data_home=None, funneled=True, resize=0.5,
         raise ValueError("subset='%s' is invalid: should be one of %r" % (
             subset, list(sorted(label_filenames.keys()))))
     index_file_path = join(lfw_home, label_filenames[subset])
+
     # load and memoize the pairs as np arrays
     pairs, target, target_names = load_func(
         index_file_path, data_folder_path, resize=resize, color=color,
         slice_=slice_)
+
     # pack the results as a Bunch instance
     return Bunch(data=pairs, target=target, target_names=target_names,
                  DESCR="'%s' segment of the LFW pairs dataset" % subset)
-
-
-
-
 
 
 def load_lfw_pairs(download_if_missing=False, **kwargs):

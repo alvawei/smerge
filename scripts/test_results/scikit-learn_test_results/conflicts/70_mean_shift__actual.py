@@ -6,32 +6,45 @@ Authors: Conrad Lee conradlee@gmail.com
          Gael Varoquaux gael.varoquaux@normalesup.org
 """
 
-from math import floor
+from ..utils import extmath, check_random_state
 import numpy as np
-from ..utils import extmath
-from collections import defaultdict
+def estimate_bandwidth(X, quantile=0.3, n_samples=None, random_state=0):
+    """Estimate the bandwith to use with MeanShift algorithm
 
-from ..base import BaseEstimator
-from ..metrics.pairwise import euclidean_distances
-from ..ball_tree import BallTree
-
-
-def estimate_bandwidth(X, quantile=0.3):
-    """Estimate the bandwith ie the radius to use with an RBF kernel
-    in the MeanShift algorithm
-
+    Parameters
+    ----------
     X: array [n_samples, n_features]
         Input points
 
     quantile: float, default 0.3
         should be between [0, 1]
         0.5 means that the median is all pairwise distances is used
+
+    n_samples: int
+        The number of samples to use. If None, all samples are used.
+
+    random_state: int or RandomState
+        Pseudo number generator state used for random sampling.
+
+    Returns
+    -------
+    bandwidth: float
+        The bandwidth parameter
     """
-    distances = euclidean_distances(X, X)
-    distances = np.triu(distances, 1)
-    distances_sorted = np.sort(distances[distances > 0])
-    bandwidth = distances_sorted[floor(quantile * len(distances_sorted))]
+    random_state = check_random_state(random_state)
+    if n_samples is not None:
+        idx = random_state.permutation(X.shape[0])[:n_samples]
+        X = X[idx]
+    d, _ = BallTree(X).query(X, int(X.shape[0] * quantile),
+                             return_distance=True)
+    bandwidth = np.mean(np.max(d, axis=1))
     return bandwidth
+
+
+from collections import defaultdict
+
+from ..base import BaseEstimator
+from ..ball_tree import BallTree
 
 
 def mean_shift(X, bandwidth=None, seeds=None, bin_seeding=False,
@@ -81,6 +94,7 @@ def mean_shift(X, bandwidth=None, seeds=None, bin_seeding=False,
     See examples/plot_meanshift.py for an example.
 
     """
+
     if bandwidth is None:
         bandwidth = estimate_bandwidth(X)
     if seeds is None:
@@ -92,6 +106,7 @@ def mean_shift(X, bandwidth=None, seeds=None, bin_seeding=False,
     stop_thresh = 1e-3 * bandwidth  # when mean has converged
     center_intensity_dict = {}
     ball_tree = BallTree(X)  # to efficiently look up nearby points
+
     # For each seed, climb gradient until convergence or max_iterations
     for my_mean in seeds:
         completed_iterations = 0
@@ -108,6 +123,7 @@ def mean_shift(X, bandwidth=None, seeds=None, bin_seeding=False,
                 center_intensity_dict[tuple(my_mean)] = len(points_within)
                 break
             completed_iterations += 1
+
     # POST PROCESSING: remove near duplicate points
     # If the distance between two kernels is less than the bandwidth,
     # then we have to remove one because it is a duplicate. Remove the
@@ -123,6 +139,7 @@ def mean_shift(X, bandwidth=None, seeds=None, bin_seeding=False,
             unique[neighbor_idxs] = 0
             unique[i] = 1  # leave the current point as uniuqe
     cluster_centers = sorted_centers[unique]
+
     # ASSIGN LABELS: a point belongs to the cluster that it is closest to
     centers_tree = BallTree(cluster_centers)
     if len(cluster_centers) < 65535:
@@ -137,10 +154,6 @@ def mean_shift(X, bandwidth=None, seeds=None, bin_seeding=False,
         ind = np.where(distances.flatten() < bandwidth)[0]
         labels[ind] = idxs.flatten()[ind]
     return cluster_centers, labels
-
-
-
-
 
 
 def get_bin_seeds(X, bin_size, min_bin_freq=1):
@@ -170,19 +183,19 @@ def get_bin_seeds(X, bin_size, min_bin_freq=1):
     bin_seeds : array [n_samples, n_features]
         points used as initial kernel posistions in clustering.mean_shift
     """
+
     # Bin points
     bin_sizes = defaultdict(int)
     binned_points = X.copy() / bin_size
     binned_points = np.cast[np.int32](binned_points)
     for binned_point in binned_points:
         bin_sizes[tuple(binned_point)] += 1
+
     # Select only those bins as seeds which have enough members
     bin_seeds = np.array([point for point, freq in bin_sizes.iteritems() if \
                           freq >= min_bin_freq], dtype=np.float32)
     bin_seeds = bin_seeds * bin_size
     return bin_seeds
-
-
 
 ##############################################################################
 
@@ -248,6 +261,7 @@ class MeanShift(BaseEstimator):
     the mean shift algorithm and will be the bottleneck if it is used.
 
     """
+
     def __init__(self, bandwidth=None, seeds=None, bin_seeding=False,
                  cluster_all=True):
         self.bandwidth = bandwidth
@@ -256,6 +270,7 @@ class MeanShift(BaseEstimator):
         self.cluster_all = cluster_all
         self.cluster_centers_ = None
         self.labels_ = None
+
     def fit(self, X, **params):
         """ Compute MeanShift
 
@@ -273,6 +288,4 @@ class MeanShift(BaseEstimator):
                                           bin_seeding=self.bin_seeding,
                                           cluster_all=self.cluster_all)
         return self
-
-
 

@@ -8,39 +8,46 @@
     :copyright: (c) 2015 by Armin Ronacher.
     :license: BSD, see LICENSE for more details.
 """
-
-import uuid
 import hashlib
-from base64 import b64decode, b64encode
+import hashlib
+from base64 import b64encode, b64decode
+import uuid
 from datetime import datetime
-from werkzeug.http import http_date, parse_date
-from werkzeug.datastructures import CallbackDict
+import warnings
+
 from . import Markup, json
 from ._compat import iteritems, text_type
-from .helpers import is_ip, total_seconds
+from itsdangerous import BadSignature, URLSafeTimedSerializer
 
+from itsdangerous import URLSafeTimedSerializer, BadSignature
 
-
+<<<<<<< REMOTE
 class SessionMixin(object):
     """Expands a basic dictionary with an accessors that are expected
     by Flask extensions and users for the session.
     """
+
     def _get_permanent(self):
         return self.get('_permanent', False)
+
     def _set_permanent(self, value):
         self['_permanent'] = bool(value)
+
     #: this reflects the ``'_permanent'`` key in the dict.
     permanent = property(_get_permanent, _set_permanent)
     del _get_permanent, _set_permanent
+
     #: some session backends can tell you if a session is new, but that is
     #: not necessarily guaranteed.  Use with caution.  The default mixin
     #: implementation just hardcodes ``False`` in.
     new = False
+
     #: for some backends this will always be ``True``, but some backends will
     #: default this to false and detect changes in the dictionary for as
     #: long as changes do not happen on mutable structures in the session.
     #: The default mixin implementation just hardcodes ``True`` in.
     modified = True
+
     #: the accessed variable indicates whether or not the session object has
     #: been accessed in that request. This allows flask to append a `Vary:
     #: Cookie` header to the response if the session is being accessed. This
@@ -50,93 +57,88 @@ class SessionMixin(object):
     accessed = True
 
 
+=======
+
+>>>>>>> LOCAL
 
 
-
-
-
-
-
+from werkzeug.datastructures import CallbackDict
 class TaggedJSONSerializer(object):
     """A customized JSON serializer that supports a few extra types that
     we take for granted when serializing (tuples, markup objects, datetime).
     """
+
     def dumps(self, value):
         return json.dumps(self._tag(value), separators=(',', ':'))
+
+    LOADS_MAP = {
+        ' t': tuple,
+        ' u': uuid.UUID,
+        ' b': b64decode,
+        ' m': Markup,
+        ' d': parse_date,
+    }
+
     def _tag(self, value):
-        for tag_ops in self.conversions:
-            if tag_ops['check'](value):
-                tag = tag_ops.get('key')
-                if tag:
-                    return {tag: tag_ops['tag'](value)}
-                    return {tag: tag_ops['tag'](value)}
-                return tag_ops['tag'](value)
-                tag = tag_ops.get('key')
-                if tag:
-                    return {tag: tag_ops['tag'](value)}
-                    return {tag: tag_ops['tag'](value)}
-                return tag_ops['tag'](value)
-            if tag_ops['check'](value):
-                tag = tag_ops.get('key')
-                if tag:
-                    return {tag: tag_ops['tag'](value)}
-                    return {tag: tag_ops['tag'](value)}
-                return tag_ops['tag'](value)
-                tag = tag_ops.get('key')
-                if tag:
-                    return {tag: tag_ops['tag'](value)}
-                    return {tag: tag_ops['tag'](value)}
-                return tag_ops['tag'](value)
-
-
-
+        def object_hook(obj):
+        if len(obj) != 1:
+                return obj
+        the_key, the_value = next(iteritems(obj))
+            # Check the key for a corresponding function
+            return_function = self.LOADS_MAP.get(the_key)
+            if return_function:
+                # Pass the value to the function
+                return return_function(the_value)
+            # Didn't find a function for this object
+            return obj
+        return json.loads(value, object_hook=object_hook)
 
 
 session_json_serializer = TaggedJSONSerializer()
-
-
 class SecureCookieSession(CallbackDict, SessionMixin):
     """Base class for sessions based on signed cookies."""
+
+    def __getitem__(self, key):
+        self.accessed = True
+        return super(SecureCookieSession, self).__getitem__(key)
+
+    def get(self, key, default=None):
+        self.accessed = True
+        return super(SecureCookieSession, self).get(key, default)
+
+    def setdefault(self, key, default=None):
+        self.accessed = True
+        return super(SecureCookieSession, self).setdefault(key, default)
+
+
     def __init__(self, initial=None):
         def on_update(self):
             self.modified = True
             self.accessed = True
+
         super(SecureCookieSession, self).__init__(initial, on_update)
+<<<<<<< REMOTE
+self.accessed = False
+=======
+
+>>>>>>> LOCAL
+
         self.modified = False
-        self.accessed = False
-    def __getitem__(self, key):
-        self.accessed = True
-        return super(SecureCookieSession, self).__getitem__(key)
-        self.accessed = True
-        return super(SecureCookieSession, self).__getitem__(key)
-    def get(self, key, default=None):
-        self.accessed = True
-        return super(SecureCookieSession, self).get(key, default)
-        self.accessed = True
-        return super(SecureCookieSession, self).get(key, default)
-    def setdefault(self, key, default=None):
-        self.accessed = True
-        return super(SecureCookieSession, self).setdefault(key, default)
-        self.accessed = True
-        return super(SecureCookieSession, self).setdefault(key, default)
-
-
-
 class NullSession(SecureCookieSession):
     """Class used to generate nicer error messages if sessions are not
     available.  Will still allow read-only access to the empty session
     but fail on setting.
     """
+
     def _fail(self, *args, **kwargs):
         raise RuntimeError('The session is unavailable because no secret '
                            'key was set.  Set the secret_key on the '
                            'application to something unique and secret.')
     __setitem__ = __delitem__ = clear = pop = popitem = \
         update = setdefault = _fail
+
+
     del _fail
-
-
-
 class SessionInterface(object):
     """The basic interface you have to implement in order to replace the
     default session interface which uses werkzeug's securecookie
@@ -166,15 +168,18 @@ class SessionInterface(object):
 
     .. versionadded:: 0.8
     """
+
     #: :meth:`make_null_session` will look here for the class that should
     #: be created when a null session is requested.  Likewise the
     #: :meth:`is_null_session` method will perform a typecheck against
     #: this type.
+
     null_session_class = NullSession
     #: A flag that indicates if the session interface is pickle based.
     #: This can be used by Flask extensions to make a decision in regards
     #: to how to deal with the session object.
     #:
+
     #: .. versionadded:: 0.10
     pickle_based = False
     def make_null_session(self, app):
@@ -188,6 +193,7 @@ class SessionInterface(object):
         This creates an instance of :attr:`null_session_class` by default.
         """
         return self.null_session_class()
+
     def is_null_session(self, obj):
         """Checks if a given object is a null session.  Null sessions are
         not asked to be saved.
@@ -196,6 +202,7 @@ class SessionInterface(object):
         by default.
         """
         return isinstance(obj, self.null_session_class)
+
     def get_cookie_domain(self, app):
         """Returns the domain that should be set for the session cookie.
         
@@ -205,17 +212,25 @@ class SessionInterface(object):
         Once detected (or if not set at all), ``SESSION_COOKIE_DOMAIN`` is
         updated to avoid re-running the logic.
         """
+
         rv = app.config['SESSION_COOKIE_DOMAIN']
+
         # set explicitly, or cached from SERVER_NAME detection
         # if False, return None
+        if rv is not None:
+            return rv if rv else None
+
         rv = app.config['SERVER_NAME']
+
         # server name not set, cache False to return none next time
         if not rv:
             app.config['SESSION_COOKIE_DOMAIN'] = False
-            app.config['SESSION_COOKIE_DOMAIN'] = False
             return None
+
+        # chop off the port which is usually not supported by browsers
         # remove any leading '.' since we'll add that later
         rv = rv.rsplit(':', 1)[0].lstrip('.')
+
         if '.' not in rv:
             # Chrome doesn't allow names without a '.'
             # this should only come up with localhost
@@ -224,17 +239,12 @@ class SessionInterface(object):
                 '"{rv}" is not a valid cookie domain, it must contain a ".".'
                 ' Add an entry to your hosts file, for example'
                 ' "{rv}.localdomain", and use that instead.'.format(rv=rv)
-            app.config['SESSION_COOKIE_DOMAIN'] = False
-            # Chrome doesn't allow names without a '.'
-            # this should only come up with localhost
-            # hack around this by not setting the name, and show a warning
-            warnings.warn(
-                '"{rv}" is not a valid cookie domain, it must contain a ".".'
-                ' Add an entry to your hosts file, for example'
-                ' "{rv}.localdomain", and use that instead.'.format(rv=rv)
+            )
             app.config['SESSION_COOKIE_DOMAIN'] = False
             return None
+
         ip = is_ip(rv)
+
         if ip:
             warnings.warn(
                 'The session cookie domain is an IP address. This may not work'
@@ -242,18 +252,15 @@ class SessionInterface(object):
                 ' file, for example "localhost.localdomain", and use that'
                 ' instead.'
             )
-            warnings.warn(
-                'The session cookie domain is an IP address. This may not work'
-                ' as intended in some browsers. Add an entry to your hosts'
-                ' file, for example "localhost.localdomain", and use that'
-                ' instead.'
-            )
+
         # if this is not an ip and app is mounted at the root, allow subdomain
         # matching by adding a '.' prefix
         if self.get_cookie_path(app) == '/' and not ip:
             rv = '.' + rv
-            rv = '.' + rv
+
         app.config['SESSION_COOKIE_DOMAIN'] = rv
+        return rv
+
     def get_cookie_path(self, app):
         """Returns the path for which the cookie should be valid.  The
         default implementation uses the value from the ``SESSION_COOKIE_PATH``
@@ -262,17 +269,20 @@ class SessionInterface(object):
         """
         return app.config['SESSION_COOKIE_PATH'] or \
                app.config['APPLICATION_ROOT'] or '/'
+
     def get_cookie_httponly(self, app):
         """Returns True if the session cookie should be httponly.  This
         currently just returns the value of the ``SESSION_COOKIE_HTTPONLY``
         config var.
         """
         return app.config['SESSION_COOKIE_HTTPONLY']
+
     def get_cookie_secure(self, app):
         """Returns True if the cookie should be secure.  This currently
         just returns the value of the ``SESSION_COOKIE_SECURE`` setting.
         """
         return app.config['SESSION_COOKIE_SECURE']
+
     def get_expiration_time(self, app, session):
         """A helper method that returns an expiration date for the session
         or ``None`` if the session is linked to the browser session.  The
@@ -281,6 +291,7 @@ class SessionInterface(object):
         """
         if session.permanent:
             return datetime.utcnow() + app.permanent_session_lifetime
+
     def should_set_cookie(self, app, session):
         """Used by session backends to determine if a ``Set-Cookie`` header
         should be set for this session cookie for this response. If the session
@@ -292,9 +303,12 @@ class SessionInterface(object):
 
         .. versionadded:: 0.11
         """
+
         return session.modified or (
             session.permanent and app.config['SESSION_REFRESH_EACH_REQUEST']
         )
+
+
     def open_session(self, app, request):
         """This method has to be implemented and must either return ``None``
         in case the loading failed because of a configuration error or an
@@ -302,6 +316,7 @@ class SessionInterface(object):
         interface + the methods and attributes on :class:`SessionMixin`.
         """
         raise NotImplementedError()
+
     def save_session(self, app, session, response):
         """This is called for actual sessions returned by :meth:`open_session`
         at the end of the request.  This is still called during a request
@@ -309,21 +324,6 @@ class SessionInterface(object):
         that.
         """
         raise NotImplementedError()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class SecureCookieSessionInterface(SessionInterface):
@@ -343,26 +343,21 @@ class SecureCookieSessionInterface(SessionInterface):
     #: such as datetime objects or tuples.
     serializer = session_json_serializer
     session_class = SecureCookieSession
+
     def get_signing_serializer(self, app):
         if not app.secret_key:
-            return None
             return None
         signer_kwargs = dict(
             key_derivation=self.key_derivation,
             digest_method=self.digest_method
-<<<<<<< REMOTE
-)
-=======
-)
->>>>>>> LOCAL
         )
         return URLSafeTimedSerializer(app.secret_key, salt=self.salt,
                                       serializer=self.serializer,
                                       signer_kwargs=signer_kwargs)
+
     def open_session(self, app, request):
         s = self.get_signing_serializer(app)
         if s is None:
-            return None
             return None
         val = request.cookies.get(app.session_cookie_name)
         if not val:
@@ -373,29 +368,17 @@ class SecureCookieSessionInterface(SessionInterface):
             return self.session_class(data)
         except BadSignature:
             return self.session_class()
+
     def save_session(self, app, session, response):
         domain = self.get_cookie_domain(app)
-                path = self.get_cookie_path(app)
+        path = self.get_cookie_path(app)
+
         # If the session is modified to be empty, remove the cookie.
         # If the session is empty, return without setting the cookie.
-        if not session:
-        if session.modified:
-                response.delete_cookie(
-                    app.session_cookie_name,
-                    domain=domain,
-                    path=path
-                )
-            return
         # Add a "Vary: Cookie" header if the session was accessed at all.
         if session.accessed:
             patch_vary_header(response, 'Cookie')
-            patch_vary_header(response, 'Cookie')
-        if not self.should_set_cookie(app, session):
-            return
-        httponly = self.get_cookie_httponly(app)
-        secure = self.get_cookie_secure(app)
-        expires = self.get_expiration_time(app, session)
-        val = self.get_signing_serializer(app).dumps(dict(session))
+
         response.set_cookie(
             app.session_cookie_name,
             val,
@@ -405,10 +388,17 @@ class SecureCookieSessionInterface(SessionInterface):
             path=path,
             secure=secure
         )
+        if not session:
+            if session.modified:
+                response.delete_cookie(app.session_cookie_name,
+                                       domain=domain, path=path)
+            return
 
+        if not self.should_set_cookie(app, session):
+            return
 
-
-
-
-
+        httponly = self.get_cookie_httponly(app)
+        secure = self.get_cookie_secure(app)
+        expires = self.get_expiration_time(app, session)
+        val = self.get_signing_serializer(app).dumps(dict(session))
 

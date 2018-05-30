@@ -64,9 +64,11 @@ class BaseForest(BaseEnsemble):
             base_estimator=base_estimator,
             n_estimators=n_estimators,
             estimator_params=estimator_params)
+
         self.bootstrap = bootstrap
         self.compute_importances = compute_importances
         self.random_state = check_random_state(random_state)
+
     def fit(self, X, y):
         """Build a forest of trees from the training set (X, y).
 
@@ -87,39 +89,41 @@ class BaseForest(BaseEnsemble):
         # Build the forest
         X = np.atleast_2d(X)
         y = np.atleast_1d(y)
+
         sample_mask = np.ones((X.shape[0],), dtype=np.bool)
         X_argsorted = np.asfortranarray(
             np.argsort(X.T, axis=1).astype(np.int32).T)
+
         if isinstance(self.base_estimator, ClassifierMixin):
             self.classes_ = np.unique(y)
             self.n_classes_ = len(self.classes_)
             y = np.searchsorted(self.classes_, y)
+
         for i in xrange(self.n_estimators):
             tree = self._make_estimator()
             tree.set_params(compute_importances=self.compute_importances)
+
             if self.bootstrap:
                 n_samples = X.shape[0]
                 indices = self.random_state.randint(0, n_samples, n_samples)
                 tree.fit(X[indices], y[indices],
                          sample_mask=None, X_argsorted=None)
+
             else:
                 tree.fit(X, y,
                          sample_mask=sample_mask, X_argsorted=X_argsorted)
+
         # Build the importances
         if self.compute_importances:
             importances = np.zeros(self.estimators_[0].n_features_)
+
             for tree in self.estimators_:
                 importances += tree.feature_importances_
+
             importances /= self.n_estimators
             self.feature_importances_ = importances
+
         return self
-
-
-
-
-
-
-
 
 
 class ForestClassifier(BaseForest, ClassifierMixin):
@@ -141,6 +145,7 @@ class ForestClassifier(BaseForest, ClassifierMixin):
             bootstrap=bootstrap,
             compute_importances=compute_importances,
             random_state=random_state)
+
     def predict(self, X):
         """Predict class for X.
 
@@ -159,6 +164,7 @@ class ForestClassifier(BaseForest, ClassifierMixin):
         """
         return self.classes_.take(
             np.argmax(self.predict_proba(X), axis=1),  axis=0)
+
     def predict_proba(self, X):
         """Predict class probabilities for X.
 
@@ -178,15 +184,21 @@ class ForestClassifier(BaseForest, ClassifierMixin):
         """
         X = np.atleast_2d(X)
         p = np.zeros((X.shape[0], self.n_classes_))
+
         for tree in self.estimators_:
             if self.n_classes_ == tree.n_classes_:
                 p += tree.predict_proba(X)
+
             else:
                 proba = tree.predict_proba(X)
+
                 for j, c in enumerate(tree.classes_):
                     p[:, c] += proba[:, j]
+
         p /= self.n_estimators
+
         return p
+
     def predict_log_proba(self, X):
         """Predict class log-probabilities for X.
 
@@ -205,14 +217,6 @@ class ForestClassifier(BaseForest, ClassifierMixin):
             ordered by arithmetical order.
         """
         return np.log(self.predict_proba(X))
-
-
-
-
-
-
-
-
 
 
 class ForestRegressor(BaseForest, RegressorMixin):
@@ -234,6 +238,7 @@ class ForestRegressor(BaseForest, RegressorMixin):
             bootstrap=bootstrap,
             compute_importances=compute_importances,
             random_state=random_state)
+
     def predict(self, X):
         """Predict regression target for X.
 
@@ -252,14 +257,13 @@ class ForestRegressor(BaseForest, RegressorMixin):
         """
         X = np.atleast_2d(X)
         y_hat = np.zeros(X.shape[0])
+
         for tree in self.estimators_:
             y_hat += tree.predict(X)
+
         y_hat /= self.n_estimators
+
         return y_hat
-
-
-
-
 
 
 class RandomForestClassifier(ForestClassifier):
@@ -333,12 +337,12 @@ class RandomForestClassifier(ForestClassifier):
             bootstrap=bootstrap,
             compute_importances=compute_importances,
             random_state=random_state)
+
         self.criterion = criterion
         self.max_depth = max_depth
         self.min_split = min_split
         self.min_density = min_density
         self.max_features = max_features
-
 
 
 class RandomForestRegressor(ForestRegressor):
@@ -412,12 +416,12 @@ class RandomForestRegressor(ForestRegressor):
             bootstrap=bootstrap,
             compute_importances=compute_importances,
             random_state=random_state)
+
         self.criterion = criterion
         self.max_depth = max_depth
         self.min_split = min_split
         self.min_density = min_density
         self.max_features = max_features
-
 
 
 class ExtraTreesClassifier(ForestClassifier):
@@ -493,13 +497,12 @@ class ExtraTreesClassifier(ForestClassifier):
             bootstrap=bootstrap,
             compute_importances=compute_importances,
             random_state=random_state)
+
         self.criterion = criterion
         self.max_depth = max_depth
         self.min_split = min_split
         self.min_density = min_density
         self.max_features = max_features
-
-
 
 
 class ExtraTreesRegressor(ForestRegressor):
@@ -575,10 +578,10 @@ class ExtraTreesRegressor(ForestRegressor):
             bootstrap=bootstrap,
             compute_importances=compute_importances,
             random_state=random_state)
+
         self.criterion = criterion
         self.max_depth = max_depth
         self.min_split = min_split
         self.min_density = min_density
         self.max_features = max_features
-
 

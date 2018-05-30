@@ -1,189 +1,233 @@
-# Adapted from MILK: Machine Learning Toolkit
-# Copyright (C) 2008-2011, Luis Pedro Coelho <luis@luispedro.org>
-# License: MIT. See COPYING.MIT file in the milk distribution
-#
-# Authors: Brian Holt, Peter Prettenhofer, Satrajit Ghosh
-#
-# License: BSD Style.
-
+"""
+This module gathers tree-based methods, including decision, regression and
+randomized trees.
+"""
+# Code is originally adapted from MILK: Machine Learning Toolkit
+# Authors: Brian Holt, Peter Prettenhofer, Satrajit Ghosh, Gilles Louppe
+# License: BSD3
+from __future__ import division
 from __future__ import division
 import numpy as np
-
+import numpy as np
+from ..base import BaseEstimator, ClassifierMixin, RegressorMixin
 from ..base import BaseEstimator, ClassifierMixin, RegressorMixin
 from ..utils import array2d, check_random_state
 from ..utils import array2d, check_random_state
-from ..utils import check_random_state
-
+from . import _tree
 from . import _tree
 
-__all__ = [
-    "DecisionTreeClassifier",
-    "DecisionTreeRegressor"
-]
 
-DTYPE = _tree.DTYPE
-
-CLASSIFICATION = {
-    "gini": _tree.Gini,
-    "entropy": _tree.Entropy,
-}
-
-REGRESSION = {
-    "mse": _tree.MSE,
-}
-
-GRAPHVIZ_TREE_TEMPLATE = """\
-%(current)s [label="%(current_gv)s"] ;
-%(left_child)s [label="%(left_child_gv)s"] ;
-%(right_child)s [label="%(right_child_gv)s"] ;
-%(current)s -> %(left_child)s ;
-%(current)s -> %(right_child)s ;
-"""
-
-
-def export_graphviz(decision_tree, out_file=None, feature_names=None):
-    """Export a decision tree in DOT format.
-
-    This function generates a GraphViz representation of the decision tree,
-    which is then written into `out_file`. Once exported, graphical renderings
-    can be generated using, for example,::
-
-        $ dot -Tps tree.dot -o tree.ps      (PostScript format)
-        $ dot -Tpng tree.dot -o tree.png    (PNG format)
-
-    Parameters
-    ----------
-    decision_tree : decision tree classifier
-        The decision tree to be exported to graphviz.
-
-    out : file object or string, optional (default=None)
-        Handle or name of the output file.
-
-    feature_names : list of strings, optional (default=None)
-        Names of each of the features.
-
-    Returns
-    -------
-    out_file : file object
-        The file object to which the tree was exported.  The user is
-        expected to `close()` this object when done with it.
-
-    Examples
-    --------
-    >>> from sklearn.datasets import load_iris
-    >>> from sklearn import tree
-
-    >>> clf = tree.DecisionTreeClassifier()
-    >>> iris = load_iris()
-
-    >>> clf = clf.fit(iris.data, iris.target)
-    >>> import tempfile
-    >>> out_file = export_graphviz(clf, out_file=tempfile.TemporaryFile())
-    >>> out_file.close()
-    """
-    def node_to_str(tree, node_id):
-    def recurse(tree, node_id):
-    if out_file is None:
-        out_file = open("tree.dot", 'w')
-    elif isinstance(out_file, basestring):
-        out_file = open(out_file, 'w')
-    out_file.write("digraph Tree {\n")
-    recurse(decision_tree.tree, 0)
-    out_file.write("}")
-    return out_file
-
-
-
-
-
-
-
-
-
-def _build_tree(is_classification, X, y, criterion, max_depth, min_split,
-                max_features, n_classes, random_state, min_density,
+class Tree(object):
+<<<<<<< REMOTE
+def _build_tree(X, y, is_classification, criterion, max_depth, min_split,
+                min_density, max_features, random_state, n_classes, find_split,
                 sample_mask=None, X_argsorted=None):
     """Build a tree by recursively partitioning the data."""
-    # make data fortran layout
-    if not np.isfortran(X):
-        X = np.asfortranarray(X)
-        y = np.ascontiguousarray(y, dtype=DTYPE)
-    if X_argsorted is None:
-        X_argsorted = np.asfortranarray(
-            np.argsort(X.T, axis=1).astype(np.int32).T)
-    if sample_mask is None:
-                sample_mask = np.ones((X.shape[0],), dtype=np.bool)
-    n_features = X.shape[1]
-    feature_mask = np.ones((n_features,), dtype=np.bool, order="C")
-    if max_features is not None:
-        if max_features <= 0 or max_features > n_features:
-            raise ValueError("max_features=%d must be in range (0..%d]. "
-                             "Did you mean to use None to signal no "
-                             "max_features?"
-                             % (max_features, n_features))
-        permutation = random_state.permutation(n_features)
-        sample_dims = np.sort(permutation[-max_features:])
-        feature_mask[sample_dims] = False
-        feature_mask = np.logical_not(feature_mask)
-    feature_mask = feature_mask.astype(np.int32)
-    def recursive_partition(X, X_argsorted, y, sample_mask, depth):
-        is_split_valid = True
+
+    if max_depth <= 10:
+        init_capacity = (2 ** (max_depth + 1)) - 1
+    else:
+        init_capacity = 2047  # num nodes of tree with depth 10
+
+    tree = Tree(n_classes, init_capacity)
+
+    # Recursively partition X
+    def recursive_partition(X, X_argsorted, y, sample_mask, depth,
+                            parent, is_left_child):
+        # Count samples
         n_node_samples = sample_mask.sum()
-        if n_samples == 0:
-            raise ValueError("Attempting to find a split with an empty sample_mask")
-        if depth >= max_depth or n_samples < min_split:
-            is_split_valid = False
-            else:
-            feature, threshold, init_error = _tree._find_best_split(
-                X, y, X_argsorted, sample_mask, feature_mask,
-                criterion, n_samples)
-        if feature == -1:
-                is_split_valid = False
+
+        if n_node_samples == 0:
+            raise ValueError("Attempting to find a split "
+                             "with an empty sample_mask")
+
+        # Split samples
+        if depth < max_depth and n_node_samples >= min_split:
+            feature, threshold, best_error, init_error = find_split(
+                X, y, X_argsorted, sample_mask, n_node_samples,
+                max_features, criterion, random_state)
+
+        else:
+            feature = -1
+
+        # Value at this node
         current_y = y[sample_mask]
+
         if is_classification:
             value = np.zeros((n_classes,))
             t = current_y.max() + 1
             value[:t] = np.bincount(current_y.astype(np.int))
+
         else:
-            # we need to wrap the mean into an array
             value = np.asarray(np.mean(current_y))
-        if not is_split_valid:
-            return _tree.Node(-1, 0.0, 0.0, n_samples, value, None, None)
-    else:
+
+        # Terminal node
+        if feature == -1:
+            # compute error at leaf
+            error = _tree._error_at_leaf(y, sample_mask, criterion,
+                                         n_node_samples)
+            tree.add_leaf(parent, is_left_child, value, error, n_node_samples)
+
+        # Internal node
+        else:
+            # Sample mask is too sparse?
             if n_node_samples / X.shape[0] <= min_density:
-                # sample_mask too sparse - pack X and X_argsorted
                 X = X[sample_mask]
                 X_argsorted = np.asfortranarray(
                     np.argsort(X.T, axis=1).astype(np.int32).T)
                 y = current_y
-        sample_mask = np.ones((X.shape[0],), dtype=np.bool)
+                sample_mask = np.ones((X.shape[0],), dtype=np.bool)
+
+            # Split and and recurse
             split = X[:, feature] <= threshold
-            left_partition = recursive_partition(X, X_argsorted, y,
-                                                 split & sample_mask,
-                                                 depth + 1)
-            right_partition = recursive_partition(X, X_argsorted, y,
-                                                  ~split & sample_mask,
-                                                  depth + 1)
-            return _tree.Node(feature, threshold, init_error, n_samples,
-                              value, left_partition, right_partition)
-    return recursive_partition(X, X_argsorted, y, sample_mask, 0)
+
+            node_id = tree.add_split_node(parent, is_left_child, feature,
+                                          threshold, best_error, init_error,
+                                          n_node_samples, value)
+
+            # left child recursion
+            recursive_partition(X, X_argsorted, y,
+                                split & sample_mask,
+                                depth + 1, node_id, True)
+
+            # right child recursion
+            recursive_partition(X, X_argsorted, y,
+                                ~split & sample_mask,
+                                depth + 1, node_id, False)
+
+    # Launch the construction
+    if X.dtype != DTYPE or not np.isfortran(X):
+        X = np.asanyarray(X, dtype=DTYPE, order="F")
+
+    if y.dtype != DTYPE or not y.flags.contiguous:
+        y = np.ascontiguousarray(y, dtype=DTYPE)
+
+    if sample_mask is None:
+        sample_mask = np.ones((X.shape[0],), dtype=np.bool)
+
+    if X_argsorted is None:
+        X_argsorted = np.asfortranarray(
+            np.argsort(X.T, axis=1).astype(np.int32).T)
+
+    recursive_partition(X, X_argsorted, y, sample_mask, 0, -1, False)
+
+    tree.resize(tree.node_count)
+    return tree
 
 
 
+=======
+def _build_tree(X, y, is_classification, criterion, max_depth, min_split,
+                min_density, max_features, random_state, n_classes, find_split,
+                sample_mask=None, X_argsorted=None, store_terminal_region=False):
+    """Build a tree by recursively partitioning the data."""
+
+    # Convert input format
+    if X.dtype != DTYPE or not np.isfortran(X):
+        X = np.asanyarray(X, dtype=DTYPE, order="F")
+
+    if y.dtype != DTYPE or not y.flags.contiguous:
+        y = np.ascontiguousarray(y, dtype=DTYPE)
+
+    # create sample mask and preprocess inputs
+    if sample_mask is None:
+        sample_mask = np.ones((X.shape[0],), dtype=np.bool)
+
+    if X_argsorted is None:
+        X_argsorted = np.asfortranarray(
+            np.argsort(X.T, axis=1).astype(np.int32).T)
+
+    # create tree structure
+    if max_depth <= 10:
+        init_capacity = (2 ** (max_depth + 1)) - 1
+    else:
+        init_capacity = 2047  # num nodes of tree with depth 10
+
+    tree = Tree(n_classes, init_capacity)
+
+    # init terminal region if necessary
+    if store_terminal_region:
+        if min_density != 0.0:
+            raise ValueError(
+                "If min_density has to be 0.0 if store_terminal_region")
+        tree.terminal_region = np.empty((X.shape[0], ), dtype=np.int32)
+        tree.terminal_region.fill(-1)
+
+    # Recursively partition X
+    def recursive_partition(X, X_argsorted, y, sample_mask, depth,
+                            parent, is_left_child):
+        # Count samples
+        n_node_samples = sample_mask.sum()
+
+        if n_node_samples == 0:
+            raise ValueError("Attempting to find a split "
+                             "with an empty sample_mask")
+
+        # Split samples
+        if depth < max_depth and n_node_samples >= min_split:
+            feature, threshold, best_error, init_error = find_split(
+                X, y, X_argsorted, sample_mask, n_node_samples,
+                max_features, criterion, random_state)
+
+        else:
+            feature = -1
+
+        # Value at this node
+        current_y = y[sample_mask]
+
+        if is_classification:
+            value = np.zeros((n_classes,))
+            t = current_y.max() + 1
+            value[:t] = np.bincount(current_y.astype(np.int))
+
+        else:
+            value = np.asarray(np.mean(current_y))
+
+        # Terminal node
+        if feature == -1:
+            # compute error at leaf
+            error = _tree._error_at_leaf(y, sample_mask, criterion,
+                                         n_node_samples)
+            node_id = tree.add_leaf(parent, is_left_child, value, error,
+                                    n_node_samples)
+            if store_terminal_region:
+                tree.terminal_region[sample_mask] = node_id
+
+        # Internal node
+        else:
+            # Sample mask is too sparse?
+            if n_node_samples / X.shape[0] <= min_density:
+                X = X[sample_mask]
+                X_argsorted = np.asfortranarray(
+                    np.argsort(X.T, axis=1).astype(np.int32).T)
+                y = current_y
+                sample_mask = np.ones((X.shape[0],), dtype=np.bool)
+
+            # Split and and recurse
+            split = X[:, feature] <= threshold
+
+            node_id = tree.add_split_node(parent, is_left_child, feature,
+                                          threshold, best_error, init_error,
+                                          n_node_samples, value)
+
+            # left child recursion
+            recursive_partition(X, X_argsorted, y,
+                                split & sample_mask,
+                                depth + 1, node_id, True)
+
+            # right child recursion
+            recursive_partition(X, X_argsorted, y,
+                                ~split & sample_mask,
+                                depth + 1, node_id, False)
+
+    recursive_partition(X, X_argsorted, y, sample_mask, 0, -1, False)
+
+    tree.resize(tree.node_count)
+    return tree
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+>>>>>>> LOCAL
 class BaseDecisionTree(BaseEstimator):
     """Base class for decision trees.
 
@@ -214,58 +258,23 @@ class BaseDecisionTree(BaseEstimator):
         self : object
             Returns self.
         """
-        X = np.asanyarray(X, dtype=DTYPE, order="F")
-        n_samples, self.n_features = X.shape
-        if len(y) != n_samples:
-            raise ValueError("Number of labels=%d does not match "
-                             "number of features=%d" % (len(y), n_samples))
-        self.random_state = check_random_state(random_state)
-        if self.min_split <= 0:
-            raise ValueError("min_split must be greater than zero.")
-        if self.max_depth <= 0:
-            raise ValueError("max_depth must be greater than zero. ")
-        if self.min_density < 0.0 or self.min_density > 1.0:
-            raise ValueError("min_density must be in [0, 1]")
-        sample_mask = np.ones((n_samples,), dtype=np.bool)
-        is_classification = (self.type == "classification")
-        if is_classification:
-            y = np.ascontiguousarray(y, dtype=np.int)
-            self.n_classes = self.classes.shape[0]
-            self.classes = np.unique(y)
-            self.n_classes = self.classes.shape[0]
-            y = np.searchsorted(self.classes, y)
-            criterion_class = CLASSIFICATION[self.criterion]
-            criterion = criterion_class(self.n_classes)
-        else:  # regression
-        if self.min_density < 0.0 or self.min_density > 1.0:
-            y = np.ascontiguousarray(y, dtype=DTYPE)
-        self.n_classes = None
-            criterion = REGRESSION[self.criterion]()
-            criterion = criterion_class()
-        self.tree = _build_tree(X, y, is_classification, criterion,
-                                self.max_depth, self.min_split,
-                                self.min_density, self.max_features,
-                                self.random_state, self.n_classes,
-                                self.find_split)
+        # Convert data
+        X = np.asarray(X, dtype=DTYPE, order='F')
+
+        is_classification = isinstance(self, ClassifierMixin)
+
+        else:
+
+        # Check parameters
+        if self.max_depth is not None and self.max_depth <= 0:
+        if self.max_features >= 0 and \
+               not (0 < self.max_features <= self.n_features):
+            raise ValueError("max_features must be in (0, n_features]")
+
+        # Build tree
+
+
         return self
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class DecisionTreeClassifier(BaseDecisionTree, ClassifierMixin):
     """A decision tree classifier.
 
@@ -352,15 +361,19 @@ class DecisionTreeClassifier(BaseDecisionTree, ClassifierMixin):
             by arithmetical order.
         """
         X = array2d(X, dtype=DTYPE)
+
         n_samples, n_features = X.shape
         P = self.tree.predict(X)
         if self.tree is None:
             raise Exception("Tree not initialized. Perform a fit first.")
+
+
         if self.n_features != n_features:
             raise ValueError("Number of features of the model must "
                              " match the input. Model n_features is %s and "
                              " input n_features is %s "
                              % (self.n_features, n_features))
+
         P /= P.sum(axis=1)[:, np.newaxis]
         return P
     def predict_log_proba(self, X):
@@ -378,11 +391,6 @@ class DecisionTreeClassifier(BaseDecisionTree, ClassifierMixin):
             ordered by arithmetical order.
         """
         return np.log(self.predict_proba(X))
-
-
-
-
-
 
 
 class DecisionTreeRegressor(BaseDecisionTree, RegressorMixin):

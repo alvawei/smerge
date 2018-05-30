@@ -75,11 +75,12 @@ target = news_train.target[idx]
 
 print "num train docs: ", data.shape[0]
 print ""
+print clf
+
 print "Training a linear SVM (hinge loss and L2 regularizer) using SGD:"
-      "SGD(n_iter=50, alpha=0.00001, fit_intercept=True)"
+
 t0 = time()
 clf = SGD(n_iter=50, alpha=0.00001, fit_intercept=True)
-#clf = LinearSVC(**parameters)
 clf.fit(data, target)
 print "done in %fs" % (time() - t0)
 print "Percentage of non zeros coef: %f" % (np.mean(clf.coef_ != 0) * 100)

@@ -82,9 +82,9 @@ class LinearSVC(BaseLibLinear, ClassifierMixin, CoefSelectTransformerMixin):
     http://www.csie.ntu.edu.tw/~cjlin/liblinear/
 
     """
+
     # all the implementation is provided by the mixins
     pass
-
 
 
 class SVC(DenseBaseLibSVM, ClassifierMixin):
@@ -167,13 +167,13 @@ class SVC(DenseBaseLibSVM, ClassifierMixin):
     --------
     SVR, LinearSVC
     """
+
     def __init__(self, C=1.0, kernel='rbf', degree=3, gamma=0.0,
                  coef0=0.0, shrinking=True, probability=False,
                  tol=1e-3, cache_size=200, C_scale_n_samples=False):
         DenseBaseLibSVM.__init__(self, 'c_svc', kernel, degree, gamma, coef0,
                                  tol, C, 0., 0., shrinking, probability,
                                  cache_size, C_scale_n_samples)
-
 
 
 
@@ -272,13 +272,13 @@ class NuSVC(DenseBaseLibSVM, ClassifierMixin):
     --------
     SVC, LinearSVC, SVR
     """
+
     def __init__(self, nu=0.5, kernel='rbf', degree=3, gamma=0.0,
                  coef0=0.0, shrinking=True, probability=False,
                  tol=1e-3, cache_size=200):
         DenseBaseLibSVM.__init__(self, 'nu_svc', kernel, degree, gamma,
                                 coef0, tol, 0., nu, 0., shrinking, probability,
                                 cache_size, C_scale_n_samples=None)
-
 
 
 
@@ -374,6 +374,8 @@ class SVR(DenseBaseLibSVM, RegressorMixin):
         DenseBaseLibSVM.__init__(self, 'epsilon_svr', kernel, degree, gamma,
                                  coef0, tol, C, 0., epsilon, shrinking,
                                  probability, cache_size, C_scale_n_samples)
+
+
     def fit(self, X, y, sample_weight=None, **params):
         """
         Fit the SVM model according to the given training data and parameters.
@@ -397,8 +399,6 @@ class SVR(DenseBaseLibSVM, RegressorMixin):
         # we copy this method because SVR does not accept class_weight
         return DenseBaseLibSVM.fit(self, X, y, sample_weight=sample_weight,
                                   **params)
-
-
 
 
 class NuSVR(DenseBaseLibSVM, RegressorMixin):
@@ -483,6 +483,7 @@ class NuSVR(DenseBaseLibSVM, RegressorMixin):
     --------
     NuSVC, SVR
     """
+
     <<<<<<< REMOTE
     def __init__(self, nu=0.5, kernel='rbf', degree=3,
                  gamma=0.0, coef0=0.0, shrinking=True,
@@ -491,6 +492,7 @@ class NuSVR(DenseBaseLibSVM, RegressorMixin):
                                  tol, 0, nu, None, shrinking, probability,
                                  cache_size)
 
+
 =======
     def __init__(self, nu=0.5, C=1.0, kernel='rbf', degree=3,
                  gamma=0.0, coef0=0.0, shrinking=True,
@@ -498,6 +500,7 @@ class NuSVR(DenseBaseLibSVM, RegressorMixin):
         DenseBaseLibSVM.__init__(self, 'nu_svr', kernel, degree, gamma, coef0,
                                  tol, C, nu, None, shrinking, probability,
                                  cache_size, C_scale_n_samples)
+
 
 =======
     def __init__(self, nu=0.5, C=1.0, kernel='rbf', degree=3,
@@ -508,10 +511,13 @@ class NuSVR(DenseBaseLibSVM, RegressorMixin):
                                  tol, C, nu, None, shrinking, probability,
                                  cache_size, C_scale_n_samples)
 
+
 >>>>>>> LOCAL
         DenseBaseLibSVM.__init__(self, 'nu_svr', kernel, degree, gamma, coef0,
                                  tol, C, nu, None, shrinking, probability,
                                  cache_size, C_scale_n_samples)
+
+
     def fit(self, X, y, sample_weight=None, **params):
         """
         Fit the SVM model according to the given training data and parameters.
@@ -531,9 +537,6 @@ class NuSVR(DenseBaseLibSVM, RegressorMixin):
         """
         # we copy this method because SVR does not accept class_weight
         return DenseBaseLibSVM.fit(self, X, y, sample_weight=[], **params)
-
-
-
 
 
 class OneClassSVM(DenseBaseLibSVM):
@@ -603,6 +606,7 @@ class OneClassSVM(DenseBaseLibSVM):
         DenseBaseLibSVM.__init__(self, 'one_class', kernel, degree, gamma,
                                  coef0, tol, 0., nu, 0., shrinking, False,
                                  cache_size, C_scale_n_samples=None)
+
     def fit(self, X, class_weight={}, sample_weight=None, **params):
         """
         Detects the soft boundary of the set of samples X.
@@ -626,5 +630,4 @@ class OneClassSVM(DenseBaseLibSVM):
         super(OneClassSVM, self).fit(
             X, [], class_weight=class_weight, sample_weight=sample_weight,
             **params)
-
 

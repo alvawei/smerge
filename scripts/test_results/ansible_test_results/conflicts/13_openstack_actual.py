@@ -31,9 +31,6 @@ import os
 
 
 def openstack_argument_spec():
-
-
-
 def openstack_find_nova_addresses(addresses, ext_tag, key_name=None):
     ret = []
     for (k, v) in addresses.iteritems():

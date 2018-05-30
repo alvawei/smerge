@@ -28,6 +28,7 @@ from operator import itemgetter
 from optparse import OptionParser
 import sys
 from time import time
+import pylab as pl
 
 from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import Vectorizer
@@ -105,8 +106,8 @@ print
 y_train, y_test = data_train.target, data_test.target
 
 print "Extracting features from the training dataset using a sparse vectorizer"
-t0 = time()
 vectorizer = Vectorizer(sublinear_tf=True, max_df=0.5)
+t0 = time()
 X_train = vectorizer.fit_transform(data_train.data)
 print "done in %fs" % (time() - t0)
 print "n_samples: %d, n_features: %d" % X_train.shape
@@ -140,6 +141,7 @@ def trim(s):
 
 ###############################################################################
 # Benchmark classifiers
+results = []
 def benchmark(clf):
     print 80 * '_'
     print "Training: "
@@ -148,37 +150,38 @@ def benchmark(clf):
     clf.fit(X_train, y_train)
     train_time = time() - t0
     print "train time: %0.3fs" % train_time
+
     t0 = time()
     pred = clf.predict(X_test)
     test_time = time() - t0
     print "test time:  %0.3fs" % test_time
+
     score = metrics.f1_score(y_test, pred)
     print "f1-score:   %0.3f" % score
+
     if hasattr(clf, 'coef_'):
         print "dimensionality: %d" % clf.coef_.shape[1]
         print "density: %f" % density(clf.coef_)
+
         if opts.print_top10:
             print "top 10 keywords per class:"
             for i, category in enumerate(categories):
                 top10 = np.argsort(clf.coef_[i])[-10:]
                 print trim("%s: %s" % (category, " ".join(vocabulary[top10])))
         print
+
     if opts.print_report:
         print "classification report:"
         print metrics.classification_report(y_test, pred,
                                             target_names=categories)
+
     if opts.print_cm:
         print "confusion matrix:"
         print metrics.confusion_matrix(y_test, pred)
+
     print
     clf_descr = str(clf).split('(')[0]
     return clf_descr, score, train_time, test_time
-
-
-
-
-
-
 
 
 for clf, name in ((RidgeClassifier(tol=1e-1), "Ridge Classifier"),
@@ -194,22 +197,46 @@ for penalty in ["l2", "l1"]:
     # Train Liblinear model
     results.append(benchmark(LinearSVC(loss='l2', penalty=penalty, C=1000,
                                             dual=False, tol=1e-3)))
+
     # Train SGD model
     results.append(benchmark(SGDClassifier(alpha=.0001, n_iter=50,
                                           penalty=penalty)))
 
+results.append(benchmark(SGDClassifier(alpha=.0001, n_iter=50,
+                                      penalty="elasticnet")))
+results.append(benchmark(MultinomialNB(alpha=.01)))
+results.append(benchmark(BernoulliNB(alpha=.01)))
 
+
+results.append(benchmark(L1LinearSVC(C=1000)))
+
+
+# make some plots
+
+indices = np.arange(len(results))
+
+results = [[x[i] for x in results] for i in xrange(4)]
+
+clf_names, score, training_time, test_time = results
+
+pl.title("Score")
+pl.barh(indices, score, .2, label="score", color='r')
+pl.barh(indices + .3, training_time, .2, label="training time", color='g')
+pl.barh(indices + .6, test_time, .2, label="test time", color='b')
+pl.yticks(())
+pl.legend(loc='best')
+pl.subplots_adjust(left=.25)
+
+for i, c in  zip(indices, clf_names):
+    pl.text(-.3, i, c)
+
+pl.show()
 # Train SGD with Elastic Net penalty
-print "Elastic-Net penalty"
 print 80 * '='
-sgd_results = benchmark(SGDClassifier(alpha=.0001, n_iter=50,
-                                      penalty="elasticnet"))
-
+print "Elastic-Net penalty"
 # Train sparse Naive Bayes classifiers
 print 80 * '='
 print "Naive Bayes"
-mnnb_results = benchmark(MultinomialNB(alpha=.01))
-bnb_result = benchmark(BernoulliNB(alpha=.01))
 
 
 class L1LinearSVC(LinearSVC):
@@ -220,13 +247,11 @@ class L1LinearSVC(LinearSVC):
                                       dual=False, tol=1e-3)
         X = self.transformer_.fit_transform(X, y)
         return LinearSVC.fit(self, X, y)
+
     def predict(self, X):
         X = self.transformer_.transform(X)
         return LinearSVC.predict(self, X)
 
-
-
 print 80 * '='
 print "LinearSVC with L1-based feature selection"
-l1linearsvc_results = benchmark(L1LinearSVC(C=1000))
 

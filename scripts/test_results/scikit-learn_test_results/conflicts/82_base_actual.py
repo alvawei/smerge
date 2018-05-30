@@ -29,10 +29,10 @@ class Bunch(dict):
     """ Container object for datasets: dictionnary-like object that
         exposes its keys as attributes.
     """
+
     def __init__(self, **kwargs):
         dict.__init__(self, kwargs)
         self.__dict__ = self
-
 
 
 def get_data_home(data_home=None):
@@ -65,6 +65,75 @@ def clear_data_home(data_home=None):
     shutil.rmtree(data_home)
 
 
+def load_boston():
+    """Load the Boston house prices dataset and return it.
+
+    Returns
+    -------
+    data : Bunch
+        Dictionary-like object, the interesting attributes are:
+        'data', the data to learn, 'target', the classification labels,
+        'target_names', the meaning of the labels, and 'DESCR', the
+        full description of the dataset.
+
+    Example
+    -------
+    >>> from scikits.learn.datasets import load_boston
+    >>> data = load_boston()
+
+    """
+
+    module_path = dirname(__file__)
+    data_file = csv.reader(open(join(module_path, 'data',
+                                     'boston_house_prices.csv')))
+    fdescr = open(join(module_path, 'descr', 'boston_house_prices.rst'))
+    temp = data_file.next()
+    n_samples = int(temp[0])
+    n_features = int(temp[1])
+    data = np.empty((n_samples, n_features))
+    target = np.empty((n_samples,))
+    temp = data_file.next()  # names of features
+    feature_names = np.array(temp)
+    for i, d in enumerate(data_file):
+        data[i] = np.asanyarray(d[:-1], dtype=np.float)
+        target[i] = np.asanyarray(d[-1], dtype=np.float)
+
+    return Bunch(data=data, target=target,
+                 feature_names=feature_names,
+                 DESCR=fdescr.read())
+def load_boston():
+    """load the boston house prices dataset and returns it.
+
+    Returns
+    -------
+    data : Bunch
+        Dictionnary-like object, the interesting attributes are:
+        'data', the data to learn, 'target', the classification labels,
+        'target_names', the meaning of the labels, and 'DESCR', the
+        full description of the dataset.
+
+    Example
+    -------
+
+
+    """
+    module_path = dirname(__file__)
+    data_file = csv.reader(open(join(module_path, 'data', 'boston_house_prices.csv')))
+    fdescr = open(join(module_path, 'descr', 'boston_house_prices.rst'))
+    temp = data_file.next()
+    n_samples = int(temp[0])
+    n_features = int(temp[1])
+    data = np.empty((n_samples, n_features))
+    target = np.empty((n_samples,) )
+    temp = data_file.next() # names of features
+    feature_names = np.array(temp)
+    for i, d in enumerate(data_file):
+        data[i] = np.asanyarray(d[:-1], dtype=np.float)
+        target[i] = np.asanyarray(d[-1], dtype=np.float)
+      
+    return Bunch(data=data, target=target,
+                 feature_names=feature_names,
+                 DESCR=fdescr.read())
 def load_files(container_path, description=None, categories=None,
                load_content=True, shuffle=True, random_state=42):
     """Load text files with categories as subfolder names
@@ -138,10 +207,13 @@ def load_files(container_path, description=None, categories=None,
     target = []
     target_names = []
     filenames = []
+
     folders = [f for f in sorted(listdir(container_path))
                if isdir(join(container_path, f))]
+
     if categories is not None:
         folders = [f for f in folders if f in categories]
+
     for label, folder in enumerate(folders):
         target_names.append(folder)
         folder_path = join(container_path, folder)
@@ -149,35 +221,31 @@ def load_files(container_path, description=None, categories=None,
                      for d in sorted(listdir(folder_path))]
         target.extend(len(documents) * [label])
         filenames.extend(documents)
+
     # convert to array for fancy indexing
     filenames = np.array(filenames)
     target = np.array(target)
+
     if shuffle:
         random_state = check_random_state(random_state)
         indices = np.arange(filenames.shape[0])
         random_state.shuffle(indices)
         filenames = filenames[indices]
         target = target[indices]
+
     if load_content:
         data = [open(filename).read() for filename in filenames]
         return Bunch(data=data,
                      target_names=target_names,
                      target=target,
                      DESCR=description)
+
     return Bunch(filenames=filenames,
                  target_names=target_names,
                  target=target,
                  DESCR=description)
 
 
-
-
-
-
-
-
-
-###############################################################################
 
 def load_iris():
     """Load and return the iris dataset (classification).
@@ -203,6 +271,7 @@ def load_iris():
     ['setosa', 'versicolor', 'virginica']
 
     """
+
     module_path = dirname(__file__)
     data_file = csv.reader(open(join(module_path, 'data', 'iris.csv')))
     fdescr = open(join(module_path, 'descr', 'iris.rst'))
@@ -219,7 +288,6 @@ def load_iris():
                  DESCR=fdescr.read(),
                  feature_names=['sepal length (cm)', 'sepal width (cm)',
                                 'petal length (cm)', 'petal width (cm)'])
-
 
 
 def load_digits(n_class=10):
@@ -250,6 +318,7 @@ def load_digits(n_class=10):
         pl.matshow(digits.raw_data[0])
 
     """
+
     module_path = dirname(__file__)
     data = np.loadtxt(join(module_path, 'data', 'digits.csv.gz'),
                       delimiter=',')
@@ -258,17 +327,16 @@ def load_digits(n_class=10):
     flat_data = data[:, :-1]
     images = flat_data.view()
     images.shape = (-1, 8, 8)
+
     if n_class < 10:
         idx = target < n_class
         flat_data, target = flat_data[idx], target[idx]
         images = images[idx]
+
     return Bunch(data=flat_data, target=target.astype(np.int),
                  target_names=np.arange(10),
                  images=images,
                  DESCR=descr)
-
-
-
 
 
 def load_diabetes():
@@ -319,29 +387,4 @@ def load_linnerud():
                  header_physiological=header_physiological,
                  DESCR=fdescr.read())
 
-
-###############################################################################
-# Add the description in the docstring
-
-def _add_notes(function, filename):
-    """Add a notes section to the docstring of a function reading it from a
-    file"""
-    fdescr = open(join(dirname(__file__), 'descr', filename), 'r')
-    # Dedent the docstring
-    doc = function.__doc__.split('\n')
-    doc = '%s\n%s' % (textwrap.dedent(doc[0]),
-                      textwrap.dedent('\n'.join(doc[1:])))
-    # Remove the first line of the description, which contains the
-    # dataset's name
-    descr = '\n'.join(fdescr.read().split('\n')[1:])
-    function.__doc__ = doc + descr
-
-
-for function, filename in ((load_iris, 'iris.rst'),
-                           (load_linnerud, 'linnerud.rst'),
-                           (load_digits, 'digits.rst')):
-    #try:
-        _add_notes(function, filename)
-    #except:
-    #    pass
 

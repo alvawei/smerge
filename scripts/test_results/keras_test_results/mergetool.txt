@@ -9,6 +9,6 @@ Generating AST diffs...
 Merging changes...
 Writing result to keras/models.py
 
-Merge conflicts resolved: 0/2
+Merge conflicts resolved: 7/7
 keras/models.py seems unchanged.
 Was the merge successful [y/n]? 

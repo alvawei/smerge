@@ -16,10 +16,10 @@ class Bunch(dict):
     """ Container object for datasets: dictionnary-like object that
         exposes its keys as attributes.
     """
+
     def __init__(self, **kwargs):
         dict.__init__(self, kwargs)
         self.__dict__ = self
-
 
 
 ################################################################################
@@ -49,6 +49,7 @@ def load_iris():
           dtype='|S10')
 
     """
+    
     data_file = csv.reader(open(os.path.dirname(__file__)
                         + '/data/iris.csv'))
     fdescr = open(os.path.dirname(__file__)
@@ -64,7 +65,6 @@ def load_iris():
         target[i] = np.asanyarray(ir[-1], dtype=np.int)
     return Bunch(data=data, target=target, target_names=target_names,
                  DESCR=fdescr.read())
-    
 
 
 def load_digits():
@@ -90,6 +90,7 @@ def load_digits():
         pl.matshow(digits.raw_data[0])
 
     """
+    
     data = np.loadtxt(os.path.join(os.path.dirname(__file__)
                         + '/data/digits.csv.gz'), delimiter=',')
     fdescr = open(os.path.join(os.path.dirname(__file__)
@@ -102,7 +103,6 @@ def load_digits():
                  target_names=np.arange(10),
                  images=images,
                  DESCR=fdescr.read())
-    
 
 
 

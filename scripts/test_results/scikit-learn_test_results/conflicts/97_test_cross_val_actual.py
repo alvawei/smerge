@@ -2,6 +2,7 @@
 """
 
 import numpy as np
+from scipy.sparse import coo_matrix
 
 import nose
 from nose.tools import assert_true
@@ -19,22 +20,23 @@ class MockClassifier(BaseEstimator):
     """Dummy classifier to test the cross-validation
 
     """
+
     def __init__(self, a=0):
         self.a = a
+
     def fit(self, X, Y, **params):
         self._set_params(**params)
         return self
+
     def predict(self, T):
         return T.shape[0]
+
     def score(self, X=None, Y=None):
         return 1./(1+np.abs(self.a))
 
 
-
-
-
-
 X = np.ones((10, 2))
+X_sparse = coo_matrix(X)
 y = np.arange(10) / 2
 
 ##############################################################################
@@ -54,6 +56,7 @@ def test_cross_val_score():
         # Smoke test
         score = cross_val.cross_val_score(clf, X, y)
         np.testing.assert_array_equal(score, clf.score(X, y))
+
         score = cross_val.cross_val_score(clf, X_sparse, y)
         np.testing.assert_array_equal(score, clf.score(X_sparse, y))
 
@@ -64,27 +67,26 @@ def test_permutation_score():
     y = iris.target
     svm = SVC(kernel='linear')
     cv = StratifiedKFold(y, 2)
+
     score, scores, pvalue = permutation_test_score(svm, X, y,
                                                    zero_one_score, cv)
     assert_true(score > 0.9)
     np.testing.assert_almost_equal(pvalue, 0.0, 1)
+
     score_label, _, pvalue_label = permutation_test_score(svm, X, y,
                                                     zero_one_score,
                                                     cv, labels=np.ones(y.size),
                                                     random_state=0)
     assert_true(score_label == score)
     assert_true(pvalue_label == pvalue)
+
     # set random y
     y = np.mod(np.arange(len(y)), 3)
+
     score, scores, pvalue = permutation_test_score(svm, X, y,
                                                    zero_one_score, cv)
     assert_true(score < 0.5)
     assert_true(pvalue > 0.4)
-
-
-
-
-
 
 
 def test_cross_val_generator_with_indices():

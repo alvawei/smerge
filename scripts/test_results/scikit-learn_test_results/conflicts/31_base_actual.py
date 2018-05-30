@@ -1,12 +1,12 @@
 import numpy as np
 import scipy.sparse as sp
+import warnings
 
 from . import libsvm, liblinear
 from . import libsvm_sparse
 from ..base import BaseEstimator
 from ..utils import array2d, atleast2d_or_csr
 from ..utils.extmath import safe_sparse_dot
-import warnings
 
 
 LIBSVM_IMPL = ['c_svc', 'nu_svc', 'one_class', 'epsilon_svr', 'nu_svr']
@@ -28,19 +28,21 @@ def _get_class_weight(class_weight, y):
             values = class_weight.values()
         weight = np.asarray(values, dtype=np.float64, order='C')
         weight_label = np.asarray(keys, dtype=np.int32, order='C')
-    return weight, weight_label
 
+    return weight, weight_label
 
 
 def _one_vs_one_coef(dual_coef, n_support, support_vectors):
     """Generate primal coefficients from dual coefficients
     for the one-vs-one multi class LibSVM in the case
     of a linear kernel."""
+
     # get 1vs1 weights for all n*(n-1) classifiers.
     # this is somewhat messy.
     # shape of dual_coef_ is nSV * (n_classes -1)
     # see docs for details
     n_class = dual_coef.shape[0] + 1
+
     # XXX we could do preallocation of coef but
     # would have to take care in the sparse case
     coef = []
@@ -51,18 +53,16 @@ def _one_vs_one_coef(dual_coef, n_support, support_vectors):
         for class2 in xrange(class1 + 1, n_class):
             # SVs for class1:
             sv2 = support_vectors[sv_locs[class2]:sv_locs[class2 + 1], :]
+
             # dual coef for class1 SVs:
             alpha1 = dual_coef[class2 - 1, sv_locs[class1]:sv_locs[class1 + 1]]
             # dual coef for class2 SVs:
             alpha2 = dual_coef[class1, sv_locs[class2]:sv_locs[class2 + 1]]
             # build weight for class1 vs class2
+
             coef.append(safe_sparse_dot(alpha1, sv1)
                     + safe_sparse_dot(alpha2, sv2))
     return coef
-
-
-
-
 
 
 class BaseLibSVM(BaseEstimator):
@@ -70,7 +70,9 @@ class BaseLibSVM(BaseEstimator):
 
     This implements support vector machine classification and regression.
     """
+
     _sparse_kernels = ["linear", "poly", "rbf", "sigmoid", "precomputed"]
+
     def __init__(self, impl, kernel, degree, gamma, coef0,
                  tol, C, nu, epsilon, shrinking, probability, cache_size,
                  scale_C, sparse, class_weight):
@@ -86,6 +88,7 @@ class BaseLibSVM(BaseEstimator):
             warnings.warn('SVM: scale_C will disappear and be assumed to be '
                           'True in scikit-learn 0.12', FutureWarning,
                           stacklevel=2)
+
         self.impl = impl
         self.degree = degree
         self.gamma = gamma
@@ -100,6 +103,8 @@ class BaseLibSVM(BaseEstimator):
         self.scale_C = scale_C
         self.sparse = sparse
         self.class_weight = class_weight
+
+
     def fit(self, X, y, class_weight=None, sample_weight=None):
         """Fit the SVM model according to the given training data.
 
@@ -138,30 +143,37 @@ class BaseLibSVM(BaseEstimator):
         fit = self._sparse_fit if self._sparse else self._dense_fit
         fit(X, y, sample_weight)
         return self
+
     def _dense_fit(self, X, y, sample_weight=None):
         X = np.asarray(X, dtype=np.float64, order='C')
         y = np.asarray(y, dtype=np.float64, order='C')
         sample_weight = np.asarray([] if sample_weight is None
                                       else sample_weight, dtype=np.float64)
+
         if hasattr(self, 'kernel_function'):
             # you must store a reference to X to compute the kernel in predict
             # TODO: add keyword copy to copy on demand
             self.__Xfit = X
             X = self._compute_kernel(X)
+
         self.class_weight_, self.class_weight_label_ = \
                      _get_class_weight(self.class_weight, y)
+
         # check dimensions
         solver_type = LIBSVM_IMPL.index(self.impl)
         if solver_type != 2 and X.shape[0] != y.shape[0]:
             raise ValueError("X and y have incompatible shapes.\n" +
                              "X has %s samples, but y has %s." %
                              (X.shape[0], y.shape[0]))
+
         if self.kernel == "precomputed" and X.shape[0] != X.shape[1]:
             raise ValueError("X.shape[0] should be equal to X.shape[1]")
+
         if (self.kernel in ['poly', 'rbf']) and (self.gamma == 0):
             # if custom gamma is not provided ...
             self.gamma = 1.0 / X.shape[1]
         self.shape_fit_ = X.shape
+
         # set default parameters
         C = self.C
         if getattr(self, 'scale_C', False):
@@ -169,6 +181,7 @@ class BaseLibSVM(BaseEstimator):
         epsilon = self.epsilon
         if epsilon is None:
             epsilon = 0.1
+
         # we don't pass **self.get_params() to allow subclasses to
         # add other parameters to __init__
         self.support_, self.support_vectors_, self.n_support_, \
@@ -181,6 +194,7 @@ class BaseLibSVM(BaseEstimator):
             probability=self.probability, degree=self.degree,
             shrinking=self.shrinking, tol=self.tol, cache_size=self.cache_size,
             coef0=self.coef0, gamma=self.gamma, epsilon=epsilon)
+
     def _sparse_fit(self, X, y, sample_weight=None):
         """
         Fit the SVM model according to the given training data and parameters.
@@ -216,32 +230,40 @@ class BaseLibSVM(BaseEstimator):
         For maximum effiency, use a sparse matrix in csr format
         (scipy.sparse.csr_matrix)
         """
+
         X = sp.csr_matrix(X)
         X.data = np.asarray(X.data, dtype=np.float64, order='C')
         y = np.asarray(y, dtype=np.float64, order='C')
         sample_weight = np.asarray([] if sample_weight is None
                                       else sample_weight, dtype=np.float64)
+
         if X.shape[0] != y.shape[0]:
             raise ValueError("X and y have incompatible shapes: %r vs %r\n"
                              "Note: Sparse matrices cannot be indexed w/"
                              "boolean masks (use `indices=True` in CV)."
                              % (X.shape, y.shape))
+
         if sample_weight.shape[0] > 0 and sample_weight.shape[0] != X.shape[0]:
             raise ValueError("sample_weight and X have incompatible shapes:"
                              "%r vs %r\n"
                              "Note: Sparse matrices cannot be indexed w/"
                              "boolean masks (use `indices=True` in CV)."
                              % (sample_weight.shape, X.shape))
+
         solver_type = LIBSVM_IMPL.index(self.impl)
         kernel_type = self._sparse_kernels.index(self.kernel)
+
         self.class_weight_, self.class_weight_label_ = \
                      _get_class_weight(self.class_weight, y)
+
         if (kernel_type in [1, 2]) and (self.gamma == 0):
             # if custom gamma is not provided ...
             self.gamma = 1.0 / X.shape[1]
+
         C = self.C
         if self.scale_C:
             C /= float(X.shape[0])
+
         self.support_vectors_, dual_coef_data, self.intercept_, self.label_, \
             self.n_support_, self.probA_, self.probB_ = \
             libsvm_sparse.libsvm_sparse_train(
@@ -250,14 +272,17 @@ class BaseLibSVM(BaseEstimator):
                  C, self.class_weight_label_, self.class_weight_,
                  sample_weight, self.nu, self.cache_size, self.epsilon,
                  int(self.shrinking), int(self.probability))
+
         n_class = len(self.label_) - 1
         n_SV = self.support_vectors_.shape[0]
+
         dual_coef_indices = np.tile(np.arange(n_SV), n_class)
         dual_coef_indptr = np.arange(0, dual_coef_indices.size + 1,
                                      dual_coef_indices.size / n_class)
         self.dual_coef_ = sp.csr_matrix(
             (dual_coef_data, dual_coef_indices, dual_coef_indptr),
             (n_class, n_SV))
+
     def predict(self, X):
         """Perform classification or regression samples in X.
 
@@ -278,6 +303,7 @@ class BaseLibSVM(BaseEstimator):
         X = self._validate_for_predict(X)
         predict = self._sparse_predict if self._sparse else self._dense_predict
         return predict(X)
+
     def _dense_predict(self, X):
         X = np.asarray(X, dtype=np.float64, order='C')
         if X.ndim == 1:
@@ -285,6 +311,7 @@ class BaseLibSVM(BaseEstimator):
             X = np.reshape(X, (1, -1), order='C')
         n_samples, n_features = X.shape
         X = self._compute_kernel(X)
+
         if self.kernel == "precomputed":
             if X.shape[1] != self.shape_fit_[0]:
                 raise ValueError("X.shape[1] = %d should be equal to %d, "
@@ -294,9 +321,11 @@ class BaseLibSVM(BaseEstimator):
             raise ValueError("X.shape[1] = %d should be equal to %d, "
                              "the number of features at training time" %
                              (n_features, self.shape_fit_[1]))
+
         epsilon = self.epsilon
         if epsilon == None:
             epsilon = 0.1
+
         svm_type = LIBSVM_IMPL.index(self.impl)
         return libsvm.predict(
             X, self.support_, self.support_vectors_, self.n_support_,
@@ -307,9 +336,11 @@ class BaseLibSVM(BaseEstimator):
             probability=self.probability, degree=self.degree,
             shrinking=self.shrinking, tol=self.tol, cache_size=self.cache_size,
             coef0=self.coef0, gamma=self.gamma, epsilon=epsilon)
+
     def _sparse_predict(self, X):
         X = sp.csr_matrix(X, dtype=np.float64)
         kernel_type = self._sparse_kernels.index(self.kernel)
+
         <<<<<<< REMOTE
 return libsvm_sparse.libsvm_sparse_predict(
                       X.data, X.indices, X.indptr,
@@ -350,6 +381,7 @@ return libsvm_sparse.libsvm_sparse_predict(
                       self.probability, self.n_support_, self.label_,
                       self.probA_, self.probB_)
 >>>>>>> LOCAL
+
     def predict_proba(self, X):
         """Compute the likehoods each possible outcomes of samples in T.
 
@@ -377,18 +409,23 @@ return libsvm_sparse.libsvm_sparse_predict(
         if not self.probability:
             raise ValueError(
                     "probability estimates must be enabled to use this method")
+
         if self.impl not in ('c_svc', 'nu_svc'):
             raise NotImplementedError("predict_proba only implemented for SVC "
                                       "and NuSVC")
+
         X = self._validate_for_predict(X)
         pred_proba = self._sparse_predict_proba if self._sparse \
                                                 else self._dense_predict_proba
         return pred_proba(X)
+
     def _dense_predict_proba(self, X):
         X = self._compute_kernel(X)
+
         epsilon = self.epsilon
         if epsilon == None:
             epsilon = 0.1
+
         svm_type = LIBSVM_IMPL.index(self.impl)
         pprob = libsvm.predict_proba(
             X, self.support_, self.support_vectors_, self.n_support_,
@@ -398,7 +435,9 @@ return libsvm_sparse.libsvm_sparse_predict(
             probability=self.probability, degree=self.degree,
             shrinking=self.shrinking, tol=self.tol, cache_size=self.cache_size,
             coef0=self.coef0, gamma=self.gamma, epsilon=epsilon)
+
         return pprob
+
     def _compute_kernel(self, X):
         """Return the data transformed by a callable kernel"""
         if hasattr(self, 'kernel_function'):
@@ -407,9 +446,11 @@ return libsvm_sparse.libsvm_sparse_predict(
             X = np.asarray(self.kernel_function(X, self.__Xfit),
                            dtype=np.float64, order='C')
         return X
+
     def _sparse_predict_proba(self, X):
         X.data = np.asarray(X.data, dtype=np.float64, order='C')
         kernel_type = self._sparse_kernels.index(self.kernel)
+
         <<<<<<< REMOTE
 return libsvm_sparse.libsvm_sparse_predict_proba(
             X.data, X.indices, X.indptr,
@@ -450,6 +491,7 @@ return libsvm_sparse.libsvm_sparse_predict_proba(
             self.probability, self.n_support_, self.label_,
             self.probA_, self.probB_)
 >>>>>>> LOCAL
+
     def predict_log_proba(self, X):
         """Compute the log likehoods each possible outcomes of samples in X.
 
@@ -475,6 +517,7 @@ return libsvm_sparse.libsvm_sparse_predict_proba(
         datasets.
         """
         return np.log(self.predict_proba(X))
+
     def decision_function(self, X):
         """Distance of the samples X to the separating hyperplane.
 
@@ -490,7 +533,9 @@ return libsvm_sparse.libsvm_sparse_predict_proba(
         """
         if self._sparse:
             raise ValueError("decision_function not supported for sparse SVM")
+
         X = array2d(X, dtype=np.float64, order="C")
+
         epsilon = self.epsilon
         if epsilon == None:
             epsilon = 0.1
@@ -503,11 +548,14 @@ return libsvm_sparse.libsvm_sparse_predict_proba(
             probability=self.probability, degree=self.degree,
             shrinking=self.shrinking, tol=self.tol, cache_size=self.cache_size,
             coef0=self.coef0, gamma=self.gamma, epsilon=epsilon)
+
         # In binary case, we need to flip the sign of coef, intercept and
         # decision function.
         if len(self.label_) == 2 and self.impl != 'one_class':
             return -dec_func
+
         return dec_func
+
     def _validate_for_predict(self, X):
         X = atleast2d_or_csr(X, dtype=np.float64, order="C")
         if self._sparse and not sp.isspmatrix(X):
@@ -517,11 +565,13 @@ return libsvm_sparse.libsvm_sparse_predict_proba(
                 "cannot use sparse input in %r trained on dense data"
                 % type(self).__name__)
         return X
+
     @property
     def coef_(self):
         if self.kernel != 'linear':
             raise ValueError('coef_ is only available when using a '
                              'linear kernel')
+
         if self.dual_coef_.shape[0] == 1:
             # binary classifier
             coef = -safe_sparse_dot(self.dual_coef_, self.support_vectors_)
@@ -533,6 +583,7 @@ return libsvm_sparse.libsvm_sparse_predict_proba(
                 coef = sp.vstack(coef).tocsr()
             else:
                 coef = np.vstack(coef)
+
         # coef_ being a read-only property it's better to mark the value as
         # immutable to avoid hiding potential bugs for the unsuspecting user
         if sp.issparse(coef):
@@ -544,58 +595,10 @@ return libsvm_sparse.libsvm_sparse_predict_proba(
         return coef
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class BaseLibLinear(BaseEstimator):
     """Base for classes binding liblinear (dense and sparse versions)"""
+
+
     _solver_type_dict = {
         'PL2_LLR_D0': 0,  # L2 penalty, logistic regression
         'PL2_LL2_D1': 1,  # L2 penalty, L2 loss, dual form
@@ -618,12 +621,18 @@ class BaseLibLinear(BaseEstimator):
         self.intercept_scaling = intercept_scaling
         self.multi_class = multi_class
         self.scale_C = scale_C
-        self.class_weight = class_weight
+<<<<<<< REMOTE
+
+=======
+self.class_weight = class_weight
+>>>>>>> LOCAL
         if not scale_C:
             warnings.warn('SVM: scale_C will disappear and be assumed to be '
                           'True in scikit-learn 0.12', FutureWarning,
                           stacklevel=2)
+
         # Check that the arguments given are valid:
+
         self._get_solver_type()
     def _get_solver_type(self):
         """Find the liblinear magic number for the solver.
@@ -654,6 +663,7 @@ class BaseLibLinear(BaseEstimator):
             raise ValueError('Not supported set of arguments: '
                              + error_string)
         return self._solver_type_dict[solver_type]
+
     def fit(self, X, y, class_weight=None):
         """Fit the model according to the given training data.
 
@@ -675,19 +685,30 @@ class BaseLibLinear(BaseEstimator):
         self : object
             Returns self.
         """
+
+        if class_weight != None:
+            warnings.warn("'class_weight' is now an initialization parameter."
+                    "Using it in the 'fit' method is deprecated.",
+                    DeprecationWarning)
+            self.class_weight = class_weight
+
         X = atleast2d_or_csr(X, dtype=np.float64, order="C")
+        self.class_weight_, self.class_weight_label_ = \
+
         y = np.asarray(y, dtype=np.int32).ravel()
         self._sparse = sp.isspmatrix(X)
-        self._sparse = sp.isspmatrix(X)
-        self.class_weight_, self.class_weight_label_ = \
+
+
                      _get_class_weight(self.class_weight, y)
         if X.shape[0] != y.shape[0]:
             raise ValueError("X and y have incompatible shapes.\n" +
                              "X has %s samples, but y has %s." % \
                              (X.shape[0], y.shape[0]))
+
         C = self.C
         if self.scale_C:
             C = C / float(X.shape[0])
+
         train = liblinear.csr_train_wrap if self._sparse \
                                          else liblinear.train_wrap
         self.raw_coef_, self.label_ = train(X, y, self._get_solver_type(),
@@ -710,6 +731,7 @@ class BaseLibLinear(BaseEstimator):
         self._check_n_features(X)
         predict = liblinear.csr_predict_wrap if self._sparse \
                                              else liblinear.predict_wrap
+
         return predict(X, self.raw_coef_, self._get_solver_type(), self.tol,
                        self.C, self.class_weight_label_, self.class_weight_,
                        self.label_, self._get_bias())
@@ -730,11 +752,12 @@ class BaseLibLinear(BaseEstimator):
         self._check_n_features(X)
         dfunc_wrap = liblinear.csr_decision_function_wrap \
                        if self._sparse \
-                       else liblinear.decision_function_wrap
         dec_func = dfunc_wrap(X, self.raw_coef_, self._get_solver_type(),
                 self.tol, self.C, self.class_weight_label_, self.class_weight_,
                 self.label_, self._get_bias())
         return dec_func
+
+                       else liblinear.decision_function_wrap
     def _check_n_features(self, X):
         n_features = self.raw_coef_.shape[1]
         if self.fit_intercept:
@@ -742,6 +765,7 @@ class BaseLibLinear(BaseEstimator):
         if X.shape[1] != n_features:
             raise ValueError("X.shape[1] should be %d, not %d." % (n_features,
                                                                    X.shape[1]))
+
     def _validate_for_predict(self, X):
         X = atleast2d_or_csr(X, dtype=np.float64, order="C")
         if self._sparse and not sp.isspmatrix(X):
@@ -751,33 +775,43 @@ class BaseLibLinear(BaseEstimator):
                 "cannot use sparse input in %r trained on dense data"
                 % type(self).__name__)
         return X
+
     def _get_intercept_(self):
         if self.fit_intercept:
             ret = self.intercept_scaling * self.raw_coef_[:, -1]
             return ret
         return 0.0
+
+
     def _set_intercept_(self, intercept):
         self.fit_intercept = True
         intercept /= self.intercept_scaling
         intercept = intercept.reshape(-1, 1)
         self.raw_coef_ = np.hstack((self.raw_coef_[:, : -1], intercept))
+
         # We need fortran ordered arrays for the predict
         self.raw_coef_ = np.asfortranarray(self.raw_coef_)
     intercept_ = property(_get_intercept_, _set_intercept_)
+
     def _get_coef_(self):
         if self.fit_intercept:
             ret = self.raw_coef_[:, : -1].copy()
         else:
             ret = self.raw_coef_.copy()
+
         # mark the returned value as immutable
         # to avoid silencing potential bugs
         ret.flags.writeable = False
         return ret
+
     def _set_coef_(self, coef):
         raw_intercept = self.raw_coef_[:, -1].reshape(-1, 1)
+
         self.raw_coef_ = coef
         if self.fit_intercept:
             self.raw_coef_ = np.hstack((self.raw_coef_, raw_intercept))
+
+
         # We need fortran ordered arrays for the predict
         self.raw_coef_ = np.asfortranarray(self.raw_coef_)
     coef_ = property(_get_coef_, _set_coef_)
@@ -786,40 +820,6 @@ class BaseLibLinear(BaseEstimator):
             return self.intercept_scaling
         else:
             return -1.0
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 libsvm.set_verbosity_wrap(0)
 libsvm_sparse.set_verbosity_wrap(0)

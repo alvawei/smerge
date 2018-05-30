@@ -13,6 +13,37 @@ if on_gpu():
     from theano.sandbox.cuda import dnn
 
 
+def conv_output_length(input_length, filter_size, border_mode, stride):
+    assert border_mode in {'same', 'full', 'valid'}
+    if border_mode == 'same':
+        output_length = input_length
+    elif border_mode == 'full':
+        output_length = input_length + filter_size - 1
+    elif border_mode == 'valid':
+        output_length = input_length - filter_size + 1
+    return (output_length + stride - 1) // stride
+
+
+def pool_output_length(input_length, pool_size, ignore_border, stride):
+    if ignore_border:
+        output_length = input_length - pool_size + 1
+        output_length = (output_length + stride - 1) // stride
+    else:
+        if pool_size == input_length:
+            output_length = min(input_length, stride - stride % 2)
+            if output_length <= 0:
+                output_length = 1
+        elif stride >= pool_size:
+            output_length = (input_length + stride - 1) // stride
+        else:
+            output_length = (input_length - pool_size + stride - 1) // stride
+            if output_length <= 0:
+                output_length = 1
+            else:
+                output_length += 1
+    return output_length
+
+
 class Convolution1D(Layer):
     def __init__(self, input_dim, nb_filter, filter_length,
                  init='uniform', activation='linear', weights=None,
@@ -21,6 +52,7 @@ class Convolution1D(Layer):
                  W_constraint=None, b_constraint=None):
         if border_mode not in {'valid', 'full', 'same'}:
             raise Exception('Invalid border mode for Convolution1D:', border_mode)
+
         super(Convolution1D, self).__init__()
         self.nb_filter = nb_filter
         self.input_dim = input_dim
@@ -30,51 +62,82 @@ class Convolution1D(Layer):
         self.activation = activations.get(activation)
         self.subsample = (subsample_length, 1)
         self.border_mode = border_mode
+
         self.input = T.tensor3()
         self.W_shape = (nb_filter, input_dim, filter_length, 1)
         self.W = self.init(self.W_shape)
         self.b = shared_zeros((nb_filter,))
+
         self.params = [self.W, self.b]
+
         self.regularizers = []
+
         self.W_regularizer = regularizers.get(W_regularizer)
         if self.W_regularizer:
             self.W_regularizer.set_param(self.W)
             self.regularizers.append(self.W_regularizer)
+
         self.b_regularizer = regularizers.get(b_regularizer)
         if self.b_regularizer:
             self.b_regularizer.set_param(self.b)
             self.regularizers.append(self.b_regularizer)
+
         self.activity_regularizer = regularizers.get(activity_regularizer)
         if self.activity_regularizer:
             self.activity_regularizer.set_layer(self)
             self.regularizers.append(self.activity_regularizer)
+
         self.W_constraint = constraints.get(W_constraint)
         self.b_constraint = constraints.get(b_constraint)
         self.constraints = [self.W_constraint, self.b_constraint]
+
         if weights is not None:
             self.set_weights(weights)
+
+
     @property
     def output_shape(self):
         length = conv_output_length(self.input_shape[1], self.filter_length, self.border_mode, self.subsample[0])
         return (self.input_shape[0], length, self.nb_filter)
-        length = conv_output_length(self.input_shape[1], self.filter_length, self.border_mode, self.subsample[0])
-        return (self.input_shape[0], length, self.nb_filter)
+
     def get_output(self, train=False):
         X = self.get_input(train)
         X = T.reshape(X, (X.shape[0], X.shape[1], X.shape[2], 1)).dimshuffle(0, 2, 1, 3)
-        border_mode = self.border_mode
+
 <<<<<<< REMOTE
-if on_gpu() and dnn.dnn_available():
-=======
-if border_mode == 'same':
->>>>>>> LOCAL
-        if border_mode == 'same':
-<<<<<<< REMOTE
-assert(self.subsample_length == 1)
-=======
-output_length = input_length
->>>>>>> LOCAL
+        if on_gpu() and dnn.dnn_available():
+            if border_mode == 'same':
+                assert(self.subsample_length == 1)
                 pad_x = (self.filter_length - self.subsample_length) // 2
+                conv_out = dnn.dnn_conv(img=X,
+                                        kerns=self.W,
+                                        border_mode=(pad_x, 0))
+            else:
+                conv_out = dnn.dnn_conv(img=X,
+                                        kerns=self.W,
+                                        border_mode=border_mode,
+                                        subsample=self.subsample)
+
+=======
+        if border_mode == 'same':
+            border_mode = 'full'
+            assert self.subsample == (1, 1)
+
+
+>>>>>>> LOCAL
+        else:
+            if border_mode == 'same':
+                border_mode = 'full'
+
+            conv_out = T.nnet.conv.conv2d(X, self.W,
+                                          border_mode=border_mode,
+                                          subsample=self.subsample)
+            if self.border_mode == 'same':
+                shift_x = (self.filter_length - 1) // 2
+                conv_out = conv_out[:, :, shift_x:X.shape[2] + shift_x, :]
+
+        border_mode = self.border_mode
+
         output = self.activation(conv_out + self.b.dimshuffle('x', 0, 'x', 'x'))
         output = T.reshape(output, (output.shape[0], output.shape[1], output.shape[2])).dimshuffle(0, 2, 1)
         return output
@@ -94,21 +157,6 @@ output_length = input_length
                 "b_constraint": self.b_constraint.get_config() if self.b_constraint else None}
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class Convolution2D(Layer):
     def __init__(self, nb_filter, stack_size, nb_row, nb_col,
                  init='glorot_uniform', activation='linear', weights=None,
@@ -117,6 +165,7 @@ class Convolution2D(Layer):
                  W_constraint=None, b_constraint=None):
         if border_mode not in {'valid', 'full', 'same'}:
             raise Exception('Invalid border mode for Convolution2D:', border_mode)
+
         super(Convolution2D, self).__init__()
         self.init = initializations.get(init)
         self.activation = activations.get(activation)
@@ -124,92 +173,69 @@ class Convolution2D(Layer):
         self.border_mode = border_mode
         self.nb_filter = nb_filter
         self.stack_size = stack_size
+
         self.nb_row = nb_row
         self.nb_col = nb_col
+
         self.input = T.tensor4()
         self.W_shape = (nb_filter, stack_size, nb_row, nb_col)
         self.W = self.init(self.W_shape)
         self.b = shared_zeros((nb_filter,))
+
         self.params = [self.W, self.b]
+
         self.regularizers = []
+
         self.W_regularizer = regularizers.get(W_regularizer)
         if self.W_regularizer:
             self.W_regularizer.set_param(self.W)
             self.regularizers.append(self.W_regularizer)
+
         self.b_regularizer = regularizers.get(b_regularizer)
         if self.b_regularizer:
             self.b_regularizer.set_param(self.b)
             self.regularizers.append(self.b_regularizer)
+
         self.activity_regularizer = regularizers.get(activity_regularizer)
         if self.activity_regularizer:
             self.activity_regularizer.set_layer(self)
             self.regularizers.append(self.activity_regularizer)
+
         self.W_constraint = constraints.get(W_constraint)
         self.b_constraint = constraints.get(b_constraint)
         self.constraints = [self.W_constraint, self.b_constraint]
+
         if weights is not None:
             self.set_weights(weights)
+
+
+    @property
+    def output_shape(self):
+        input_shape = self.input_shape
+        rows = input_shape[2]
+        cols = input_shape[3]
+        rows = conv_output_length(rows, self.nb_row, self.border_mode, self.subsample[0])
+        cols = conv_output_length(cols, self.nb_col, self.border_mode, self.subsample[1])
+        return (input_shape[0], self.nb_filter, rows, cols)
+
     def get_output(self, train=False):
         X = self.get_input(train)
         border_mode = self.border_mode
         if on_gpu() and dnn.dnn_available():
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
-        else:
-<<<<<<< REMOTE
-if border_mode == 'same':
-=======
-output_length = (input_length - pool_size + stride - 1) // stride
->>>>>>> LOCAL
-            if output_length <= 0:
-                output_length = 1
-                output_length = 1
-<<<<<<< REMOTE
-if self.border_mode == 'same':
-=======
-else:
->>>>>>> LOCAL
             if border_mode == 'same':
-<<<<<<< REMOTE
-assert(self.subsample == (1, 1))
-=======
-assert(self.subsample == (1, 1))
->>>>>>> LOCAL
-<<<<<<< REMOTE
-pad_x = (self.nb_row - self.subsample[0]) // 2
-=======
-pad_x = (self.nb_row - self.subsample[0]) // 2
->>>>>>> LOCAL
-<<<<<<< REMOTE
-pad_y = (self.nb_col - self.subsample[1]) // 2
-=======
-pad_y = (self.nb_col - self.subsample[1]) // 2
->>>>>>> LOCAL
-<<<<<<< REMOTE
-conv_out = dnn.dnn_conv(img=X,
-                                        kerns=self.W,
-                                        border_mode=(pad_x, pad_y))
-=======
-conv_out = dnn.dnn_conv(img=X,
-                                        kerns=self.W,
-                                        border_mode=(pad_x, pad_y))
->>>>>>> LOCAL
-            conv_out = T.nnet.conv.conv2d(X, self.W,
-                                          border_mode=border_mode,
-                                          subsample=self.subsample)
-            if border_mode == 'same':
-<<<<<<< REMOTE
-border_mode = 'full'
-=======
-border_mode = 'full'
->>>>>>> LOCAL
                 assert(self.subsample == (1, 1))
-                shift_x = (self.nb_row - 1) // 2
-                shift_y = (self.nb_col - 1) // 2
-                conv_out = conv_out[:, :, shift_x:X.shape[2] + shift_x, shift_y:X.shape[3] + shift_y]
+                pad_x = (self.nb_row - self.subsample[0]) // 2
+                pad_y = (self.nb_col - self.subsample[1]) // 2
+                conv_out = dnn.dnn_conv(img=X,
+                                        kerns=self.W,
+                                        border_mode=(pad_x, pad_y))
+            else:
+                conv_out = dnn.dnn_conv(img=X,
+                                        kerns=self.W,
+                                        border_mode=border_mode,
+                                        subsample=self.subsample)
+        else:
+
         return self.activation(conv_out + self.b.dimshuffle('x', 0, 'x', 'x'))
     def get_config(self):
         return {"name": self.__class__.__name__,
@@ -228,44 +254,23 @@ border_mode = 'full'
                 "b_constraint": self.b_constraint.get_config() if self.b_constraint else None}
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class MaxPooling1D(Layer):
     def __init__(self, pool_length=2, stride=1, ignore_border=True):
         super(MaxPooling1D, self).__init__()
         if type(stride) is not int or not stride:
             raise Exception('"stride" argument in MaxPooling1D should be an int > 0.')
-            raise Exception('"stride" argument in MaxPooling1D should be an int > 0.')
         self.pool_length = pool_length
-        self.stride = stride
 <<<<<<< REMOTE
-else:
+        else:
+            self.st = None
+
+
 =======
 self.st = (self.stride, 1)
 >>>>>>> LOCAL
-        else:
-<<<<<<< REMOTE
-conv_out = dnn.dnn_conv(img=X,
-                                        kerns=self.W,
-                                        border_mode=border_mode,
-                                        subsample=self.subsample)
-=======
-output_length += 1
->>>>>>> LOCAL
-            self.st = None
+
+        self.stride = stride
+
         self.input = T.tensor3()
         self.poolsize = (pool_length, 1)
         self.ignore_border = ignore_border
@@ -274,23 +279,19 @@ output_length += 1
         input_shape = self.input_shape
         length = pool_output_length(input_shape[1], self.pool_length, self.ignore_border, self.stride)
         return (input_shape[0], length, input_shape[2])
-        input_shape = self.input_shape
-        length = pool_output_length(input_shape[1], self.pool_length, self.ignore_border, self.stride)
-        return (input_shape[0], length, input_shape[2])
+
     def get_output(self, train=False):
         X = self.get_input(train)
         X = T.reshape(X, (X.shape[0], X.shape[1], X.shape[2], 1)).dimshuffle(0, 2, 1, 3)
         output = downsample.max_pool_2d(X, ds=self.poolsize, st=self.st, ignore_border=self.ignore_border)
         output = output.dimshuffle(0, 2, 1, 3)
         return T.reshape(output, (output.shape[0], output.shape[1], output.shape[2]))
+
     def get_config(self):
         return {"name": self.__class__.__name__,
                 "stride": self.stride,
                 "pool_length": self.pool_length,
                 "ignore_border": self.ignore_border}
-
-
-
 
 
 class MaxPooling2D(Layer):
@@ -300,20 +301,19 @@ class MaxPooling2D(Layer):
         self.poolsize = tuple(poolsize)
         self.stride = tuple(stride)
         self.ignore_border = ignore_border
+
     @property
     def output_shape(self):
         input_shape = self.input_shape
         rows = pool_output_length(input_shape[2], self.poolsize[0], self.ignore_border, self.stride[0])
         cols = pool_output_length(input_shape[3], self.poolsize[1], self.ignore_border, self.stride[1])
         return (input_shape[0], input_shape[1], rows, cols)
-        input_shape = self.input_shape
-        rows = pool_output_length(input_shape[2], self.poolsize[0], self.ignore_border, self.stride[0])
-        cols = pool_output_length(input_shape[3], self.poolsize[1], self.ignore_border, self.stride[1])
-        return (input_shape[0], input_shape[1], rows, cols)
+
     def get_output(self, train=False):
         X = self.get_input(train)
         output = downsample.max_pool_2d(X, ds=self.poolsize, st=self.stride, ignore_border=self.ignore_border)
         return output
+
     def get_config(self):
         return {"name": self.__class__.__name__,
                 "poolsize": self.poolsize,
@@ -321,28 +321,25 @@ class MaxPooling2D(Layer):
                 "stride": self.stride}
 
 
-
-
 class UpSample1D(Layer):
     def __init__(self, length=2):
         super(UpSample1D, self).__init__()
         self.length = length
         self.input = T.tensor3()
+
     @property
     def output_shape(self):
         input_shape = self.input_shape
         return (input_shape[0], self.length * input_shape[1], input_shape[2])
-        input_shape = self.input_shape
-        return (input_shape[0], self.length * input_shape[1], input_shape[2])
+
     def get_output(self, train=False):
         X = self.get_input(train)
         output = theano.tensor.extra_ops.repeat(X, self.length, axis=1)
         return output
+
     def get_config(self):
         return {"name": self.__class__.__name__,
                 "length": self.length}
-
-
 
 
 class UpSample2D(Layer):
@@ -350,22 +347,21 @@ class UpSample2D(Layer):
         super(UpSample2D, self).__init__()
         self.input = T.tensor4()
         self.size = tuple(size)
+
     @property
     def output_shape(self):
         input_shape = self.input_shape
         return (input_shape[0], input_shape[1], self.size[0] * input_shape[2], self.size[1] * input_shape[3])
-        input_shape = self.input_shape
-        return (input_shape[0], input_shape[1], self.size[0] * input_shape[2], self.size[1] * input_shape[3])
+
     def get_output(self, train=False):
         X = self.get_input(train)
         Y = theano.tensor.extra_ops.repeat(X, self.size[0], axis=2)
         output = theano.tensor.extra_ops.repeat(Y, self.size[1], axis=3)
         return output
+
     def get_config(self):
         return {"name": self.__class__.__name__,
                 "size": self.size}
-
-
 
 
 class ZeroPadding2D(Layer):
@@ -373,12 +369,12 @@ class ZeroPadding2D(Layer):
         super(ZeroPadding2D, self).__init__()
         self.pad = tuple(pad)
         self.input = T.tensor4()
+
     @property
     def output_shape(self):
         input_shape = self.input_shape
         return (input_shape[0], input_shape[1], input_shape[2] + 2 * self.pad[0], input_shape[3] + 2 * self.pad[1])
-        input_shape = self.input_shape
-        return (input_shape[0], input_shape[1], input_shape[2] + 2 * self.pad[0], input_shape[3] + 2 * self.pad[1])
+
     def get_output(self, train=False):
         X = self.get_input(train)
         pad = self.pad
@@ -387,9 +383,8 @@ class ZeroPadding2D(Layer):
         out = T.zeros(out_shape)
         indices = (slice(None), slice(None), slice(pad[0], in_shape[2] + pad[0]), slice(pad[1], in_shape[3] + pad[1]))
         return T.set_subtensor(out[indices], X)
+
     def get_config(self):
         return {"name": self.__class__.__name__,
                 "pad": self.pad}
-
-
 

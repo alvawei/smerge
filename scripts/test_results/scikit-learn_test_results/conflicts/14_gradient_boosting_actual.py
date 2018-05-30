@@ -51,25 +51,25 @@ class QuantileEstimator(BaseEstimator):
         if not 0 < alpha < 1.0:
             raise ValueError("`alpha` must be in (0, 1.0)")
         self.alpha = alpha
+
     def fit(self, X, y):
         self.quantile = stats.scoreatpercentile(y, self.alpha * 100.0)
+
     def predict(self, X):
         y = np.empty((X.shape[0], 1), dtype=np.float64)
         y.fill(self.quantile)
         return y
 
 
-
-
 class MeanEstimator(BaseEstimator):
     """An estimator predicting the mean of the training targets."""
     def fit(self, X, y):
         self.mean = np.mean(y)
+
     def predict(self, X):
         y = np.empty((X.shape[0], 1), dtype=np.float64)
         y.fill(self.mean)
         return y
-
 
 
 class LogOddsEstimator(BaseEstimator):
@@ -77,11 +77,11 @@ class LogOddsEstimator(BaseEstimator):
     def fit(self, X, y):
         n_pos = np.sum(y)
         self.prior = np.log(n_pos / (y.shape[0] - n_pos))
+
     def predict(self, X):
         y = np.empty((X.shape[0], 1), dtype=np.float64)
         y.fill(self.prior)
         return y
-
 
 
 class PriorProbabilityEstimator(BaseEstimator):
@@ -91,11 +91,11 @@ class PriorProbabilityEstimator(BaseEstimator):
     def fit(self, X, y):
         class_counts = np.bincount(y)
         self.priors = class_counts / float(y.shape[0])
+
     def predict(self, X):
         y = np.empty((X.shape[0], self.priors.shape[0]), dtype=np.float64)
         y[:] = self.priors
         return y
-
 
 
 class LossFunction(object):
@@ -109,15 +109,20 @@ class LossFunction(object):
         ``n_classes`` for multi-class classification.
     """
     __metaclass__ = ABCMeta
+
     is_multi_class = False
+
     def __init__(self, n_classes):
         self.K = n_classes
+
     def init_estimator(self, X, y):
         """Default ``init`` estimator for loss function. """
         raise NotImplementedError()
+
     @abstractmethod
     def __call__(self, y, pred):
         """Compute the loss of prediction ``pred`` and ``y``. """
+
     @abstractmethod
     def negative_gradient(self, y, y_pred, **kargs):
         """Compute the negative gradient.
@@ -129,6 +134,7 @@ class LossFunction(object):
         y_pred : np.ndarray, shape=(n,):
             The predictions.
         """
+
     def update_terminal_regions(self, tree, X, y, residual, y_pred,
                                 sample_mask, learn_rate=1.0, k=0):
         """Update the terminal regions (=leaves) of the given tree and
@@ -150,41 +156,35 @@ class LossFunction(object):
         """
         # compute leaf for each sample in ``X``.
         terminal_regions = tree.apply(X)
+
         # mask all which are not in sample mask.
         masked_terminal_regions = terminal_regions.copy()
         masked_terminal_regions[~sample_mask] = -1
+
         # update each leaf (= perform line search)
         for leaf in np.where(tree.children_left == TREE_LEAF)[0]:
             self._update_terminal_region(tree, masked_terminal_regions,
                                          leaf, X, y, residual,
                                          y_pred[:, k])
+
         # update predictions (both in-bag and out-of-bag)
         y_pred[:, k] += learn_rate * tree.value[:, 0, 0].take(terminal_regions,
                                                               axis=0)
+
     @abstractmethod
     def _update_terminal_region(self, tree, terminal_regions, leaf, X, y,
                                 residual, pred):
         """Template method for updating terminal regions (=leaves). """
 
 
-
-
-
-
-
-
-
-
-
-
 class RegressionLossFunction(LossFunction):
     """Base class for regression loss functions. """
     __metaclass__ = ABCMeta
+
     def __init__(self, n_classes):
         if n_classes != 1:
             raise ValueError("``n_classes`` must be 1 for regression")
         super(RegressionLossFunction, self).__init__(n_classes)
-
 
 
 class LeastSquaresError(RegressionLossFunction):
@@ -192,10 +192,13 @@ class LeastSquaresError(RegressionLossFunction):
     Terminal regions need not to be updated for least squares. """
     def init_estimator(self):
         return MeanEstimator()
+
     def __call__(self, y, pred):
         return np.mean((y - pred.ravel()) ** 2.0)
+
     def negative_gradient(self, y, pred, **kargs):
         return y - pred.ravel()
+
     def update_terminal_regions(self, tree, X, y, residual, y_pred,
                                 sample_mask, learn_rate=1.0, k=0):
         """Least squares does not need to update terminal regions.
@@ -204,25 +207,25 @@ class LeastSquaresError(RegressionLossFunction):
         """
         # update predictions
         y_pred[:, k] += learn_rate * tree.predict(X).ravel()
+
     def _update_terminal_region(self, tree, terminal_regions, leaf, X, y,
                                 residual, pred):
         pass
-
-
-
-
 
 
 class LeastAbsoluteError(RegressionLossFunction):
     """Loss function for least absolute deviation (LAD) regression. """
     def init_estimator(self):
         return QuantileEstimator(alpha=0.5)
+
     def __call__(self, y, pred):
         return np.abs(y - pred.ravel()).mean()
+
     def negative_gradient(self, y, pred, **kargs):
         """1.0 if y - pred > 0.0 else -1.0"""
         pred = pred.ravel()
         return 2.0 * (y - pred > 0.0) - 1.0
+
     def _update_terminal_region(self, tree, terminal_regions, leaf, X, y,
                                 residual, pred):
         """LAD updates terminal regions to median estimates. """
@@ -231,16 +234,16 @@ class LeastAbsoluteError(RegressionLossFunction):
                                            pred.take(terminal_region, axis=0))
 
 
-
-
-
 class HuberLossFunction(RegressionLossFunction):
     """Loss function for least absolute deviation (LAD) regression. """
+
     def __init__(self, n_classes, alpha=0.9):
         super(HuberLossFunction, self).__init__(n_classes)
         self.alpha = alpha
+
     def init_estimator(self):
         return QuantileEstimator(alpha=0.5)
+
     def __call__(self, y, pred):
         pred = pred.ravel()
         diff = y - pred
@@ -249,6 +252,7 @@ class HuberLossFunction(RegressionLossFunction):
         sq_loss = np.sum(0.5 * diff[gamma_mask] ** 2.0)
         lin_loss = np.sum(gamma * (np.abs(diff[~gamma_mask]) - gamma / 2.0))
         return (sq_loss + lin_loss) / y.shape[0]
+
     def negative_gradient(self, y, pred, **kargs):
         pred = pred.ravel()
         diff = y - pred
@@ -259,6 +263,7 @@ class HuberLossFunction(RegressionLossFunction):
         residual[~gamma_mask] = gamma * np.sign(diff[~gamma_mask])
         self.gamma = gamma
         return residual
+
     def _update_terminal_region(self, tree, terminal_regions, leaf, X, y,
                                 residual, pred):
         """LAD updates terminal regions to median estimates. """
@@ -273,36 +278,37 @@ class HuberLossFunction(RegressionLossFunction):
             np.minimum(np.abs(diff_minus_median), gamma))
 
 
-
-
-
-
-
 class QuantileLossFunction(RegressionLossFunction):
     """Loss function for quantile regression.
 
     Quantile regression allows to estimate the percentiles
     of the conditional distribution of the target.
     """
+
     def __init__(self, n_classes, alpha=0.9):
         super(QuantileLossFunction, self).__init__(n_classes)
         assert 0 < alpha < 1.0
         self.alpha = alpha
         self.percentile = alpha * 100.0
+
     def init_estimator(self):
         return QuantileEstimator(self.alpha)
+
     def __call__(self, y, pred):
         pred = pred.ravel()
         diff = y - pred
         alpha = self.alpha
+
         mask = y > pred
         return (alpha * diff[mask].sum() +
                 (1.0 - alpha) * diff[~mask].sum()) / y.shape[0]
+
     def negative_gradient(self, y, pred, **kargs):
         alpha = self.alpha
         pred = pred.ravel()
         mask = y > pred
         return (alpha * mask) - ((1.0 - alpha) * ~mask)
+
     def _update_terminal_region(self, tree, terminal_regions, leaf, X, y,
                                 residual, pred):
         """LAD updates terminal regions to median estimates. """
@@ -311,12 +317,6 @@ class QuantileLossFunction(RegressionLossFunction):
                pred.take(terminal_region, axis=0)
         val = stats.scoreatpercentile(diff, self.percentile)
         tree.value[leaf, 0] = val
-
-
-
-
-
-
 
 
 class BinomialDeviance(LossFunction):
@@ -331,33 +331,33 @@ class BinomialDeviance(LossFunction):
                              self.__class__.__name__)
         # we only need to fit one tree for binary clf.
         super(BinomialDeviance, self).__init__(1)
+
     def init_estimator(self):
         return LogOddsEstimator()
+
     def __call__(self, y, pred):
         """Compute the deviance (= negative log-likelihood). """
         # logaddexp(0, v) == log(1.0 + exp(v))
         pred = pred.ravel()
         return np.sum(np.logaddexp(0.0, -2 * y * pred)) / y.shape[0]
+
     def negative_gradient(self, y, pred, **kargs):
         return y - 1.0 / (1.0 + np.exp(-pred.ravel()))
+
     def _update_terminal_region(self, tree, terminal_regions, leaf, X, y,
                                 residual, pred):
         """Make a single Newton-Raphson step. """
         terminal_region = np.where(terminal_regions == leaf)[0]
         residual = residual.take(terminal_region, axis=0)
         y = y.take(terminal_region, axis=0)
+
         numerator = residual.sum()
         denominator = np.sum((y - residual) * (1 - y + residual))
+
         if denominator == 0.0:
             tree.value[leaf, 0, 0] = 0.0
         else:
             tree.value[leaf, 0, 0] = numerator / denominator
-
-
-
-
-
-
 
 
 class MultinomialDeviance(LossFunction):
@@ -366,49 +366,49 @@ class MultinomialDeviance(LossFunction):
     For multi-class classification we need to fit ``n_classes`` trees at
     each stage.
     """
+
     is_multi_class = True
+
     def __init__(self, n_classes):
         if n_classes < 3:
             raise ValueError("%s requires more than 2 classes."
                              % self.__class__.__name__)
         super(MultinomialDeviance, self).__init__(n_classes)
+
     def init_estimator(self):
         return PriorProbabilityEstimator()
+
     def __call__(self, y, pred):
         # create one-hot label encoding
         Y = np.zeros((y.shape[0], self.K), dtype=np.float64)
         for k in range(self.K):
             Y[:, k] = y == k
+
         return np.sum(-1 * (Y * pred).sum(axis=1) +
                       logsumexp(pred, axis=1))
+
     def negative_gradient(self, y, pred, k=0):
         """Compute negative gradient for the ``k``-th class. """
         return y - np.nan_to_num(np.exp(pred[:, k] -
                                         logsumexp(pred, axis=1)))
+
     def _update_terminal_region(self, tree, terminal_regions, leaf, X, y,
                                 residual, pred):
         """Make a single Newton-Raphson step. """
         terminal_region = np.where(terminal_regions == leaf)[0]
         residual = residual.take(terminal_region, axis=0)
+
         y = y.take(terminal_region, axis=0)
+
         numerator = residual.sum()
         numerator *= (self.K - 1) / self.K
+
         denominator = np.sum((y - residual) * (1.0 - y + residual))
+
         if denominator == 0.0:
             tree.value[leaf, 0, 0] = 0.0
         else:
             tree.value[leaf, 0, 0] = numerator / denominator
-
-
-
-
-
-
-
-
-
-
-
 
 
 LOSS_FUNCTIONS = {'ls': LeastSquaresError,
@@ -423,6 +423,7 @@ LOSS_FUNCTIONS = {'ls': LeastSquaresError,
 class BaseGradientBoosting(BaseEnsemble):
     """Abstract base class for Gradient Boosting. """
     __metaclass__ = ABCMeta
+
     @abstractmethod
     def __init__(self, loss, learn_rate, n_estimators, min_samples_split,
                  min_samples_leaf, max_depth, init, subsample,
@@ -430,54 +431,74 @@ class BaseGradientBoosting(BaseEnsemble):
         if n_estimators <= 0:
             raise ValueError("n_estimators must be greater than 0")
         self.n_estimators = n_estimators
+
         if learn_rate <= 0.0:
             raise ValueError("learn_rate must be greater than 0")
         self.learn_rate = learn_rate
+
         if loss not in LOSS_FUNCTIONS:
             raise ValueError("Loss '%s' not supported. " % loss)
         self.loss = loss
+
         if min_samples_split <= 0:
             raise ValueError("min_samples_split must be larger than 0")
         self.min_samples_split = min_samples_split
+
         if min_samples_leaf <= 0:
             raise ValueError("min_samples_leaf must be larger than 0")
         self.min_samples_leaf = min_samples_leaf
+
         if subsample <= 0.0 or subsample > 1:
             raise ValueError("subsample must be in (0,1]")
         self.subsample = subsample
+
         self.max_features = max_features
+
         if max_depth <= 0:
             raise ValueError("max_depth must be larger than 0")
         self.max_depth = max_depth
+
         if init is not None:
             if not hasattr(init, 'fit') or not hasattr(init, 'predict'):
                 raise ValueError("init must be valid estimator")
         self.init = init
+
         self.random_state = check_random_state(random_state)
+
         if not (0.0 < alpha < 1.0):
             raise ValueError("alpha must be in (0.0, 1.0)")
         self.alpha = alpha
+
         self.estimators_ = None
+
     def fit_stage(self, i, X, X_argsorted, y, y_pred, sample_mask):
         """Fit another stage of ``n_classes_`` trees to the boosting model. """
         loss = self.loss_
         original_y = y
+
         for k in range(loss.K):
             if loss.is_multi_class:
                 y = np.array(original_y == k, dtype=np.float64)
+
             residual = loss.negative_gradient(y, y_pred, k=k)
+
             # induce regression tree on residuals
             tree = Tree(self.n_features, (1,), 1, MSE(1), self.max_depth,
                         self.min_samples_split, self.min_samples_leaf, 0.0,
                         self.max_features, TREE_SPLIT_BEST, self.random_state)
+
             tree.build(X, residual[:, np.newaxis], sample_mask, X_argsorted)
+
             # update tree leaves
             self.loss_.update_terminal_regions(tree, X, y, residual, y_pred,
                                                sample_mask, self.learn_rate,
                                                k=k)
+
             # add tree to ensemble
             self.estimators_[i, k] = tree
+
         return y_pred
+
     def fit(self, X, y):
         """Fit the gradient boosting model.
 
@@ -502,34 +523,47 @@ class BaseGradientBoosting(BaseEnsemble):
         X, y = check_arrays(X, y, sparse_format='dense')
         X = np.asfortranarray(X, dtype=DTYPE)
         y = np.ravel(y, order='C')
+
         n_samples, n_features = X.shape
         self.n_features = n_features
+
         if self.max_features is None:
             self.max_features = n_features
+
         if not (0 < self.max_features <= n_features):
             raise ValueError("max_features must be in (0, n_features]")
+
         loss_class = LOSS_FUNCTIONS[self.loss]
         if self.loss in ('huber', 'quantile'):
             loss = loss_class(self.n_classes_, self.alpha)
         else:
             loss = loss_class(self.n_classes_)
+
         # store loss object for future use
         self.loss_ = loss
+
         if self.init is None:
             self.init = loss.init_estimator()
+
         # create argsorted X for fast tree induction
         X_argsorted = np.asfortranarray(
             np.argsort(X.T, axis=1).astype(np.int32).T)
+
         # fit initial model
         self.init.fit(X, y)
+
         # init predictions
         y_pred = self.init.predict(X)
+
         self.estimators_ = np.empty((self.n_estimators, loss.K),
                                     dtype=np.object)
+
         self.train_score_ = np.zeros((self.n_estimators,), dtype=np.float64)
         self.oob_score_ = np.zeros((self.n_estimators), dtype=np.float64)
+
         sample_mask = np.ones((n_samples,), dtype=np.bool)
         n_inbag = max(1, int(self.subsample * n_samples))
+
         # perform boosting iterations
         for i in range(self.n_estimators):
             # subsampling
@@ -537,8 +571,10 @@ class BaseGradientBoosting(BaseEnsemble):
                 # TODO replace with ``np.choice`` if possible.
                 sample_mask = _random_sample_mask(n_samples, n_inbag,
                                                   self.random_state)
+
             # fit next stage of trees
             y_pred = self.fit_stage(i, X, X_argsorted, y, y_pred, sample_mask)
+
             # track deviance (= loss)
             if self.subsample < 1.0:
                 self.train_score_[i] = loss(y[sample_mask],
@@ -548,10 +584,14 @@ class BaseGradientBoosting(BaseEnsemble):
             else:
                 # no need to fancy index w/ no subsampling
                 self.train_score_[i] = loss(y, y_pred)
+
+
         return self
+
     def _make_estimator(self, append=True):
         # we don't need _make_estimator
         raise NotImplementedError()
+
     def _init_decision_function(self, X):
         """Check input and compute prediction of ``init``. """
         if self.estimators_ is None or len(self.estimators_) == 0:
@@ -562,6 +602,7 @@ class BaseGradientBoosting(BaseEnsemble):
                              (self.n_features, X.shape[1]))
         score = self.init.predict(X).astype(np.float64)
         return score
+
     def decision_function(self, X):
         """Compute the decision function of ``X``.
 
@@ -582,6 +623,7 @@ class BaseGradientBoosting(BaseEnsemble):
         score = self._init_decision_function(X)
         predict_stages(self.estimators_, X, self.learn_rate, score)
         return score
+
     def staged_decision_function(self, X):
         """Compute decision function of ``X`` for each iteration.
 
@@ -606,6 +648,7 @@ class BaseGradientBoosting(BaseEnsemble):
         for i in range(self.n_estimators):
             predict_stage(self.estimators_, i, X, self.learn_rate, score)
             yield score
+
     @property
     def feature_importances_(self):
         if self.estimators_ is None or len(self.estimators_) == 0:
@@ -616,54 +659,144 @@ class BaseGradientBoosting(BaseEnsemble):
             stage_sum = sum(tree.compute_feature_importances(method='gini')
                             for tree in stage) / len(stage)
             total_sum += stage_sum
+
         importances = total_sum / len(self.estimators_)
         return importances
 
 
+def unique_rows2(X):
+    """Slower than 1 but can be cythonized!"""
+    for i in range(X.shape[1]):
+        indices = np.argsort(X[:, i])
+        X = X[indices]
+    indices = []
+    counts = []
+    n_equal = 1
+    for i in range(1, X.shape[0]):
+        if np.all(X[i] == X[i - 1]):
+            n_equal += 1
+        else:
+            indices.append(i - 1)
+            counts.append(n_equal)
+            n_equal = 1
+    return X[indices]
 
 
+def unique_rows(arr, dtype=np.float32):
+    return np.array([np.array(x, dtype=dtype)
+                     for x in set(tuple(x) for x in arr)],
+                    dtype=dtype)
 
 
+## def partial_dependency_plot(estimator, X, y, features):
+##     assert isinstance(estimator, BaseGradientBoosting)
+##     features = np.asarray(features)
+##     n_features = features.shape[0]
+##     if features.min() >= 0 and features.max() < X.shape[1]:
+##         raise ValueError("features must be in [0, %d]" % X.shape[1])
+
+##     # feature combinations up to cardinality n_features
+##     feature_combinations = chain(combinations(features, card)
+##                                  for card in range(n_features))
+##     feature_combinations = list(feature_combinations)
+##     print("There are %d feature combinations" % len(feature_combinations))
+
+##     for feature_combination in feature_combinations:
+##         eval_points = X[:, feature_combinations]
 
 
+def _grid_from_X(X, percentiles=(0.05, 0.95), grid_resolution=100):
+    """Generate a grid of points from ``X`` based on ``percentiles``.
+
+    The grid is generated by placing ``grid_resolution`` equally
+    spaced points between the ``percentiles`` of each column
+    of ``X``.
+    """
+    if len(percentiles) != 2:
+        raise ValueError('percentile must be tuple of len 2')
+    if not all(map(lambda x: 0.0 <= x <= 1.0, percentiles)):
+        raise ValueError('percentile values must be in [0, 1]')
+
+    emp_percentiles = mquantiles(X, prob=percentiles, axis=0)
+
+    axes = []
+    for col in range(X.shape[1]):
+        uniques = np.unique(X[:, col])
+        if uniques.shape[0] < grid_resolution:
+            # feature has low resolution use unique vals
+            axis = uniques
+        else:
+            # create axis based on percentiles and grid resolution
+            axis = np.linspace(emp_percentiles[0, col],
+                               emp_percentiles[1, col],
+                               grid_resolution)
+        axes.append(axis)
+
+    return cartesian(axes)
 
 
+def partial_dependency(model, target_variables, grid=None, X=None,
+                       percentiles=(0.05, 0.95), grid_resolution=100):
+    """Partial dependency of ``target_variables``.
 
+    Partial dependency plots show the dependency between the joint values
+    of the ``target_variables`` and the function represented
+    by the ``model``.
 
+    Parameters
+    ----------
+    model : BaseGradientBoosting
+        A fitted gradient boosting model (multi-class not supported yet).
+    target_variables : array-like, dtype=int
+        The target features for which the partial dependecy should be
+        computed (size should be smaller than 3 for visual renderings).
+    grid : array-like, shape=(n_points, len(target_variables))
+        The grid of ``target_variables`` values for which the
+        partial dependecy should be evaluted (either ``grid`` or ``X``
+        must be specified).
+    X : array-like, shape=(n_samples, n_features)
+        The data on which ``model`` was trained. It is used to generate
+        a ``grid`` for the ``target_variables``. The ``grid`` comprises
+        ``grid_resolution`` equally spaced points between the two
+        ``percentiles``.
+    percentiles : (low, high), default=(0.05, 0.95)
+        The lower and upper percentile used create the extreme values
+        for the ``grid``. Only if ``X`` is not None.
+    grid_resolution : int, default=100
+        The number of equally spaced points on the ``grid``.
 
+    Returns
+    -------
+    pdp : array, shape=``grid.shape[0]``
+        The partial dependency function evaluated on the ``grid``.
+    grid : array, shape=(n_points, len(target_variables))
+        The grid of target variable values for which ``pdp`` was evaluated.
+    """
+    if model.estimators_.shape[1] != 1:
+        raise ValueError('Partial dependency does not support multi-class yet')
+    if grid is None and X is None:
+        raise ValueError('Either grid or X must be specified')
 
+    target_variables = np.asarray(target_variables, dtype=np.int32,
+                                  order='C').ravel()
 
+    if X is not None:
+        grid = _grid_from_X(X[:, target_variables], percentiles, grid_resolution)
 
+    grid = np.asarray(grid, dtype=DTYPE, order='C')
 
+    try:
+        pdp = model.init.predict(grid).ravel()
+    except ValueError:
+        raise ValueError("init model must be constant to support dependency plots")
 
+    n_estimators = model.estimators_.shape[0]
 
+    for stage in xrange(n_estimators):
+        tree = model.estimators_[stage, 0]
+        _partial_dependency_tree(tree, grid, target_variables, pdp)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return pdp, grid
 class GradientBoostingClassifier(BaseGradientBoosting, ClassifierMixin):
     """Gradient Boosting for classification.
 
@@ -766,6 +899,7 @@ class GradientBoostingClassifier(BaseGradientBoosting, ClassifierMixin):
     T. Hastie, R. Tibshirani and J. Friedman.
     Elements of Statistical Learning Ed. 2, Springer, 2009.
     """
+
     def __init__(self, loss='deviance', learn_rate=0.1, n_estimators=100,
                  subsample=1.0, min_samples_split=1, min_samples_leaf=1,
                  max_depth=3, init=None, random_state=None,
@@ -774,6 +908,8 @@ class GradientBoostingClassifier(BaseGradientBoosting, ClassifierMixin):
             loss, learn_rate, n_estimators, min_samples_split,
             min_samples_leaf, max_depth, init, subsample, max_features,
             random_state)
+
+
     def fit(self, X, y):
         """Fit the gradient boosting model.
 
@@ -800,7 +936,9 @@ class GradientBoostingClassifier(BaseGradientBoosting, ClassifierMixin):
         y = np.searchsorted(self.classes_, y)
         if self.loss == 'deviance':
             self.loss = 'mdeviance' if len(self.classes_) > 2 else 'bdeviance'
+
         return super(GradientBoostingClassifier, self).fit(X, y)
+
     def _score_to_proba(self, score):
         """Compute class probability estimates from decision scores. """
         proba = np.ones((score.shape[0], self.n_classes_), dtype=np.float64)
@@ -811,6 +949,7 @@ class GradientBoostingClassifier(BaseGradientBoosting, ClassifierMixin):
             proba = np.nan_to_num(
                 np.exp(score - (logsumexp(score, axis=1)[:, np.newaxis])))
         return proba
+
     def predict_proba(self, X):
         """Predict class probabilities for X.
 
@@ -827,6 +966,7 @@ class GradientBoostingClassifier(BaseGradientBoosting, ClassifierMixin):
         """
         score = self.decision_function(X)
         return self._score_to_proba(score)
+
     def staged_predict_proba(self, X):
         """Predict class probabilities at each stage for X.
 
@@ -845,6 +985,7 @@ class GradientBoostingClassifier(BaseGradientBoosting, ClassifierMixin):
         """
         for score in self.staged_decision_function(X):
             yield self._score_to_proba(X)
+
     def predict(self, X):
         """Predict class for X.
 
@@ -860,6 +1001,7 @@ class GradientBoostingClassifier(BaseGradientBoosting, ClassifierMixin):
         """
         proba = self.predict_proba(X)
         return self.classes_.take(np.argmax(proba, axis=1), axis=0)
+
     def staged_predict(self, X):
         """Predict class probabilities at each stage for X.
 
@@ -878,15 +1020,6 @@ class GradientBoostingClassifier(BaseGradientBoosting, ClassifierMixin):
         """
         for proba in self.staged_predict_proba(X):
             yield self.classes_.take(np.argmax(proba, axis=1), axis=0)
-
-
-
-
-
-
-
-
-
 
 
 class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
@@ -995,6 +1128,7 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
     T. Hastie, R. Tibshirani and J. Friedman.
     Elements of Statistical Learning Ed. 2, Springer, 2009.
     """
+
     def __init__(self, loss='ls', learn_rate=0.1, n_estimators=100,
                  subsample=1.0, min_samples_split=1, min_samples_leaf=1,
                  max_depth=3, init=None, random_state=None,
@@ -1003,6 +1137,8 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
             loss, learn_rate, n_estimators, min_samples_split,
             min_samples_leaf, max_depth, init, subsample, max_features,
             random_state, alpha)
+
+
     def fit(self, X, y):
         """Fit the gradient boosting model.
 
@@ -1026,6 +1162,7 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
         """
         self.n_classes_ = 1
         return super(GradientBoostingRegressor, self).fit(X, y)
+
     def predict(self, X):
         """Predict regression target for X.
 
@@ -1040,6 +1177,7 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
             The predicted values.
         """
         return self.decision_function(X).ravel()
+
     def staged_predict(self, X):
         """Predict regression target at each stage for X.
 
@@ -1058,144 +1196,6 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
         """
         for y in self.staged_decision_function(X):
             yield y.ravel()
-
-
-
-
-
-def unique_rows2(X):
-    """Slower than 1 but can be cythonized!"""
-    for i in range(X.shape[1]):
-        indices = np.argsort(X[:, i])
-        X = X[indices]
-    indices = []
-    counts = []
-    n_equal = 1
-    for i in range(1, X.shape[0]):
-        if np.all(X[i] == X[i - 1]):
-            n_equal += 1
-        else:
-            indices.append(i - 1)
-            counts.append(n_equal)
-            n_equal = 1
-    return X[indices]
-
-
-def unique_rows(arr, dtype=np.float32):
-    return np.array([np.array(x, dtype=dtype)
-                     for x in set(tuple(x) for x in arr)],
-                    dtype=dtype)
-
-
-## def partial_dependency_plot(estimator, X, y, features):
-##     assert isinstance(estimator, BaseGradientBoosting)
-##     features = np.asarray(features)
-##     n_features = features.shape[0]
-##     if features.min() >= 0 and features.max() < X.shape[1]:
-##         raise ValueError("features must be in [0, %d]" % X.shape[1])
-
-##     # feature combinations up to cardinality n_features
-##     feature_combinations = chain(combinations(features, card)
-##                                  for card in range(n_features))
-##     feature_combinations = list(feature_combinations)
-##     print("There are %d feature combinations" % len(feature_combinations))
-
-##     for feature_combination in feature_combinations:
-##         eval_points = X[:, feature_combinations]
-
-
-def _grid_from_X(X, percentiles=(0.05, 0.95), grid_resolution=100):
-    """Generate a grid of points from ``X`` based on ``percentiles``.
-
-    The grid is generated by placing ``grid_resolution`` equally
-    spaced points between the ``percentiles`` of each column
-    of ``X``.
-    """
-    if len(percentiles) != 2:
-        raise ValueError('percentile must be tuple of len 2')
-    if not all(map(lambda x: 0.0 <= x <= 1.0, percentiles)):
-        raise ValueError('percentile values must be in [0, 1]')
-    emp_percentiles = mquantiles(X, prob=percentiles, axis=0)
-    axes = []
-    for col in range(X.shape[1]):
-        uniques = np.unique(X[:, col])
-        if uniques.shape[0] < grid_resolution:
-            # feature has low resolution use unique vals
-            axis = uniques
-        else:
-            # create axis based on percentiles and grid resolution
-            axis = np.linspace(emp_percentiles[0, col],
-                               emp_percentiles[1, col],
-                               grid_resolution)
-        axes.append(axis)
-    return cartesian(axes)
-
-
-
-
-
-def partial_dependency(model, target_variables, grid=None, X=None,
-                       percentiles=(0.05, 0.95), grid_resolution=100):
-    """Partial dependency of ``target_variables``.
-
-    Partial dependency plots show the dependency between the joint values
-    of the ``target_variables`` and the function represented
-    by the ``model``.
-
-    Parameters
-    ----------
-    model : BaseGradientBoosting
-        A fitted gradient boosting model (multi-class not supported yet).
-    target_variables : array-like, dtype=int
-        The target features for which the partial dependecy should be
-        computed (size should be smaller than 3 for visual renderings).
-    grid : array-like, shape=(n_points, len(target_variables))
-        The grid of ``target_variables`` values for which the
-        partial dependecy should be evaluted (either ``grid`` or ``X``
-        must be specified).
-    X : array-like, shape=(n_samples, n_features)
-        The data on which ``model`` was trained. It is used to generate
-        a ``grid`` for the ``target_variables``. The ``grid`` comprises
-        ``grid_resolution`` equally spaced points between the two
-        ``percentiles``.
-    percentiles : (low, high), default=(0.05, 0.95)
-        The lower and upper percentile used create the extreme values
-        for the ``grid``. Only if ``X`` is not None.
-    grid_resolution : int, default=100
-        The number of equally spaced points on the ``grid``.
-
-    Returns
-    -------
-    pdp : array, shape=``grid.shape[0]``
-        The partial dependency function evaluated on the ``grid``.
-    grid : array, shape=(n_points, len(target_variables))
-        The grid of target variable values for which ``pdp`` was evaluated.
-    """
-    if model.estimators_.shape[1] != 1:
-        raise ValueError('Partial dependency does not support multi-class yet')
-    if grid is None and X is None:
-        raise ValueError('Either grid or X must be specified')
-    target_variables = np.asarray(target_variables, dtype=np.int32,
-                                  order='C').ravel()
-    if X is not None:
-        grid = _grid_from_X(X[:, target_variables], percentiles, grid_resolution)
-    grid = np.asarray(grid, dtype=DTYPE, order='C')
-    try:
-        pdp = model.init.predict(grid).ravel()
-    except ValueError:
-        raise ValueError("init model must be constant to support dependency plots")
-    n_estimators = model.estimators_.shape[0]
-    for stage in xrange(n_estimators):
-        tree = model.estimators_[stage, 0]
-        _partial_dependency_tree(tree, grid, target_variables, pdp)
-    return pdp, grid
-
-
-
-
-
-
-
 
 
 

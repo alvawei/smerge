@@ -263,8 +263,6 @@ def resize_images(X, height_factor, width_factor, dim_ordering):
         return output
     else:
         raise Exception('Invalid dim_ordering: ' + dim_ordering)
-    else:
-            dim = dim % x.type.ndim + 1
 
 
 def repeat(x, n):
@@ -301,6 +299,8 @@ def expand_dims(x, dim=-1):
     if dim < 0:
         if x.type.ndim == 0:
             dim = 0
+        else:
+            dim = dim % x.type.ndim + 1
     pattern.insert(dim, 'x')
     return x.dimshuffle(pattern)
 
@@ -342,6 +342,7 @@ def spatial_2d_padding(x, padding=(1, 1), dim_ordering='th'):
                    slice(None),
                    slice(padding[0], input_shape[2] + padding[0]),
                    slice(padding[1], input_shape[3] + padding[1]))
+
     elif dim_ordering == 'tf':
         output_shape = (input_shape[0],
                         input_shape[1] + 2 * padding[0],
@@ -352,9 +353,9 @@ def spatial_2d_padding(x, padding=(1, 1), dim_ordering='th'):
                    slice(padding[0], input_shape[1] + padding[0]),
                    slice(padding[1], input_shape[2] + padding[1]),
                    slice(None))
-        else:
+    else:
+        raise Exception('Invalid dim_ordering: ' + dim_ordering)
     return T.set_subtensor(output[indices], x)
-
 
 # VALUE MANIPULATION
 
@@ -376,10 +377,10 @@ class Function(object):
     def __init__(self, inputs, outputs, updates=[], **kwargs):
         self.function = theano.function(inputs, outputs, updates=updates,
                                         allow_input_downcast=True, **kwargs)
+
     def __call__(self, inputs):
         assert type(inputs) in {list, tuple}
         return self.function(*inputs)
-
 
 
 
@@ -431,69 +432,38 @@ def rnn(step_function, inputs, initial_states,
     '''
     ndim = inputs.ndim
     assert ndim >= 3, 'Input should be at least 3D.'
+
     axes = [1, 0] + list(range(2, ndim))
     inputs = inputs.dimshuffle(axes)
-    if mask is not None:
-        mask = mask.dimshuffle(axes)
+<<<<<<< REMOTE
     else:
         if mask.ndim == ndim-1:
             mask = expand_dims(mask)
-            mask = expand_dims(mask)
         assert mask.ndim == ndim
-        raise Exception('Invalid dim_ordering: ' + dim_ordering)
-    else:
-<<<<<<< REMOTE
-outputs = results
-=======
-def _step(input, *states):
->>>>>>> LOCAL
-<<<<<<< REMOTE
-states = []
-=======
-results, _ = theano.scan(
->>>>>>> LOCAL
-            _step,
-            sequences=inputs,
-            outputs_info=[None] + initial_states,
-            go_backwards=go_backwards)
         mask = mask.dimshuffle(axes)
-    def _step(input, mask, output_tm1, *states):
-        output, new_states = step_function(input, states)
-        # output previous output if masked.
-        output = T.switch(mask, output, output_tm1)
-        return_states = []
-        for state, new_state in zip(states, new_states):
-            return_states.append(T.switch(mask, new_state, state))
-        return [output] + return_states
-    # build an all-zero tensor of shape (samples, output_dim)
-    initial_output = step_function(inputs[0], initial_states)[0] * 0
-    # Theano gets confused by broadcasting patterns in the scan op
-    initial_output = T.unbroadcast(initial_output, 0, 1)
-    results, _ = theano.scan(
-        _step,
-        sequences=[inputs, mask],
-        outputs_info=[initial_output] + initial_states,
-        go_backwards=go_backwards)
+
+
+=======
+
+>>>>>>> LOCAL
+    if mask is not None:
+        mask = expand_dims(ones_like(T.sum(inputs, axis=-1)))
+    else:
+        outputs = results
+        states = []
+
+
+
     # deal with Theano API inconsistency
     if type(results) is list:
         outputs = results[0]
         states = results[1:]
-    else:
-        # scale preds so that the class probas of each sample sum to 1
-        output /= output.sum(axis=-1, keepdims=True)
     outputs = T.squeeze(outputs)
     last_output = outputs[-1]
     axes = [1, 0] + list(range(2, outputs.ndim))
     outputs = outputs.dimshuffle(axes)
     states = [T.squeeze(state[-1]) for state in states]
     return last_output, outputs, states
-
-
-
-
-
-
-
 
 def switch(condition, then_expression, else_expression):
     '''condition: scalar tensor.
@@ -525,11 +495,14 @@ def softplus(x):
 def categorical_crossentropy(output, target, from_logits=False):
     if from_logits:
         output = T.nnet.softmax(output)
+    else:
+        # scale preds so that the class probas of each sample sum to 1
+        output /= output.sum(axis=-1, keepdims=True)
     # avoid numerical instability with _EPSILON clipping
     output = T.clip(output, _EPSILON, 1.0 - _EPSILON)
+
+
     return T.nnet.categorical_crossentropy(output, target)
-
-
 def binary_crossentropy(output, target, from_logits=False):
     if from_logits:
         output = T.nnet.sigmoid(output)
@@ -567,8 +540,8 @@ def l2_normalize(x, axis):
     return x / norm
 
 
-# CONVOLUTIONS
 
+# CONVOLUTIONS
 def conv2d(x, kernel, strides=(1, 1), border_mode='valid', dim_ordering='th',
            image_shape=None, filter_shape=None):
     '''
@@ -577,6 +550,7 @@ def conv2d(x, kernel, strides=(1, 1), border_mode='valid', dim_ordering='th',
     '''
     if dim_ordering not in {'th', 'tf'}:
         raise Exception('Unknown dim_ordering ' + str(dim_ordering))
+
     if dim_ordering == 'tf':
         # TF uses the last dimension as channel dimension,
         # instead of the 2nd one.
@@ -592,6 +566,7 @@ def conv2d(x, kernel, strides=(1, 1), border_mode='valid', dim_ordering='th',
         if filter_shape:
             filter_shape = (filter_shape[3], filter_shape[2],
                             filter_shape[0], filter_shape[1])
+
     if _on_gpu() and dnn.dnn_available():
         if border_mode == 'same':
             assert(strides == (1, 1))
@@ -604,8 +579,11 @@ def conv2d(x, kernel, strides=(1, 1), border_mode='valid', dim_ordering='th',
             conv_out = conv_out[:, :,
                                 shift_x:x.shape[2] + shift_x,
                                 shift_y:x.shape[3] + shift_y]
-    else:
         else:
+            conv_out = dnn.dnn_conv(img=x,
+                                    kerns=kernel,
+                                    border_mode=border_mode,
+                                    subsample=strides)
     else:
         if border_mode == 'same':
             th_border_mode = 'full'
@@ -613,8 +591,8 @@ def conv2d(x, kernel, strides=(1, 1), border_mode='valid', dim_ordering='th',
         elif border_mode == 'valid':
             th_border_mode = 'valid'
         else:
-        raise Exception('Invalid border mode: ' + str(border_mode))
             raise Exception('Border mode not supported: ' + str(border_mode))
+
         conv_out = T.nnet.conv.conv2d(x, kernel,
                                       border_mode=th_border_mode,
                                       subsample=strides,
@@ -627,16 +605,11 @@ def conv2d(x, kernel, strides=(1, 1), border_mode='valid', dim_ordering='th',
             conv_out = conv_out[:, :,
                                 shift_x:x.shape[2] + shift_x,
                                 shift_y:x.shape[3] + shift_y]
-            conv_out = dnn.dnn_conv(img=x,
-                                    kerns=kernel,
-                                    border_mode=border_mode,
-                                    subsample=strides)
     if dim_ordering == 'tf':
         conv_out = conv_out.dimshuffle((0, 2, 3, 1))
+
+
     return conv_out
-
-
-
 
 
 def pool2d(x, pool_size, strides=(1, 1), border_mode='valid',
@@ -648,31 +621,33 @@ def pool2d(x, pool_size, strides=(1, 1), border_mode='valid',
         ignore_border = True
         padding = (0, 0)
     else:
+        raise Exception('Invalid border mode: ' + str(border_mode))
+
     if dim_ordering not in {'th', 'tf'}:
         raise Exception('Unknown dim_ordering ' + str(dim_ordering))
+
     if dim_ordering == 'tf':
         x = x.dimshuffle((0, 3, 1, 2))
+
     if pool_mode == 'max':
         pool_out = downsample.max_pool_2d(x, ds=pool_size, st=strides,
                                           ignore_border=ignore_border,
                                           padding=padding,
                                           mode='max')
+    else:
+        raise Exception('Invalid pooling mode: ' + str(pool_mode))
+
     elif pool_mode == 'avg':
         pool_out = downsample.max_pool_2d(x, ds=pool_size, st=strides,
                                           ignore_border=ignore_border,
                                           padding=padding,
                                           mode='average_exc_pad')
+
+
     if dim_ordering == 'tf':
         pool_out = pool_out.dimshuffle((0, 2, 3, 1))
     return pool_out
-
-
-
-
-
 # RANDOMNESS
-
-
 def random_normal(shape, mean=0.0, std=1.0, dtype=_FLOATX, seed=None):
     if seed is None:
         seed = np.random.randint(10e6)

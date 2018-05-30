@@ -7,6 +7,7 @@ from scipy import linalg
 from .base import BaseEstimator
 from .utils.extmath import fast_logdet
 
+
 def _assess_dimension_(spect, rk, n_samples, dim):
     """
     Compute the likelihood of a rank rk dataset
@@ -36,19 +37,24 @@ def _assess_dimension_(spect, rk, n_samples, dim):
     if rk>dim:
         raise ValueError, "the dimension cannot exceed dim"
     from scipy.special import gammaln
+
     pu = -rk*np.log(2)
     for i in range(rk):
         pu += gammaln((dim - i)/2) - np.log(np.pi) * (dim - i)/2
+
     pl = np.sum(np.log(spect[:rk]))
     pl = -pl * n_samples / 2
+
     if rk == dim:
         pv = 0
         v = 1
     else:
         v = np.sum(spect[rk:dim]) / (dim - rk)
         pv = -np.log(v) * n_samples * (dim - rk)/2
+
     m = dim * rk - rk * (rk + 1) / 2
     pp = np.log(2 * np.pi) * (m + rk + 1)/2
+
     pa = 0
     spectrum_ = spect.copy()
     spectrum_[rk:dim] = v
@@ -56,14 +62,10 @@ def _assess_dimension_(spect, rk, n_samples, dim):
         for j in range (i + 1, dim):
             pa += np.log((spect[i] - spect[j]) * \
                      (1./spectrum_[j] - 1./spectrum_[i])) + np.log(n_samples)
+
     ll = pu + pl + pv + pp -pa/2 - rk*np.log(n_samples)/2
+
     return ll
-
-
-
-
-
-
 
 
 def _infer_dimension_(spect, n, p):
@@ -78,7 +80,9 @@ def _infer_dimension_(spect, n, p):
     return ll.argmax()
 
 
+
 ################################################################################
+
 class PCA(BaseEstimator):
     """Principal component analysis (PCA)
 
@@ -127,6 +131,7 @@ class PCA(BaseEstimator):
     def __init__(self, n_comp=None, copy=True):
         self.n_comp = n_comp
         self.copy = copy
+
     def fit(self, X, **params):
         """ Fit the model to the data X
         """
@@ -148,27 +153,27 @@ class PCA(BaseEstimator):
                                             n_samples, X.shape[1])
             self.components_ = self.components_[:, :self.n_comp]
             self.explained_variance_ = self.explained_variance_[:self.n_comp]
+
         elif self.n_comp is not None:
             self.components_ = self.components_[:, :self.n_comp]
             self.explained_variance_ = self.explained_variance_[:self.n_comp]
+
+
         return self
     def transform(self, X):
         """ Apply the dimension reduction learned on the train data.
         """
         Xr = X - self.mean_
         Xr = np.dot(Xr, self.components_)
+
+
         return Xr
-
-
-
-
-
-
-
 ################################################################################
+
 class ProbabilisticPCA(PCA):
     """ Additional layer on top of PCA that add a probabilistic evaluation
     """
+
     def fit(self, X, homoscedastic=True):
         """Additionally to PCA.fit, learns a covariance model
 
@@ -196,6 +201,7 @@ class ProbabilisticPCA(PCA):
                 self.components_[:, k:k+1], self.components_[:, k:k+1].T)
             self.covariance_ += self.explained_variance_[k] * add_cov
         return self
+
     def score(self, X):
         """Return a scoreassociated to new data
 
@@ -217,6 +223,4 @@ class ProbabilisticPCA(PCA):
         log_like += fast_logdet(self.precision_) - \
                                     self.dim / 2 * np.log(2 * np.pi)
         return log_like
-
-
 

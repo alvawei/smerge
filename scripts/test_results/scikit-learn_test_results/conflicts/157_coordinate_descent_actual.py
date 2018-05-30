@@ -1,7 +1,158 @@
 # Author: Alexandre Gramfort <alexandre.gramfort@inria.fr>
+#         Fabian Pedregosa <fabian.pedregosa@inria.fr>
+#         Olivier Grisel <olivier.grisel@ensta.org>
+#
+
+import warnings
+from cd_fast import lasso_coordinate_descent, enet_coordinate_descent
+import numpy as np
+
+from .cd_fast import lasso_coordinate_descent, enet_coordinate_descent
+from .utils import lasso_objective, enet_objective, density
+from ..cross_val import KFold
+
+<<<<<<< REMOTE
+def lasso_path(X, y, eps=1e-3, n_alphas=100, **kwargs):
+    """Compute Lasso path with coordinate descent"""
+    nsamples = X.shape[0]
+    alpha_max = np.abs(np.dot(X.T, y)).max() / nsamples
+    model = Lasso(alpha=alpha_max)
+    weights = []
+    alphas = np.linspace(np.log(alpha_max), np.log(eps * alpha_max), n_alphas)
+    alphas = np.exp(alphas)
+    for alpha in alphas:
+        model.alpha = alpha
+        model.fit(X, y, **kwargs)
+        weights.append(model.coef_.copy())
+
+    weights = np.asarray(weights)
+    return alphas, weights
+
+
+=======
+
+>>>>>>> LOCAL
+class LinearModelPath(LinearModel):
+    """Base class for iterative model fitting along a regularization path"""
+
+    model_class = None
+
+    default_model_params = {}
+
+    def __init__(self, w0=None, cv_factory=None, eps=1e-3, n_alphas=100,
+                 model_params=None):
+        self.cv_factory = cv_factory
+        self.eps = eps
+        self.n_alphas = n_alphas
+        self.coef_ = w0
+        self.alpha = 0.0
+        self.path = []
+        if model_params is None:
+            self.model_params = self.default_model_params.copy()
+        else:
+            self.model_params = model_params
+
+    def fit(self, X, y, store_path=False, **kwargs):
+        """Fit linear model with coordinate descent along decreasing alphas
+
+        The same model is reused with warm restarts. Early stopping can happen
+        before reaching n_alphas if the cross validation detects overfitting
+        when decreasing the strength of the regularization.
+        """
+        X = np.asanyarray(X, dtype=np.float64)
+        y = np.asanyarray(y, dtype=np.float64)
+
+        self.path_ = []
+        n_samples = X.shape[0]
+
+        # init cross validator
+        cv = self.cv_factory(X, y) if self.cv_factory else KFold(n_samples, 3)
+        train, valid = iter(cv).next()
+
+        # compute the alpha grid
+        alpha_max = np.abs(np.dot(X.T, y)).max() / n_samples
+        logalphas = np.linspace(np.log(alpha_max),
+                                np.log(self.eps * alpha_max), self.n_alphas)
+        alphas = np.exp(logalphas)
+
+        # fit a model down the alpha grid and stop before overfitting
+        model = self.model_class(alpha=alpha_max, **self.model_params)
+        best_mse = np.inf
+        for alpha in alphas:
+            model.alpha = alpha
+            y_ = model.fit(X[train], y[train], **kwargs).predict(X[valid])
+            mse = ((y_ - y[valid]) ** 2).mean()
+            if mse > best_mse:
+                # early stop we are overfitting
+                break
+            else:
+                best_mse = mse
+                best_model = self.model_class(w0=model.coef_.copy(),
+                                              alpha=alpha, **self.model_params)
+                if store_path:
+                    self.path_.append(best_model)
+
+        # fine tune at optimal alpha on complete data set
+        best_model.fit(X, y, **kwargs)
+        self.coef_ = best_model.coef_
+        self.alpha = best_model.alpha # purely indicative
+        return self
+
+
+class LassoPath(LinearModelPath):
+    """Lasso linear model with iterative fitting along a regularization path"""
+
+    model_class = Lasso
+
+
+class ElasticNetPath(LinearModelPath):
+    """Elastic Net model with iterative fitting along a regularization path"""
+
+    model_class = ElasticNet
+
+    default_model_params = {"rho": 0.5}
+
+
+
+def lasso_path(X, y, eps=1e-3, n_alphas=100, **kwargs):
+    """
+    Compute Lasso path with coordinate descent
+
+    See examples/plot_lasso_coordinate_descent_path.py for an example.
+    """
+    nsamples = X.shape[0]
+    alpha_max = np.abs(np.dot(X.T, y)).max() / nsamples
+    model = Lasso(alpha=alpha_max)
+    weights = []
+    alphas = np.linspace(np.log(alpha_max), np.log(eps * alpha_max), n_alphas)
+    alphas = np.exp(alphas)
+    for alpha in alphas:
+        model.alpha = alpha
+        model.fit(X, y, **kwargs)
+        weights.append(model.coef_.copy())
+
+    weights = np.asarray(weights)
+    return alphas, weights
+
+
+def enet_path(X, y, eps=1e-3, n_alphas=100, rho=0.5, **kwargs):
+    """Compute Elastic-Net path with coordinate descent"""
+    nsamples = X.shape[0]
+    alpha_max = np.abs(np.dot(X.T, y)).max() / (nsamples*rho)
+    model = ElasticNet(alpha=alpha_max, rho=rho)
+    weights = []
+    alphas = np.linspace(np.log(alpha_max), np.log(eps * alpha_max), n_alphas)
+    alphas = np.exp(alphas)
+    for alpha in alphas:
+        model.alpha = alpha
+        model.fit(X, y, **kwargs)
+        weights.append(model.coef_.copy())
+
+    weights = np.asarray(weights)
+    return alphas, weights
+
 # License: BSD Style.
 
-# $Id$
 """Implementation of regularized linear regression with Coordinate Descent
 
 This implementation is focused on regularizers that lead to sparse parameters
@@ -21,268 +172,83 @@ Where R are the residuals between the output of the model and the expected
 value and w is the vector of weights to fit.
 """
 
-import numpy as np
-import scipy.linalg as linalg
-from lasso_cd import lasso_coordinate_descent as lasso_coordinate_descent_slow
-from enet_cd import enet_coordinate_descent as enet_coordinate_descent_slow
-from iteration_callbacks import IterationCallbackMaxit, IterationCallbackFunc
-from utils import enet_dual_gap, lasso_dual_gap, lasso_objective, \
-                  enet_objective, density
-
-# Attempt to improve speed with cython
-try:
-    from lasso_cd_fast import lasso_coordinate_descent \
-            as lasso_coordinate_descent_fast
-    from enet_cd_fast import enet_coordinate_descent \
-            as enet_coordinate_descent_fast
-    lasso_coordinate_descent = lasso_coordinate_descent_fast
-    enet_coordinate_descent = enet_coordinate_descent_fast
-except ImportError:
-    lasso_coordinate_descent = lasso_coordinate_descent_slow
-    enet_coordinate_descent = enet_coordinate_descent_slow
-    print "Using Python version of coordinate descent"
-
 class LinearModel(object):
     """Base class for Linear Model optimized with coordinate descent"""
-    def __init__(self, w0=None, callbacks=None):
+
+    def __init__(self, w0=None):
         # weights of the model (can be lazily initialized by the ``fit`` method)
-        self.w = w0
-        # callbacks that handles recording of the historic data
-        # and can stop iterations
-        self.callbacks = []
-        if callbacks is not None:
-            for callback in callbacks:
-                self.callbacks.append(callback)
-        self.learner = None
-        self.dual_gap_func = None
-    def fit(self, X, Y, maxit=100, tol=1e-4):
-        """Fit Lasso model with coordinate descent"""
-        X, y = np.asanyarray(X), np.asanyarray(y)
-        n_samples, n_features = X.shape
-        if tol is not None:
-            cb_dual_gap = IterationCallbackFunc(self._dual_gap_func, tol=tol)
-            self.callbacks.append(cb_dual_gap)
-        if self.w is None:
-            self.w = np.zeros(n_features)
-        self.w = self.learner(self, X, y, maxit)
-        # return self for chaining fit and predict calls
-        return self
-    def compute_density(self):
+        self.coef_ = w0
+
     def predict(self, X):
         """Linear model prediction: compute the dot product with the weights"""
         X = np.asanyarray(X)
         return np.dot(X, self.coef_)
+
     def compute_density(self):
         """Ratio of non-zero weights in the model"""
         return density(self.coef_)
-    @property
-    def coef_(self):
-        return self
-
-
-
-
-
-
-
-
-
-
-
 
 class Lasso(LinearModel):
-    """
-    Linear Model trained with L1 prior as regularizer (a.k.a. the
-    lasso).
+    """Linear Model trained with L1 prior as regularizer (a.k.a. the Lasso)"""
 
-    The lasso estimate solves the minization of the least-squares
-    penalty with alpha * ||beta||_1 added, where alpha is a constant and
-    ||beta||_1 is the L1-norm of the parameter vector.
-
-    This formulation is useful in some context due to its tendency to
-    prefer solutions with fewer parameter values, effectively reducing
-    the number of variables upon which the given solution is
-    dependent. For this reason, the LASSO and its variants are
-    fundamental to the field of compressed sensing.
-
-    Parameters
-    ----------
-    alpha : double
-        Constant that multiplies the L1 term.
-
-    Attributes
-    ----------
-    `coef_` : array, shape = [nfeatures]
-        parameter vector (w in the fomulation formula)
-
-    Examples
-    --------
-    >>> from scikits.learn import glm
-    >>> clf = glm.Lasso()
-    >>> clf.fit([[0,0], [1, 1], [2, 2]], [0, 1, 2])
-    Lasso Coordinate Descent
-    >>> print clf.coef_
-    [ 0.4  0. ]
-
-    Notes
-    -----
-    The algorithm used to fit the model is coordinate descent.x
-    """
-<<<<<<< REMOTE
     def __init__(self, alpha=1.0, w0=None):
         super(Lasso, self).__init__(w0)
         self.alpha = float(alpha)
 
-=======
-    def __init__(self, alpha=1.0, w0=None, tol=1e-4):
-        super(Lasso, self).__init__(w0)
-        self.alpha = float(alpha)
-        self.tol = tol
-
->>>>>>> LOCAL
-<<<<<<< REMOTE
     def fit(self, X, Y, maxit=100, tol=1e-4):
         """Fit Lasso model with coordinate descent"""
         X = np.asanyarray(X, dtype=np.float64)
         Y = np.asanyarray(Y, dtype=np.float64)
+
         nsamples = X.shape[0]
         alpha = self.alpha * nsamples
+
         if self.coef_ is None:
             self.coef_ = np.zeros(X.shape[1], dtype=np.float64)
+
         self.coef_, self.dual_gap_, self.eps_ = \
                     lasso_coordinate_descent(self.coef_, alpha, X, Y, maxit, 10, tol)
+
         if self.dual_gap_ > self.eps_:
             warnings.warn('Objective did not converge, you might want to increase the number of interations')
+
         # return self for chaining fit and predict calls
         return self
 
-=======
-    def fit(self, X, Y, maxit=100):
-        """Fit Lasso model with coordinate descent"""
-        X = np.asanyarray(X, dtype=np.float64)
-        Y = np.asanyarray(Y, dtype=np.float64)
-        nsamples = X.shape[0]
-        alpha = self.alpha * nsamples
-        if self.coef_ is None:
-            self.coef_ = np.zeros(X.shape[1], dtype=np.float64)
-        self.coef_, self.dual_gap_, self.eps_ = \
-                    lasso_coordinate_descent(self.coef_, alpha, X, Y, maxit, 10, self.tol)
-        if self.dual_gap_ > self.eps_:
-            warnings.warn('Objective did not converge, you might want to increase the number of interations')
-        # return self for chaining fit and predict calls
-        return self
 
->>>>>>> LOCAL
     def __repr__(self):
         return "Lasso Coordinate Descent"
 
-
-
-
-
 class ElasticNet(LinearModel):
-    """Linear Model trained with L1 and L2 prior as regularizer
+    """Linear Model trained with L1 and L2 prior as regularizer"""
 
-    rho=1 is the lasso penalty. Currently, rho <= 0.01 is not
-    reliable, unless you supply your own sequence of alpha.
-
-    Parameters
-    ----------
-    alpha : double
-        TODO
-    rho : double
-        The ElasticNet mixing parameter, with 0 < rho <= 1. 
-    """
-<<<<<<< REMOTE
     def __init__(self, alpha=1.0, rho=0.5, w0=None):
         super(ElasticNet, self).__init__(w0)
         self.alpha = alpha
         self.rho = rho
 
-=======
-    def __init__(self, alpha=1.0, rho=0.5, w0=None, tol=1e-4):
-        super(ElasticNet, self).__init__(w0)
-        self.alpha = alpha
-        self.rho = rho
-        self.tol = tol
-
->>>>>>> LOCAL
-<<<<<<< REMOTE
     def fit(self, X, Y, maxit=100, tol=1e-4):
         """Fit Elastic Net model with coordinate descent"""
         X = np.asanyarray(X, dtype=np.float64)
         Y = np.asanyarray(Y, dtype=np.float64)
+
         if self.coef_ is None:
             self.coef_ = np.zeros(X.shape[1], dtype=np.float64)
+
         nsamples = X.shape[0]
         alpha = self.alpha * self.rho * nsamples
         beta = self.alpha * (1.0 - self.rho) * nsamples
         self.coef_, self.dual_gap_, self.eps_ = \
                     enet_coordinate_descent(self.coef_, alpha, beta, X, Y, maxit, 10, tol)
+
         if self.dual_gap_ > self.eps_:
             warnings.warn('Objective did not converge, you might want to increase the number of interations')
+
         # return self for chaining fit and predict calls
         return self
 
-=======
-    def fit(self, X, Y, maxit=100):
-        """Fit Elastic Net model with coordinate descent"""
-        X = np.asanyarray(X, dtype=np.float64)
-        Y = np.asanyarray(Y, dtype=np.float64)
-        if self.coef_ is None:
-            self.coef_ = np.zeros(X.shape[1], dtype=np.float64)
-        nsamples = X.shape[0]
-        alpha = self.alpha * self.rho * nsamples
-        beta = self.alpha * (1.0 - self.rho) * nsamples
-        self.coef_, self.dual_gap_, self.eps_ = \
-                enet_coordinate_descent(self.coef_, alpha, beta, X, Y,
-                                        maxit, 10, self.tol)
-        if self.dual_gap_ > self.eps_:
-            warnings.warn('Objective did not converge, you might want to increase the number of interations')
-        # return self for chaining fit and predict calls
-        return self
-
->>>>>>> LOCAL
     def __repr__(self):
         return "ElasticNet cd"
-
-
-
-
-
-def lasso_path(X, y, factor=0.95, n_alphas = 10, **kwargs):
-    """Compute Lasso path with coordinate descent"""
-    alpha_max = np.abs(np.dot(X.T, y)).max()
-    alpha = alpha_max
-    model = Lasso(alpha=alpha_max)
-    weights = []
-    alphas = []
-    for _ in range(n_alphas):
-        model.alpha *= factor
-        model.fit(X, y, **kwargs)
-        alphas.append(model.alpha)
-        weights.append(model.coef_.copy())
-    alphas = np.asarray(alphas)
-    weights = np.asarray(weights)
-    return alphas, weights
-
-
-
-def enet_path(X, y, factor=0.95, n_alphas=10, beta=1.0, **kwargs):
-    """Compute Elastic-Net path with coordinate descent"""
-    alpha_max = np.abs(np.dot(X.T, y)).max()
-    alpha = alpha_max
-    model = ElasticNet(alpha=alpha, beta=beta)
-    weights = []
-    alphas = []
-    for _ in range(n_alphas):
-        model.alpha *= factor
-        model.fit(X, y, **kwargs)
-        alphas.append(model.alpha)
-        weights.append(model.coef_.copy())
-    alphas = np.asarray(alphas)
-    weights = np.asarray(weights)
-    return alphas, weights
 
 
 

@@ -48,6 +48,9 @@ from .utils import (
     rmtree,
     split_argument,
 )
+from ._compat import (
+    TemporaryDirectory,
+)
 from .import pep508checker, progress
 from .environments import (
     PIPENV_COLORBLIND,
@@ -103,8 +106,7 @@ else:
     STARTING_LABEL = '   '
 # Enable shell completion.
 click_completion.init()
-click_completion.init()
-# Disable colors, for the soulless.
+# Disable colors, for the color blind and others who do not prefer colors.
 if PIPENV_COLORBLIND:
     crayons.disable()
 # Disable spinner, for cleaner build logs (the unworthy).
@@ -189,6 +191,7 @@ def cleanup_virtualenv(bare=True):
 def import_requirements(r=None, dev=False):
     import pip9
     from .vendor.pip9.req.req_file import parse_requirements
+
     # Parse requirements.txt file with Pip's parser.
     # Pip requires a `PipSession` which is a subclass of requests.Session.
     # Since we're not making any network calls, it's initialized to nothing.
@@ -221,7 +224,6 @@ def import_requirements(r=None, dev=False):
     project.recase_pipfile()
 
 
-
 def ensure_environment():
     # Skip this on Windows...
     if os.name != 'nt':
@@ -247,9 +249,9 @@ def import_from_code(path='.'):
                 rs.append(r)
         pkg_names = pipreqs.get_pkg_names(rs)
         return [proper_case(r) for r in pkg_names]
+
     except Exception:
         return []
-
 
 
 def ensure_pipfile(validate=True, skip_requirements=False, system=False):
@@ -323,10 +325,12 @@ def find_python_from_py(python):
     py = system_which('py')
     if not py:
         return None
+
     version_args = ['-{0}'.format(python[0])]
     if len(python) >= 2:
         version_args.append('-{0}.{1}'.format(python[0], python[2]))
     import subprocess
+
     for ver_arg in reversed(version_args):
         try:
             python_exe = subprocess.check_output(
@@ -334,15 +338,13 @@ def find_python_from_py(python):
             )
         except subprocess.CalledProcessError:
             continue
+
         if not isinstance(python_exe, str):
             python_exe = python_exe.decode(sys.getdefaultencoding())
         python_exe = python_exe.strip()
         version = python_version(python_exe)
         if (version or '').startswith(python):
             return python_exe
-
-
-
 
 
 def find_python_in_path(python):
@@ -376,21 +378,22 @@ def find_a_system_python(python):
     """Finds a system python, given a version (e.g. 2 / 2.7 / 3.6.2), or a full path."""
     if python.startswith('py'):
         return system_which(python)
+
     elif os.path.isabs(python):
         return python
+
     python_from_py = find_python_from_py(python)
     if python_from_py:
         return python_from_py
+
     return find_python_in_path(python)
-
-
-
 
 
 def ensure_python(three=None, python=None):
     # Support for the PIPENV_PYTHON environment variable.
     if PIPENV_PYTHON and python is False and three is None:
         python = PIPENV_PYTHON
+
     def abort():
         click.echo(
             'You can specify specific versions of Python with:\n  {0}'.format(
@@ -403,8 +406,10 @@ def ensure_python(three=None, python=None):
             err=True,
         )
         sys.exit(1)
+
     def activate_pyenv():
         import pip9
+
         """Adds all pyenv installations to the PATH."""
         if PYENV_INSTALLED:
             if PYENV_ROOT:
@@ -421,6 +426,7 @@ def ensure_python(three=None, python=None):
                         version.base_version
                     ):
                         continue
+
                     add_to_path(pyenv_path)
             else:
                 click.echo(
@@ -429,6 +435,7 @@ def ensure_python(three=None, python=None):
                     ''.format(crayons.red('Warning', bold=True),),
                     err=True,
                 )
+
     global USING_DEFAULT_PYTHON
     # Add pyenv paths to PATH.
     activate_pyenv()
@@ -537,15 +544,12 @@ def ensure_python(three=None, python=None):
     return path_to_python
 
 
-
-
-
-
-
 def ensure_virtualenv(three=None, python=None, site_packages=False):
     """Creates a virtualenv, if one doesn't exist."""
+
     def abort():
         sys.exit(1)
+
     global USING_DEFAULT_PYTHON
     if not project.virtualenv_exists:
         try:
@@ -593,8 +597,6 @@ def ensure_virtualenv(three=None, python=None, site_packages=False):
         ensure_virtualenv(
             three=three, python=python, site_packages=site_packages
         )
-
-
 
 
 def ensure_project(
@@ -716,6 +718,7 @@ def do_install_dependencies(
 
     If requirements is True, simply spits out a requirements format to stdout.
     """
+
     def cleanup_procs(procs, concurrent):
         for c in procs:
             if concurrent:
@@ -735,6 +738,7 @@ def do_install_dependencies(
                         crayons.green(c.dep.split('--hash')[0].strip()),
                     )
                 )
+
     if requirements:
         bare = True
     blocking = (not concurrent)
@@ -860,8 +864,6 @@ def do_install_dependencies(
                 )
 
 
-
-
 def convert_three_to_python(three, python):
     """Converts a Three flag into a Python flag, and raises customer warnings
     in the process, if needed.
@@ -869,12 +871,12 @@ def convert_three_to_python(three, python):
     if not python:
         if three is False:
             return '2'
+
         elif three is True:
             return '3'
+
     else:
         return python
-
-
 
 
 def do_create_virtualenv(python=None, site_packages=False):
@@ -1016,16 +1018,6 @@ def do_lock(
             ),
             err=True,
         )
-    if write:
-        # Alert the user of progress.
-        click.echo(
-            u'{0} {1} {2}'.format(
-                crayons.normal('Locking'),
-                crayons.red('[packages]'),
-                crayons.normal('dependencies…'),
-            ),
-            err=True,
-        )
     # Create the lockfile.
     lockfile = project._lockfile
     # Cleanup lockfile.
@@ -1034,9 +1026,6 @@ def do_lock(
             if not hasattr(v, 'keys'):
                 del lockfile[section][k]
     # Ensure that develop inherits from default.
-    for dev_package in project.dev_packages:
-        if dev_package in project.packages:
-            dev_packages[dev_package] = project.packages[dev_package]
     dev_packages = project.dev_packages.copy()
     for dev_package in project.dev_packages:
         if dev_package in project.packages:
@@ -1083,6 +1072,7 @@ def do_lock(
             # ignore it
             if not any(dep in line for dep in vcs_deps):
                 continue
+
             try:
                 installed = convert_deps_from_pip(line)
                 name = list(installed.keys())[0]
@@ -1091,21 +1081,12 @@ def do_lock(
             except IndexError:
                 pass
     if write:
-        # Write out the lockfile.
-        with atomic_open_for_write(project.lockfile_location) as f:
-            simplejson.dump(
-                lockfile, f, indent=4, separators=(',', ': '), sort_keys=True
-            )
-            # Write newline at end of document. GH Issue #319.
-            f.write('\n')
+        # Alert the user of progress.
         click.echo(
-            '{0}'.format(
-                crayons.normal(
-                    'Updated Pipfile.lock ({0})!'.format(
-                        lockfile['_meta'].get('hash', {}).get('sha256')[-6:]
-                    ),
-                    bold=True,
-                )
+            u'{0} {1} {2}'.format(
+                crayons.normal('Locking'),
+                crayons.red('[packages]'),
+                crayons.normal('dependencies…'),
             ),
             err=True,
         )
@@ -1148,13 +1129,13 @@ def do_lock(
     # Add refs for VCS installs.
     # TODO: be smarter about this.
     vcs_deps = convert_deps_to_pip(project.vcs_packages, project, r=False)
-    pip_freeze = delegator.run('{0} freeze'.format(escape_grouped_arguments(which_pip(allow_global=system)))).out
-    for dep in vcs_deps:
+    if vcs_deps:
         for line in pip_freeze.strip().split('\n'):
             # if the line doesn't match a vcs dependency in the Pipfile,
             # ignore it
             if not any(dep in line for dep in vcs_deps):
                 continue
+
             try:
                 installed = convert_deps_from_pip(line)
                 name = list(installed.keys())[0]
@@ -1185,7 +1166,13 @@ def do_lock(
                 default_package
             ]
     if write:
-        project.write_lockfile(lockfile)
+        # Write out the lockfile.
+        with atomic_open_for_write(project.lockfile_location) as f:
+            simplejson.dump(
+                lockfile, f, indent=4, separators=(',', ': '), sort_keys=True
+            )
+            # Write newline at end of document. GH Issue #319.
+            f.write('\n')
         click.echo(
             '{0}'.format(
                 crayons.normal(
@@ -1199,8 +1186,6 @@ def do_lock(
         )
     else:
         return lockfile
-
-
 
 
 def activate_virtualenv(source=True):
@@ -1221,9 +1206,9 @@ def activate_virtualenv(source=True):
     venv_location = project.virtualenv_location.replace(' ', r'\ ')
     if source:
         return '{2} {0}/bin/activate{1}'.format(venv_location, suffix, command)
+
     else:
         return '{0}/bin/activate'.format(venv_location)
-
 
 
 def do_activate_virtualenv(bare=False):
@@ -1249,6 +1234,7 @@ def do_purge(bare=False, downloads=False, allow_global=False, verbose=False):
             )
         shutil.rmtree(project.download_location)
         return
+
     freeze = delegator.run(
         '{0} freeze'.format(
             escape_grouped_arguments(which_pip(allow_global=allow_global))
@@ -1292,7 +1278,6 @@ def do_purge(bare=False, downloads=False, allow_global=False, verbose=False):
     if not bare:
         click.echo(crayons.blue(c.out))
         click.echo(crayons.green('Environment now purged and fresh!'))
-
 
 
 def do_init(
@@ -1420,6 +1405,7 @@ def pip_install(
     extra_indexes=None,
 ):
     import pip9
+
     if verbose:
         click.echo(
             crayons.normal('Installing {0!r}'.format(package_name), bold=True),
@@ -1465,6 +1451,7 @@ def pip_install(
             src = ''
     else:
         src = ''
+
     # Try installing for each source in project.sources.
     if index:
         if not is_valid_url(index):
@@ -1524,8 +1511,6 @@ def pip_install(
     return c
 
 
-
-
 def pip_download(package_name):
     for source in project.sources:
         cmd = '{0} download "{1}" -i {2} -d {3}'.format(
@@ -1537,8 +1522,8 @@ def pip_download(package_name):
         c = delegator.run(cmd)
         if c.return_code == 0:
             break
-    return c
 
+    return c
 
 
 def which_pip(allow_global=False):
@@ -1546,13 +1531,13 @@ def which_pip(allow_global=False):
     if allow_global:
         if 'VIRTUAL_ENV' in os.environ:
             return which('pip', location=os.environ['VIRTUAL_ENV'])
+
         for p in ('pip', 'pip3', 'pip2'):
             where = system_which(p)
             if where:
                 return where
+
     return which('pip')
-
-
 
 
 def system_which(command, mult=False):
@@ -1572,13 +1557,13 @@ def system_which(command, mult=False):
         assert c.return_code == 0
     except AssertionError:
         return None if not mult else []
+
     result = c.out.strip() or c.err.strip()
     if mult:
         return result.split('\n')
+
     else:
         return result.split('\n')[0]
-
-
 
 
 def format_help(help):
@@ -1671,12 +1656,12 @@ def format_pip_output(out, r=None):
             # Remove requirements file information from pip9 output.
             if '(from -r' in line:
                 yield line[: line.index('(from -r')]
+
             else:
                 yield line
+
     out = '\n'.join([l for l in gen(out)])
     return out
-
-
 
 
 
@@ -1783,6 +1768,7 @@ def do_install(
     selective_upgrade=False,
 ):
     import pip9
+
     requirements_directory = TemporaryDirectory(
         suffix='-requirements', prefix='pipenv-'
     )
@@ -2071,7 +2057,6 @@ def do_install(
         requirements_directory.cleanup()
 
 
-
 def do_uninstall(
     package_name=False,
     more_packages=False,
@@ -2145,6 +2130,7 @@ def do_uninstall(
                     )
                 )
                 continue
+
             click.echo(
                 u'Removing {0} from Pipfile…'.format(
                     crayons.green(package_name)
@@ -2157,9 +2143,9 @@ def do_uninstall(
         do_lock(system=system, keep_outdated=keep_outdated)
 
 
-
 def do_shell(three=None, python=False, fancy=False, shell_args=None):
     from .patched.pew import pew
+
     # Ensure that virtualenv is available.
     ensure_project(three=three, python=python, validate=False)
     # Set an environment variable, so we know we're in the environment.
@@ -2232,20 +2218,19 @@ def do_shell(three=None, python=False, fancy=False, shell_args=None):
     # Send additional arguments to the subshell.
     if shell_args:
         c.sendline(' '.join(shell_args))
+
     # Handler for terminal resizing events
     # Must be defined here to have the shell process in its context, since we
     # can't pass it as an argument
     def sigwinch_passthrough(sig, data):
         terminal_dimensions = get_terminal_size()
         c.setwinsize(terminal_dimensions.lines, terminal_dimensions.columns)
+
     signal.signal(signal.SIGWINCH, sigwinch_passthrough)
     # Interact with the new shell.
     c.interact(escape_character=None)
     c.close()
     sys.exit(c.exitstatus)
-
-
-
 
 
 def inline_activate_virtualenv():
@@ -2479,6 +2464,7 @@ def do_graph(bare=False, json=False, reverse=False):
                 # Ignore bad packages as top level.
                 if line.split('==')[0] in BAD_PACKAGES and not reverse:
                     continue
+
                 # Bold top-level packages.
                 if not line.startswith(' '):
                     click.echo(crayons.normal(line, bold=True))
@@ -2489,7 +2475,6 @@ def do_graph(bare=False, json=False, reverse=False):
         click.echo(c.out)
     # Return its return code.
     sys.exit(c.return_code)
-
 
 
 def do_sync(

@@ -1,56 +1,32 @@
+from datetime import timedelta, datetime
+from werkzeug import ImmutableDict, SharedDataMiddleware, create_environ
+from flask.helpers import _PackageBoundObject, url_for, get_flashed_messages, \
+    _tojson_filter, get_pkg_resources
+from flask.wrappers import Request, Response
+from flask.conf import ConfigAttribute, Config
+from flask.ctx import _default_template_ctx_processor, _RequestContext
+from flask.globals import _request_ctx_stack, request
+from flask.session import Session, _NullSession
+from flask.module import _ModuleSetupState
 
 
 
+from itertools import chain
+from threading import Lock
+from jinja2 import Environment, PackageLoader, FileSystemLoader
+from werkzeug.routing import Map, Rule
+from werkzeug.exceptions import HTTPException, InternalServerError
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# a lock used for logger initialization
+_logger_lock = Lock()
+def _select_autoescape(filename):
+    """Returns `True` if autoescaping should be active for the given
+    template name.
+    """
+    if filename is None:
+        return False
+    return filename.endswith(('.html', '.htm', '.xml', '.xhtml'))
 
 
 class Flask(_PackageBoundObject):
@@ -106,10 +82,12 @@ class Flask(_PackageBoundObject):
     #: The class that is used for response objects.  See
     #: :class:`~flask.Response` for more information.
     response_class = Response
+
     #: Path for the static files.  If you don't want to use static files
     #: you can set this value to `None` in which case no URL rule is added
     #: and the development server will no longer serve any static files.
     static_path = '/static'
+
     #: The debug flag.  Set this to `True` to enable debugging of the
     #: application.  In debug mode the debugger will kick in when an unhandled
     #: exception ocurrs and the integrated server will automatically reload
@@ -118,6 +96,7 @@ class Flask(_PackageBoundObject):
     #: This attribute can also be configured from the config with the `DEBUG`
     #: configuration key.  Defaults to `False`.
     debug = ConfigAttribute('DEBUG')
+
     #: The testing flask.  Set this to `True` to enable the test mode of
     #: Flask extensions (and in the future probably also Flask itself).
     #: For example this might activate unittest helpers that have an
@@ -126,6 +105,7 @@ class Flask(_PackageBoundObject):
     #: This attribute can also be configured from the config with the
     #: `TESTING` configuration key.  Defaults to `False`.
     testing = ConfigAttribute('TESTING')
+
     #: If a secret key is set, cryptographic components can use this to
     #: sign cookies and other things.  Set this to a complex random value
     #: when you want to use the secure cookie for instance.
@@ -133,11 +113,13 @@ class Flask(_PackageBoundObject):
     #: This attribute can also be configured from the config with the
     #: `SECRET_KEY` configuration key.  Defaults to `None`.
     secret_key = ConfigAttribute('SECRET_KEY')
+
     #: The secure cookie uses this for the name of the session cookie.
     #:
     #: This attribute can also be configured from the config with the
     #: `SESSION_COOKIE_NAME` configuration key.  Defaults to ``'session'``
     session_cookie_name = ConfigAttribute('SESSION_COOKIE_NAME')
+
     #: A :class:`~datetime.timedelta` which is used to set the expiration
     #: date of a permanent session.  The default is 31 days which makes a
     #: permanent session survive for roughly one month.
@@ -146,6 +128,7 @@ class Flask(_PackageBoundObject):
     #: `PERMANENT_SESSION_LIFETIME` configuration key.  Defaults to
     #: ``timedelta(days=31)``
     permanent_session_lifetime = ConfigAttribute('PERMANENT_SESSION_LIFETIME')
+
     #: Enable this if you want to use the X-Sendfile feature.  Keep in
     #: mind that the server has to support this.  This only affects files
     #: sent with the :func:`send_file` method.
@@ -155,40 +138,17 @@ class Flask(_PackageBoundObject):
     #: This attribute can also be configured from the config with the
     #: `USE_X_SENDFILE` configuration key.  Defaults to `False`.
     use_x_sendfile = ConfigAttribute('USE_X_SENDFILE')
+
     #: The name of the logger to use.  By default the logger name is the
     #: package name passed to the constructor.
     #:
+
     #: .. versionadded:: 0.4
     logger_name = ConfigAttribute('LOGGER_NAME')
+
+
     #: The logging format used for the debug logger.  This is only used when
     #: the application is in debug mode, otherwise the attached logging
-    #: handler does the formatting.
-    #:
-    #: .. versionadded:: 0.3
-    debug_log_format = (
-        '-' * 80 + '\n' +
-        '%(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n' +
-        '%(message)s\n' +
-        '-' * 80
-    )
-    )
-    #: Options that are passed directly to the Jinja2 environment.
-        autoescape=_select_autoescape,
-    jinja_options = ImmutableDict(
-        extensions=['jinja2.ext.autoescape', 'jinja2.ext.with_']
-    )
-    #: Default configuration parameters.
-    default_config = ImmutableDict({
-        'DEBUG':                                False,
-        'TESTING':                              False,
-        'SECRET_KEY':                           None,
-        'SESSION_COOKIE_NAME':                  'session',
-        'PERMANENT_SESSION_LIFETIME':           timedelta(days=31),
-        'USE_X_SENDFILE':                       False,
-        'LOGGER_NAME':                          None,
-    def __init__(self, import_name):
-        'SERVER_NAME':                          None
-    })
     def create_jinja_environment(self):
         """Creates the Jinja2 environment based on :attr:`jinja_options`
         and :meth:`create_jinja_loader`.
@@ -197,13 +157,7 @@ class Flask(_PackageBoundObject):
         """
         return Environment(loader=self.create_jinja_loader(),
                            **self.jinja_options)
-        """Creates the Jinja2 environment based on :attr:`jinja_options`
-        and :meth:`create_jinja_loader`.
 
-        .. versionadded:: 0.5
-        """
-        return Environment(loader=self.create_jinja_loader(),
-                           **self.jinja_options)
     def init_jinja_globals(self):
         """Callde directly after the environment was created to inject
         some defaults (like `url_for`, `get_flashed_messages` and the
@@ -214,17 +168,122 @@ class Flask(_PackageBoundObject):
         self.jinja_env.globals.update(
             url_for=url_for,
             get_flashed_messages=get_flashed_messages
+        )
         self.jinja_env.filters['tojson'] = _tojson_filter
-        """Callde directly after the environment was created to inject
-        some defaults (like `url_for`, `get_flashed_messages` and the
-        `tojson` filter.
 
-        .. versionadded:: 0.5
-        """
-        self.jinja_env.globals.update(
-            url_for=url_for,
-            get_flashed_messages=get_flashed_messages
-        self.jinja_env.filters['tojson'] = _tojson_filter
+    #: handler does the formatting.
+    #:
+    #: .. versionadded:: 0.3
+    debug_log_format = (
+        '-' * 80 + '\n' +
+        '%(levelname)s in %(module)s [%(pathname)s:%(lineno)d]:\n' +
+        '%(message)s\n' +
+        '-' * 80
+    )
+
+    #: Options that are passed directly to the Jinja2 environment.
+    jinja_options = ImmutableDict(
+        autoescape=_select_autoescape,
+        extensions=['jinja2.ext.autoescape', 'jinja2.ext.with_']
+    )
+
+    #: Default configuration parameters.
+    default_config = ImmutableDict({
+        'DEBUG':                                False,
+        'TESTING':                              False,
+        'SECRET_KEY':                           None,
+        'SESSION_COOKIE_NAME':                  'session',
+        'PERMANENT_SESSION_LIFETIME':           timedelta(days=31),
+        'USE_X_SENDFILE':                       False,
+        'LOGGER_NAME':                          None,
+        'SERVER_NAME':                          None
+    })
+
+    def __init__(self, import_name):
+        _PackageBoundObject.__init__(self, import_name)
+        #: The configuration dictionary as :class:`Config`.  This behaves
+        #: exactly like a regular dictionary but supports additional methods
+        #: to load a config from files.
+        self.config = Config(self.root_path, self.default_config)
+        #: Prepare the deferred setup of the logger.
+        self._logger = None
+        self.logger_name = self.import_name
+
+        #: A dictionary of all view functions registered.  The keys will
+        #: be function names which are also used to generate URLs and
+        #: the values are the function objects themselves.
+        #: to register a view function, use the :meth:`route` decorator.
+        self.view_functions = {}
+
+        #: A dictionary of all registered error handlers.  The key is
+        #: be the error code as integer, the value the function that
+        #: should handle that error.
+        #: To register a error handler, use the :meth:`errorhandler`
+        #: decorator.
+        self.error_handlers = {}
+
+        #: A dictionary with lists of functions that should be called at the
+        #: beginning of the request.  The key of the dictionary is the name of
+        #: the module this function is active for, `None` for all requests.
+        #: This can for example be used to open database connections or
+        #: getting hold of the currently logged in user.  To register a
+        #: function here, use the :meth:`before_request` decorator.
+        self.before_request_funcs = {}
+
+        #: A dictionary with lists of functions that should be called after
+        #: each request.  The key of the dictionary is the name of the module
+        #: this function is active for, `None` for all requests.  This can for
+        #: example be used to open database connections or getting hold of the
+        #: currently logged in user.  To register a function here, use the
+        #: :meth:`before_request` decorator.
+        self.after_request_funcs = {}
+
+
+        #: A dictionary with list of functions that are called without argument
+        #: to populate the template context.  They key of the dictionary is the
+        #: name of the module this function is active for, `None` for all
+        #: requests.  Each returns a dictionary that the template context is
+        #: updated with.  To register a function here, use the
+        #: :meth:`context_processor` decorator.
+        self.template_context_processors = {
+            None: [_default_template_ctx_processor]
+        }
+
+        #: The :class:`~werkzeug.routing.Map` for this instance.  You can use
+        #: this to change the routing converters after the class was created
+        #: but before any routes are connected.  Example::
+        #:
+        #:    from werkzeug import BaseConverter
+        #:
+        #:    class ListConverter(BaseConverter):
+        #:        def to_python(self, value):
+        #:            return value.split(',')
+        #:        def to_url(self, values):
+        #:            return ','.join(BaseConverter.to_url(value)
+        #:                            for value in values)
+        self.jinja_env = self.create_jinja_environment()
+        self.init_jinja_globals()
+
+        #:
+        #:    app = Flask(__name__)
+        #:    app.url_map.converters['list'] = ListConverter
+        self.url_map = Map()
+
+        if self.static_path is not None:
+            self.add_url_rule(self.static_path + '/<filename>',
+                              build_only=True, endpoint='static')
+            if get_pkg_resources() is not None:
+                target = (self.import_name, 'static')
+            else:
+                target = os.path.join(self.root_path, 'static')
+            self.wsgi_app = SharedDataMiddleware(self.wsgi_app, {
+                self.static_path: target
+            })
+
+        #: The Jinja2 environment.  It is created from the
+        #: :attr:`jinja_options` and the loader that is returned
+        #: by the :meth:`create_jinja_loader` function.
+
     @property
     def logger(self):
         """A :class:`logging.Logger` object for this application.  The
@@ -259,12 +318,16 @@ class Flask(_PackageBoundObject):
             logger.addHandler(handler)
             self._logger = logger
             return logger
+
     def create_jinja_loader(self):
         """Creates the Jinja loader.  By default just a package loader for
         the configured package is returned that looks up templates in the
         `templates` folder.  To add other loaders it's possible to
         override this method.
         """
+        if get_pkg_resources() is None:
+            return FileSystemLoader(os.path.join(self.root_path, 'templates'))
+
         return PackageLoader(self.import_name)
     def update_template_context(self, context):
         """Update the template context with some commonly used variables.
@@ -279,6 +342,7 @@ class Flask(_PackageBoundObject):
             funcs = chain(funcs, self.template_context_processors[mod])
         for func in funcs:
             context.update(func())
+
     def run(self, host='127.0.0.1', port=5000, **options):
         """Runs the application on a local development server.  If the
         :attr:`debug` flag is set the server will automatically reload
@@ -307,6 +371,127 @@ class Flask(_PackageBoundObject):
         options.setdefault('use_reloader', self.debug)
         options.setdefault('use_debugger', self.debug)
         return run_simple(host, port, self, **options)
+
+    def test_client(self):
+        """Creates a test client for this application.  For information
+        about unit testing head over to :ref:`testing`.
+
+        The test client can be used in a `with` block to defer the closing down
+        of the context until the end of the `with` block.  This is useful if
+        you want to access the context locals for testing::
+
+            with app.test_client() as c:
+                rv = c.get('/?vodka=42')
+                assert request.args['vodka'] == '42'
+
+        .. versionchanged:: 0.4
+           added support for `with` block usage for the client.
+        """
+        from werkzeug import Client
+        class FlaskClient(Client):
+            preserve_context = context_preserved = False
+            def open(self, *args, **kwargs):
+                if self.context_preserved:
+                    _request_ctx_stack.pop()
+                    self.context_preserved = False
+                kwargs.setdefault('environ_overrides', {}) \
+                    ['flask._preserve_context'] = self.preserve_context
+                old = _request_ctx_stack.top
+                try:
+                    return Client.open(self, *args, **kwargs)
+                finally:
+                    self.context_preserved = _request_ctx_stack.top is not old
+            def __enter__(self):
+                self.preserve_context = True
+                return self
+            def __exit__(self, exc_type, exc_value, tb):
+                self.preserve_context = False
+                if self.context_preserved:
+                    _request_ctx_stack.pop()
+        return FlaskClient(self, self.response_class, use_cookies=True)
+
+    def open_session(self, request):
+        """Creates or opens a new session.  Default implementation stores all
+        session data in a signed cookie.  This requires that the
+        :attr:`secret_key` is set.
+
+        :param request: an instance of :attr:`request_class`.
+        """
+        key = self.secret_key
+        if key is not None:
+            return Session.load_cookie(request, self.session_cookie_name,
+                                       secret_key=key)
+
+    def save_session(self, session, response):
+        """Saves the session if it needs updates.  For the default
+        implementation, check :meth:`open_session`.
+
+        :param session: the session to be saved (a
+                        :class:`~werkzeug.contrib.securecookie.SecureCookie`
+                        object)
+        :param response: an instance of :attr:`response_class`
+        """
+        expires = None
+        if session.permanent:
+            expires = datetime.utcnow() + self.permanent_session_lifetime
+        session.save_cookie(response, self.session_cookie_name,
+                            expires=expires, httponly=True)
+
+    def register_module(self, module, **options):
+        """Registers a module with this application.  The keyword argument
+        of this function are the same as the ones for the constructor of the
+        :class:`Module` class and will override the values of the module if
+        provided.
+        """
+        options.setdefault('url_prefix', module.url_prefix)
+        state = _ModuleSetupState(self, **options)
+        for func in module._register_events:
+            func(state)
+
+    def add_url_rule(self, rule, endpoint=None, view_func=None, **options):
+        """Connects a URL rule.  Works exactly like the :meth:`route`
+        decorator.  If a view_func is provided it will be registered with the
+        endpoint.
+
+        Basically this example::
+
+            @app.route('/')
+            def index():
+                pass
+
+        Is equivalent to the following::
+
+            def index():
+                pass
+            app.add_url_rule('/', 'index', index)
+
+        If the view_func is not provided you will need to connect the endpoint
+        to a view function like so::
+
+            app.view_functions['index'] = index
+
+        .. versionchanged:: 0.2
+           `view_func` parameter added.
+
+        :param rule: the URL rule as string
+        :param endpoint: the endpoint for the registered URL rule.  Flask
+                         itself assumes the name of the view function as
+                         endpoint
+        :param view_func: the function to call when serving a request to the
+                          provided endpoint
+        :param options: the options to be forwarded to the underlying
+                        :class:`~werkzeug.routing.Rule` object
+        """
+        if endpoint is None:
+            assert view_func is not None, 'expected view func if endpoint ' \
+                                          'is not provided.'
+            endpoint = view_func.__name__
+        options['endpoint'] = endpoint
+        options.setdefault('methods', ('GET',))
+        self.url_map.add(Rule(rule, **options))
+        if view_func is not None:
+            self.view_functions[endpoint] = view_func
+
     def route(self, rule, **options):
         """A decorator that is used to register a view function for a
         given URL rule.  Example::
@@ -365,7 +550,7 @@ class Flask(_PackageBoundObject):
         :param methods: a list of methods this rule should be limited
                         to (``GET``, ``POST`` etc.).  By default a rule
                         just listens for ``GET`` (and implicitly ``HEAD``).
-        :param subdomain: specifies the rule for the subdomain in case
+        :param subdomain: specifies the rule for the subdoain in case
                           subdomain matching is in use.
         :param strict_slashes: can be used to disable the strict slashes
                                setting for this rule.  See above.
@@ -376,123 +561,7 @@ class Flask(_PackageBoundObject):
             self.add_url_rule(rule, None, f, **options)
             return f
         return decorator
-    def test_client(self):
-        """Creates a test client for this application.  For information
-        about unit testing head over to :ref:`testing`.
 
-        The test client can be used in a `with` block to defer the closing down
-        of the context until the end of the `with` block.  This is useful if
-        you want to access the context locals for testing::
-
-            with app.test_client() as c:
-                rv = c.get('/?vodka=42')
-                assert request.args['vodka'] == '42'
-
-        .. versionchanged:: 0.4
-           added support for `with` block usage for the client.
-        """
-        from werkzeug import Client
-        class FlaskClient(Client):
-            preserve_context = context_preserved = False
-            def open(self, *args, **kwargs):
-                if self.context_preserved:
-                    self.context_preserved = False
-                kwargs.setdefault('environ_overrides', {}) \
-                    ['flask._preserve_context'] = self.preserve_context
-                old = _request_ctx_stack.top
-        try:
-                finally:
-                    self.context_preserved = _request_ctx_stack.top is not old
-    def __enter__(self):
-        return self
-    def __exit__(self, exc_type, exc_value, tb):
-        return FlaskClient(self, self.response_class, use_cookies=True)
-    def open_session(self, request):
-        """Creates or opens a new session.  Default implementation stores all
-        session data in a signed cookie.  This requires that the
-        :attr:`secret_key` is set.
-
-        :param request: an instance of :attr:`request_class`.
-        """
-        key = self.secret_key
-        if key is not None:
-            return Session.load_cookie(request, self.session_cookie_name,
-                                       secret_key=key)
-    def before_request(self, f):
-        """Registers a function to run before each request."""
-        self.before_request_funcs.setdefault(None, []).append(f)
-        return f
-        return f
-    def after_request(self, f):
-    def context_processor(self, f):
-        return f
-    def save_session(self, session, response):
-        """Saves the session if it needs updates.  For the default
-        implementation, check :meth:`open_session`.
-
-        :param session: the session to be saved (a
-                        :class:`~werkzeug.contrib.securecookie.SecureCookie`
-                        object)
-        :param response: an instance of :attr:`response_class`
-        """
-        expires = None
-        if session.permanent:
-            expires = datetime.utcnow() + self.permanent_session_lifetime
-        session.save_cookie(response, self.session_cookie_name,
-                            expires=expires, httponly=True)
-    def register_module(self, module, **options):
-        """Registers a module with this application.  The keyword argument
-        of this function are the same as the ones for the constructor of the
-        :class:`Module` class and will override the values of the module if
-        provided.
-        """
-        options.setdefault('url_prefix', module.url_prefix)
-        state = _ModuleSetupState(self, **options)
-        for func in module._register_events:
-            func(state)
-    def add_url_rule(self, rule, endpoint=None, view_func=None, **options):
-        """Connects a URL rule.  Works exactly like the :meth:`route`
-        decorator.  If a view_func is provided it will be registered with the
-        endpoint.
-
-        Basically this example::
-
-            @app.route('/')
-            def index():
-                pass
-
-        Is equivalent to the following::
-
-            def index():
-                pass
-            app.add_url_rule('/', 'index', index)
-
-        If the view_func is not provided you will need to connect the endpoint
-        to a view function like so::
-
-            app.view_functions['index'] = index
-
-        .. versionchanged:: 0.2
-           `view_func` parameter added.
-
-        :param rule: the URL rule as string
-        :param endpoint: the endpoint for the registered URL rule.  Flask
-                         itself assumes the name of the view function as
-                         endpoint
-        :param view_func: the function to call when serving a request to the
-                          provided endpoint
-        :param options: the options to be forwarded to the underlying
-                        :class:`~werkzeug.routing.Rule` object
-        """
-        if endpoint is None:
-            assert view_func is not None, 'expected view func if endpoint ' \
-                                          'is not provided.'
-            endpoint = view_func.__name__
-        options['endpoint'] = endpoint
-        options.setdefault('methods', ('GET',))
-        self.url_map.add(Rule(rule, **options))
-        if view_func is not None:
-            self.view_functions[endpoint] = view_func
     def errorhandler(self, code):
         """A decorator that is used to register a function give a given
         error code.  Example::
@@ -512,7 +581,10 @@ class Flask(_PackageBoundObject):
         :param code: the code as integer for the handler
         """
         def decorator(f):
+            self.error_handlers[code] = f
+            return f
         return decorator
+
     def template_filter(self, name=None):
         """A decorator that is used to register custom template filter.
         You can specify a name for the filter, otherwise the function
@@ -526,8 +598,25 @@ class Flask(_PackageBoundObject):
                      function name will be used.
         """
         def decorator(f):
-        return f
+            self.jinja_env.filters[name or f.__name__] = f
+            return f
         return decorator
+
+    def before_request(self, f):
+        """Registers a function to run before each request."""
+        self.before_request_funcs.setdefault(None, []).append(f)
+        return f
+
+    def after_request(self, f):
+        """Register a function to be run after each request."""
+        self.after_request_funcs.setdefault(None, []).append(f)
+        return f
+
+    def context_processor(self, f):
+        """Registers a template context processor function."""
+        self.template_context_processors[None].append(f)
+        return f
+
     def handle_http_exception(self, e):
         """Handles an HTTP exception.  By default this will invoke the
         registered error handlers and fall back to returning the
@@ -539,6 +628,7 @@ class Flask(_PackageBoundObject):
         if handler is None:
             return e
         return handler(e)
+
     def handle_exception(self, e):
         """Default exception handling that kicks in when an exception
         occours that is not catched.  In debug mode the exception will
@@ -558,6 +648,7 @@ class Flask(_PackageBoundObject):
         if handler is None:
             return InternalServerError()
         return handler(e)
+
     def dispatch_request(self):
         """Does the request dispatching.  Matches the URL and returns the
         return value of the view or error handler.  This does not have to
@@ -565,7 +656,13 @@ class Flask(_PackageBoundObject):
         proper response object, call :func:`make_response`.
         """
         req = _request_ctx_stack.top.request
+        try:
+            if req.routing_exception is not None:
+                raise req.routing_exception
+            return self.view_functions[req.endpoint](**req.view_args)
         except HTTPException, e:
+            return self.handle_http_exception(e)
+
     def make_response(self, rv):
         """Converts the return value from a view function to a real
         response object that is an instance of :attr:`response_class`.
@@ -597,6 +694,7 @@ class Flask(_PackageBoundObject):
         if isinstance(rv, tuple):
             return self.response_class(*rv)
         return self.response_class.force_type(rv, request.environ)
+
     def preprocess_request(self):
         """Called before the actual request dispatching and will
         call every as :meth:`before_request` decorated function.
@@ -612,6 +710,7 @@ class Flask(_PackageBoundObject):
             rv = func()
             if rv is not None:
                 return rv
+
     def process_response(self, response):
         """Can be overridden in order to modify the response object
         before it's sent to the WSGI server.  By default this will
@@ -621,7 +720,7 @@ class Flask(_PackageBoundObject):
         :return: a new response object or the same, has to be an
                  instance of :attr:`response_class`.
         """
-    ctx = _request_ctx_stack.top
+        ctx = _request_ctx_stack.top
         mod = ctx.request.module
         if not isinstance(ctx.session, _NullSession):
             self.save_session(ctx.session, response)
@@ -630,6 +729,7 @@ class Flask(_PackageBoundObject):
             funcs = chain(funcs, self.after_request_funcs[mod])
         if None in self.after_request_funcs:
             funcs = chain(funcs, self.after_request_funcs[None])
+
         for handler in funcs:
             response = handler(response)
         return response
@@ -659,10 +759,16 @@ class Flask(_PackageBoundObject):
                                exception context to start the response
         """
         with self.request_context(environ):
-                try:
+            try:
+                rv = self.preprocess_request()
+                if rv is None:
+                    rv = self.dispatch_request()
+                response = self.make_response(rv)
+            try:
+                response = self.process_response(response)
             except Exception, e:
                 response = self.make_response(self.handle_exception(e))
-        try:
+
             except Exception, e:
                 response = self.make_response(self.handle_exception(e))
             return response(environ, start_response)
@@ -704,13 +810,17 @@ class Flask(_PackageBoundObject):
         :param environ: a WSGI environment
         """
         return _RequestContext(self, environ)
+
     def test_request_context(self, *args, **kwargs):
         """Creates a WSGI environment from the given values (see
         :func:`werkzeug.create_environ` for more information, this
         function accepts the same arguments).
         """
         return self.request_context(create_environ(*args, **kwargs))
+
     def __call__(self, environ, start_response):
         """Shortcut for :attr:`wsgi_app`."""
         return self.wsgi_app(environ, start_response)
+
+
 

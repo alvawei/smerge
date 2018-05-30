@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Naive Bayes models
 ==================
@@ -8,10 +9,139 @@ applying Bayes' theorem with strong (naive) feature independence assumptions.
 See http://scikit-learn.sourceforge.net/modules/naive_bayes.html for
 complete documentation.
 """
+from .base import BaseEstimator, ClassifierMixin
+from .preprocessing import LabelBinarizer
+from .preprocessing import binarize
+from .utils.extmath import safe_sparse_dot
+from .utils.fixes import unique
+
 
 # Author: Vincent Michel <vincent.michel@inria.fr>
 #         Minor fixes by Fabian Pedregosa
-#         MultinomialNB classifier by:
+class BernoulliNB(MultinomialNB):
+    """Naive Bayes classifier for multivariate Bernoulli models.
+
+    Like MultinomialNB, this classifier is suitable for discrete data. The
+    difference is that while MultinomialNB works with occurrence counts,
+    BernoulliNB is designed for binary/boolean features.
+
+    Note: this class does not check whether features are actually boolean.
+
+    Parameters
+    ----------
+    alpha: float, optional (default=1.0)
+        Additive (Laplace/Lidstone) smoothing parameter
+        (0 for no smoothing).
+    binarize: float or None, optional
+        Threshold for binarizing (mapping to booleans) of sample features.
+        If None, input is presumed to already consist of binary vectors.
+    fit_prior: boolean
+        Whether to learn class prior probabilities or not.
+        If false, a uniform prior will be used.
+
+    Methods
+    -------
+    fit(X, y) : self
+        Fit the model
+
+    predict(X) : array
+        Predict using the model.
+
+    predict_proba(X) : array
+        Predict the probability of each class using the model.
+
+    predict_log_proba(X) : array
+        Predict the log probability of each class using the model.
+
+    Attributes
+    ----------
+    `class_log_prior_`, `intercept_` : array, shape = [n_classes]
+        Log probability of each class (smoothed).
+
+    `feature_log_prob_`, `coef_` : array, shape = [n_classes, n_features]
+        Empirical log probability of features given a class, P(x_i|y).
+
+    (`class_log_prior_` and `feature_log_prob_` are properties referring to
+    `intercept_` and `coef_`, respectively.)
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> X = np.random.randint(2, size=(6, 100))
+    >>> Y = np.array([1, 2, 3, 4])
+    >>> from scikits.learn.naive_bayes import BernoulliNB
+    >>> clf = BernoulliNB()
+    >>> clf.fit(X, Y)
+    BernoulliNB(alpha=1.0, fit_prior=True)
+    >>> print clf.predict(X[2])
+    [3]
+
+    References
+    ----------
+    C.D. Manning, P. Raghavan and H. Schütze (2008). Introduction to
+    Information Retrieval. Cambridge University Press, pp. 234–265.
+
+    A. McCallum and K. Nigam (1998). A comparison of event models for naive
+    Bayes text classification. Proc. AAAI/ICML-98 Workshop on Learning for
+    Text Categorization, pp. 41–48.
+
+    V. Metsis, I. Androutsopoulos and G. Paliouras (2006). Spam filtering with
+    naive Bayes -- Which naive Bayes? 3rd Conf. on Email and Anti-Spam (CEAS).
+    """
+
+    def __init__(self, alpha=1.0, binarize=.0, fit_prior=True):
+        self.alpha = alpha
+        self.binarize = binarize
+        self.fit_prior = True
+
+    def fit(self, X, y, class_prior=None):
+        """Fit Bernoulli Naive Bayes according to X, y
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_samples, n_features]
+            Training vectors, where n_samples is the number of samples and
+            n_features is the number of features. X may be a sparse matrix.
+
+        y : array-like, shape = [n_samples]
+            Target values.
+
+        class_prior : array, shape [n_classes]
+            Custom prior probability per class.
+            Overrides the fit_prior parameter.
+
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
+        X = binarize(X, threshold=self.binarize)
+        return super(BernoulliNB, self).fit(X, y, class_prior)
+
+    def _joint_log_likelihood(self, X):
+        X = atleast2d_or_csr(X)
+        sparse = issparse(X)
+
+        if self.binarize is not None:
+            X = binarize(X, threshold=self.binarize)
+
+        n_classes, n_features = self.coef_.shape
+        n_samples, n_features_X = X.shape
+
+        assert n_features_X == n_features, \
+            "Shape of samples doesn't match shape of training data"
+
+        # XXX: In the dense case, we could vectorize this loop. It might be
+        # worthwhile to check if this is faster.
+        jll = np.empty((n_classes, n_samples))
+        feature_neg_prob = np.log(1 - np.exp(self.coef_))
+        for i, x in enumerate(X):
+            xT = (x.toarray() if sparse else np.atleast_2d(x)).T
+            jll[:, i] = (np.dot(self.coef_, xT)
+                       + np.dot(feature_neg_prob,
+                                np.logical_not(xT))).flatten()
+
+        return jll + np.atleast_2d(self.intercept_).T
 #         Amit Aides <amitibo@tx.technion.ac.il>
 #         Yehuda Finkelstein <yehudaf@tx.technion.ac.il>
 #         Lars Buitinck <L.J.Buitinck@uva.nl>
@@ -19,11 +149,7 @@ complete documentation.
 #
 # License: BSD Style.
 
-from .preprocessing import LabelBinarizer
-from .base import BaseEstimator, ClassifierMixin
 from .utils import safe_asanyarray
-from .utils.fixes import unique
-from .utils.extmath import safe_sparse_dot
 import numpy as np
 from scipy.sparse import issparse
 
@@ -83,6 +209,7 @@ class GaussianNB(BaseEstimator, ClassifierMixin):
     --------
 
     """
+
     def fit(self, X, y):
         """Fit Gaussian Naive Bayes according to X, y
 
@@ -100,8 +227,10 @@ class GaussianNB(BaseEstimator, ClassifierMixin):
         self : object
             Returns self.
         """
+
         X = np.asanyarray(X)
         y = np.asanyarray(y)
+
         theta = []
         sigma = []
         class_prior = []
@@ -115,6 +244,7 @@ class GaussianNB(BaseEstimator, ClassifierMixin):
         self.class_prior = np.array(class_prior)
         self.unique_y = unique_y
         return self
+
     def predict(self, X):
         """
         Perform classification on an array of test vectors X.
@@ -130,6 +260,7 @@ class GaussianNB(BaseEstimator, ClassifierMixin):
         X = np.asanyarray(X)
         y_pred = self.unique_y[np.argmax(self.predict_proba(X), 1)]
         return y_pred
+
     def _joint_log_likelihood(self, X):
         joint_log_likelihood = []
         for i in xrange(np.size(self.unique_y)):
@@ -140,6 +271,7 @@ class GaussianNB(BaseEstimator, ClassifierMixin):
             joint_log_likelihood.append(jointi + n_ij)
         joint_log_likelihood = np.array(joint_log_likelihood).T
         return joint_log_likelihood
+
     def predict_proba(self, X):
         """
         Return probability estimates for the test vector X.
@@ -160,6 +292,7 @@ class GaussianNB(BaseEstimator, ClassifierMixin):
         proba = np.exp(joint_log_likelihood)
         proba = proba / np.sum(proba, 1)[:, np.newaxis]
         return proba
+
     def predict_log_proba(self, X):
         """
         Return log-probability estimates for the test vector X.
@@ -185,13 +318,6 @@ class GaussianNB(BaseEstimator, ClassifierMixin):
         aB[sup] = np.exp(logaB[sup])
         log_proba -= np.log(np.sum(aB, axis=1))[:, np.newaxis] + B
         return log_proba
-
-
-
-
-
-
-
 
 
 def asanyarray_or_csr(X):
@@ -272,9 +398,11 @@ class MultinomialNB(BaseEstimator, ClassifierMixin):
     naive Bayes as a linear classifier, see J. Rennie et al. (2003),
     Tackling the poor assumptions of naive Bayes text classifiers, ICML.
     """
+
     def __init__(self, alpha=1.0, fit_prior=True):
         self.alpha = alpha
         self.fit_prior = fit_prior
+
     def fit(self, X, y, class_prior=None):
         """Fit Multinomial Naive Bayes according to X, y
 
@@ -296,41 +424,32 @@ class MultinomialNB(BaseEstimator, ClassifierMixin):
         self : object
             Returns self.
         """
-        X, sparse = asanyarray_or_csr(X)
+        X = asanyarray_or_csr(X)
+        self.unique_y, inv_y_ind = unique(y, return_inverse=True)
         y = safe_asanyarray(y)
-        self.unique_y = np.unique(y)
+
+        elif self.fit_prior:
+            y_count = np.bincount(inv_y_ind)
+            self.intercept_ = np.log(y_count) - np.log(len(y))
+        else:
+            self.intercept_ = np.zeros(n_classes) - np.log(n_classes)
+
+        Y = LabelBinarizer().fit_transform(y)
+        if Y.shape[1] == 1:
+            Y = np.concatenate((1 - Y, Y), axis=1)
+
+        N_c, N_c_i = self._count(X, Y)
+
         n_classes = self.unique_y.size
-        fit_prior = self.fit_prior
+
         if class_prior:
             assert len(class_prior) == n_classes, \
                    'Number of priors must match number of classs'
-            self.intercept_ = np.log(class_prior)
-        elif not fit_prior:
-            class_prior = np.ones(n_classes) / n_classes
-        # N_c is the count of all features in all samples of class c.
-        # N_c_i is the a count of feature i in all samples of class c.
-        N_c_i = []
+            fit_prior = False
+
         self.coef_ = (np.log(N_c_i + self.alpha)
                     - np.log(N_c.reshape(-1, 1)
                            + self.alpha * X.shape[1]))
-        if fit_prior:
-            class_prior = []
-        for yi in self.unique_y:
-            if sparse:
-                row_ind = np.nonzero(y == yi)[0]
-                N_c_i.append(np.array(X[row_ind, :].sum(axis=0)).ravel())
-        else:
-                N_c_i.append(np.sum(X[y == yi, :], 0))
-            if fit_prior:
-                class_prior.append(np.float(np.sum(y == yi)) / y.size)
-        N_c_i = np.array(N_c_i)
-        N_c = np.sum(N_c_i, axis=1)
-        # Estimate (and smooth) the parameters of the distribution
-        #
-        self.coef_ = (np.log(N_c_i + self.alpha)
-                    - np.log(N_c.reshape(-1, 1)
-                           + self.alpha * X.shape[1]))
-            self.intercept_ = np.log(class_prior)
         return self
     @staticmethod
     def _count(X, Y):
@@ -342,7 +461,10 @@ class MultinomialNB(BaseEstimator, ClassifierMixin):
         """
         N_c_i = safe_sparse_dot(Y.T, X)
         N_c = np.sum(N_c_i, axis=1)
+
         return N_c, N_c_i
+
+
     class_log_prior_ = property(lambda self: self.intercept_)
     feature_log_prob_ = property(lambda self: self.coef_)
     def predict(self, X):
@@ -359,10 +481,12 @@ class MultinomialNB(BaseEstimator, ClassifierMixin):
         """
         joint_log_likelihood = self._joint_log_likelihood(X)
         y_pred = self.unique_y[np.argmax(joint_log_likelihood, axis=0)]
+
         return y_pred
     def _joint_log_likelihood(self, X):
         """Calculate the posterior log probability of the samples X"""
         X = atleast2d_or_csr(X)
+
         jll = safe_sparse_dot(self.coef_, X.T)
         return jll + np.atleast_2d(self.intercept_).T
     def predict_proba(self, X):
@@ -381,6 +505,7 @@ class MultinomialNB(BaseEstimator, ClassifierMixin):
             order.
         """
         return np.exp(self.predict_log_proba(X))
+
     def predict_log_proba(self, X):
         """
         Return log-probability estimates for the test vector X.
@@ -400,22 +525,6 @@ class MultinomialNB(BaseEstimator, ClassifierMixin):
         # normalize by P(x) = P(f_1, ..., f_n)
         log_prob_x = np.logaddexp.reduce(jll[:, np.newaxis])
         return (jll - log_prob_x).T
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

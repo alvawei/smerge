@@ -102,6 +102,7 @@ class BayesianRidge(LinearModel):
     -----
     See examples/linear_model/plot_bayesian_ridge.py for an example.
     """
+
     def __init__(self, n_iter=300, eps=1.e-3, alpha_1=1.e-6, alpha_2=1.e-6,
                 lambda_1=1.e-6, lambda_2=1.e-6, compute_score=False,
                 fit_intercept=True, normalize=False,
@@ -117,6 +118,7 @@ class BayesianRidge(LinearModel):
         self.normalize = normalize
         self.overwrite_X = overwrite_X
         self.verbose = verbose
+
     def fit(self, X, y, **params):
         """Fit the model
 
@@ -134,21 +136,28 @@ class BayesianRidge(LinearModel):
         self._set_params(**params)
         X = np.asanyarray(X, dtype=np.float)
         y = np.asanyarray(y, dtype=np.float)
-        X, y, Xmean, ymean = LinearModel._center_data(X, y, self.fit_intercept)
+        X = as_float_array(X, self.overwrite_X)
+        X, y, X_mean, y_mean, X_std = self._center_data(X, y,
+                self.fit_intercept, self.normalize)
         n_samples, n_features = X.shape
+
         ### Initialization of the values of the parameters
         alpha_ = 1. / np.var(y)
         lambda_ = 1.
+
         verbose = self.verbose
         lambda_1 = self.lambda_1
         lambda_2 = self.lambda_2
         alpha_1 = self.alpha_1
         alpha_2 = self.alpha_2
+
         self.scores_ = list()
         coef_old_ = None
+
         XT_y = np.dot(X.T, y)
         U, S, Vh = linalg.svd(X, full_matrices=False)
         eigen_vals_ = S ** 2
+
         ### Convergence loop of the bayesian ridge regression
         for iter_ in range(self.n_iter):
             ### Compute mu and sigma
@@ -169,6 +178,7 @@ class BayesianRidge(LinearModel):
                     logdet_sigma_ = lambda_ * np.ones(n_features)
                     logdet_sigma_[:n_samples] += alpha_ * eigen_vals_
                     logdet_sigma_ = - np.sum(np.log(logdet_sigma_))
+
             ### Update alpha and lambda
             rmse_ = np.sum((y - np.dot(X, coef_)) ** 2)
             gamma_ = (np.sum((alpha_ * eigen_vals_)
@@ -177,6 +187,7 @@ class BayesianRidge(LinearModel):
                             / (np.sum(coef_ ** 2) + 2 * lambda_2))
             alpha_ = ((n_samples - gamma_ + 2 * alpha_1)
                             / (rmse_ + 2 * alpha_2))
+
             ### Compute the objective function
             if self.compute_score:
                 s = lambda_1 * log(lambda_) - lambda_2 * lambda_
@@ -188,31 +199,21 @@ class BayesianRidge(LinearModel):
                                - logdet_sigma_
                                - n_samples * log(2 * np.pi))
                 self.scores_.append(s)
+
             ### Check for convergence
             if iter_ != 0 and np.sum(np.abs(coef_old_ - coef_)) < self.tol:
                 if verbose:
                     print "Convergence after ", str(iter_), " iterations"
                 break
             coef_old_ = np.copy(coef_)
+
+
         self.alpha_ = alpha_
         self.lambda_ = lambda_
-        self.lambda_ = lambda_
         self.coef_ = coef_
-        self._set_intercept(Xmean, ymean)
+
+        self._set_intercept(X_mean, y_mean, X_std)
         return self
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ###############################################################################
@@ -315,6 +316,7 @@ class ARDRegression(LinearModel):
     --------
     See examples/linear_model/plot_ard.py for an example.
     """
+
     <<<<<<< REMOTE
     def __init__(self, n_iter=300, eps=1.e-3, alpha_1=1.e-6, alpha_2=1.e-6,
                   lambda_1=1.e-6, lambda_2=1.e-6, compute_score=False,
@@ -333,6 +335,7 @@ class ARDRegression(LinearModel):
         self.overwrite_X = overwrite_X
         self.verbose = verbose
 
+
 =======
     def __init__(self, n_iter=300, eps=1.e-3, alpha_1=1.e-6, alpha_2=1.e-6,
                   lambda_1=1.e-6, lambda_2=1.e-6, compute_score=False,
@@ -350,6 +353,7 @@ class ARDRegression(LinearModel):
         self.threshold_lambda = threshold_lambda
         self.verbose = verbose
 
+
 =======
     def __init__(self, n_iter=300, tol=1.e-3, alpha_1=1.e-6, alpha_2=1.e-6,
                   lambda_1=1.e-6, lambda_2=1.e-6, compute_score=False,
@@ -365,6 +369,7 @@ class ARDRegression(LinearModel):
         self.threshold_lambda = threshold_lambda
         self.verbose = verbose
 
+
 >>>>>>> LOCAL
         self.n_iter = n_iter
         self.tol = tol
@@ -378,6 +383,7 @@ class ARDRegression(LinearModel):
         self.overwrite_X = overwrite_X
         self.threshold_lambda = threshold_lambda
         self.verbose = verbose
+
     def fit(self, X, y, **params):
         """Fit the ARDRegression model according to the given training data
         and parameters.
@@ -397,23 +403,34 @@ class ARDRegression(LinearModel):
         self : returns an instance of self.
         """
         self._set_params(**params)
+
         X = np.asanyarray(X, dtype=np.float)
         y = np.asanyarray(y, dtype=np.float)
+
         n_samples, n_features = X.shape
         coef_ = np.zeros(n_features)
-        X, y, Xmean, ymean = LinearModel._center_data(X, y, self.fit_intercept)
+
+        X = as_float_array(X, self.overwrite_X)
+
+        X, y, X_mean, y_mean, X_std = self._center_data(X, y, self.fit_intercept,
+                self.normalize)
+
         ### Launch the convergence loop
         keep_lambda = np.ones(n_features, dtype=bool)
+
         lambda_1 = self.lambda_1
         lambda_2 = self.lambda_2
         alpha_1 = self.alpha_1
         alpha_2 = self.alpha_2
         verbose = self.verbose
+
         ### Initialization of the values of the parameters
         alpha_ = 1. / np.var(y)
         lambda_ = np.ones(n_features)
+
         self.scores_ = list()
         coef_old_ = None
+
         ### Iterative procedure of ARDRegression
         for iter_ in range(self.n_iter):
             ### Compute mu and sigma (using Woodbury matrix identity)
@@ -429,6 +446,7 @@ class ARDRegression(LinearModel):
                           1. / lambda_[keep_lambda]
             coef_[keep_lambda] = alpha_ * np.dot(
                                         sigma_, np.dot(X[:, keep_lambda].T, y))
+
             ### Update alpha and lambda
             rmse_ = np.sum((y - np.dot(X, coef_)) ** 2)
             gamma_ = 1. - lambda_[keep_lambda] * np.diag(sigma_)
@@ -436,9 +454,11 @@ class ARDRegression(LinearModel):
                             / ((coef_[keep_lambda]) ** 2 + 2. * lambda_2)
             alpha_ = (n_samples - gamma_.sum() + 2. * alpha_1) \
                             / (rmse_ + 2. * alpha_2)
+
             ### Prune the weights with a precision over a threshold
             keep_lambda = lambda_ < self.threshold_lambda
             coef_[keep_lambda == False] = 0
+
             ### Compute the objective function
             if self.compute_score:
                 s = (lambda_1 * np.log(lambda_) - lambda_2 * lambda_).sum()
@@ -447,33 +467,18 @@ class ARDRegression(LinearModel):
                                                 + np.sum(np.log(lambda_)))
                 s -= 0.5 * (alpha_ * rmse_ + (lambda_ * coef_ ** 2).sum())
                 self.scores_.append(s)
+
             ### Check for convergence
             if iter_ > 0 and np.sum(np.abs(coef_old_ - coef_)) < self.tol:
                 if verbose:
                     print "Converged after %s iterations" % iter_
                 break
             coef_old_ = np.copy(coef_)
+
         self.coef_ = coef_
         self.alpha_ = alpha_
-        self.alpha_ = alpha_
         self.sigma_ = sigma_
-        self._set_intercept(Xmean, ymean)
+
+        self._set_intercept(X_mean, y_mean, X_std)
         return self
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

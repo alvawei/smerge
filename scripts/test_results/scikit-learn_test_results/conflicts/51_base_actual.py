@@ -8,14 +8,18 @@ from .. import liblinear
 
 class SparseBaseLibSVM(BaseLibSVM):
     _kernel_types = ['linear', 'poly', 'rbf', 'sigmoid', 'precomputed']
+
     def __init__(self, impl, kernel, degree, gamma, coef0,
                  tol, C, nu, epsilon, shrinking, probability, cache_size,
                  scale_C):
         assert kernel in self._kernel_types, \
                "kernel should be one of %s, "\
                "%s was given." % (self._kernel_types, kernel)
+
         super(SparseBaseLibSVM, self).__init__(impl, kernel, degree, gamma,
                 coef0, tol, C, nu, epsilon, shrinking, probability, cache_size)
+
+
     def fit(self, X, y, class_weight=None, sample_weight=None):
         """
         Fit the SVM model according to the given training data and parameters.
@@ -51,9 +55,11 @@ class SparseBaseLibSVM(BaseLibSVM):
         For maximum effiency, use a sparse matrix in csr format
         (scipy.sparse.csr_matrix)
         """
+
         X = scipy.sparse.csr_matrix(X)
         X.data = np.asarray(X.data, dtype=np.float64, order='C')
         y = np.asarray(y, dtype=np.float64, order='C')
+
         sample_weight = np.asarray([] if sample_weight is None
                                       else sample_weight, dtype=np.float64)
         if X.shape[0] != y.shape[0]:
@@ -61,22 +67,29 @@ class SparseBaseLibSVM(BaseLibSVM):
                              "Note: Sparse matrices cannot be indexed w/"
                              "boolean masks (use `indices=True` in CV)."
                              % (X.shape, y.shape))
+
         if sample_weight.shape[0] > 0 and sample_weight.shape[0] != X.shape[0]:
             raise ValueError("sample_weight and X have incompatible shapes:"
                              "%r vs %r\n"
                              "Note: Sparse matrices cannot be indexed w/"
                              "boolean masks (use `indices=True` in CV)."
                              % (sample_weight.shape, X.shape))
+
+
         solver_type = LIBSVM_IMPL.index(self.impl)
         kernel_type = self._kernel_types.index(self.kernel)
+
+        C = self.C
+        if self.scale_C:
+            C = C / float(X.shape[0])
+
         self.class_weight, self.class_weight_label = \
+
                      _get_class_weight(class_weight, y)
         if (kernel_type in [1, 2]) and (self.gamma == 0):
             # if custom gamma is not provided ...
             self.gamma = 1.0 / X.shape[1]
-        C = self.C
-        if self.scale_C:
-            C = C / float(X.shape[0])
+
         self.support_vectors_, dual_coef_data, self.intercept_, self.label_, \
             self.n_support_, self.probA_, self.probB_ = \
             libsvm.libsvm_sparse_train(
@@ -116,6 +129,7 @@ class SparseBaseLibSVM(BaseLibSVM):
         T = scipy.sparse.csr_matrix(T)
         T.data = np.asarray(T.data, dtype=np.float64, order='C')
         kernel_type = self._kernel_types.index(self.kernel)
+
         return libsvm.libsvm_sparse_predict(T.data, T.indices, T.indptr,
                       self.support_vectors_.data,
                       self.support_vectors_.indices,
@@ -150,15 +164,19 @@ class SparseBaseLibSVM(BaseLibSVM):
         predict. Also, it will meaningless results on very small
         datasets.
         """
+
         if not self.probability:
             raise ValueError(
                     "probability estimates must be enabled to use this method")
+
         if self.impl not in ('c_svc', 'nu_svc'):
             raise NotImplementedError("predict_proba only implemented for " +
                                       "SVC and NuSVC")
+
         X = scipy.sparse.csr_matrix(X)
         X.data = np.asarray(X.data, dtype=np.float64, order='C')
         kernel_type = self._kernel_types.index(self.kernel)
+
         return libsvm.libsvm_sparse_predict_proba(
             X.data, X.indices, X.indptr,
             self.support_vectors_.data,
@@ -171,28 +189,6 @@ class SparseBaseLibSVM(BaseLibSVM):
             self.nu, self.epsilon, self.shrinking,
             self.probability, self.n_support_, self.label_,
             self.probA_, self.probB_)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class SparseBaseLibLinear(BaseLibLinear):
@@ -213,6 +209,7 @@ class SparseBaseLibLinear(BaseLibLinear):
         self : object
             Returns an instance of self.
         """
+
         import scipy.sparse
         X = scipy.sparse.csr_matrix(X)
         y = np.asarray(y, dtype=np.int32, order='C')
@@ -220,12 +217,16 @@ class SparseBaseLibLinear(BaseLibLinear):
             raise ValueError("X and y have incompatible shapes.\n" +
                              "Note: Sparse matrices cannot be indexed w/" +
                              "boolean masks (use `indices=True` in CV).")
+
         X.data = np.asarray(X.data, dtype=np.float64, order='C')
-        self.class_weight, self.class_weight_label = \
-                     _get_class_weight(class_weight, y)
         C = self.C
         if self.scale_C:
             C = C / float(X.shape[0])
+
+
+        self.class_weight, self.class_weight_label = \
+
+                     _get_class_weight(class_weight, y)
         self.raw_coef_, self.label_ = \
                        liblinear.csr_train_wrap(X.shape[1], X.data, X.indices,
                        X.indptr, y,
@@ -249,6 +250,8 @@ class SparseBaseLibLinear(BaseLibLinear):
         X = scipy.sparse.csr_matrix(X)
         self._check_n_features(X)
         X.data = np.asarray(X.data, dtype=np.float64, order='C')
+
+
         return liblinear.csr_predict_wrap(X.shape[1], X.data,
                                       X.indices, X.indptr,
                                       self.raw_coef_,
@@ -276,6 +279,8 @@ class SparseBaseLibLinear(BaseLibLinear):
         X = scipy.sparse.csr_matrix(X)
         self._check_n_features(X)
         X.data = np.asarray(X.data, dtype=np.float64, order='C')
+
+
         dec_func = liblinear.csr_decision_function_wrap(
             X.shape[1], X.data, X.indices, X.indptr, self.raw_coef_,
             self._get_solver_type(), self.tol, self.C,
@@ -287,17 +292,6 @@ class SparseBaseLibLinear(BaseLibLinear):
             return -dec_func
         else:
             return dec_func
-
-
-
-
-
-
-
-
-
-
-
 
 libsvm.set_verbosity_wrap(0)
 

@@ -71,31 +71,25 @@ def fit_grid_point(X, y, base_clf, clf_params, cv, loss_func, score_func, iid,
     # update parameters of the classifier after a copy of its base structure
     clf = copy.deepcopy(base_clf)
     clf._set_params(**clf_params)
+
     score = 0.
     n_test_samples = 0.
     for train, test in cv:
-            if sp.issparse(X):
-            # slicing only works with indices in sparse matrices
-            ind = np.arange(X.shape[0])
-            train = ind[train]
-            test = ind[test]
-        clf.fit(X_train, y[train], **fit_params)
-            X_test = X[test]
+        if isinstance(X, list) or isinstance(X, tuple):
+            X_train = [X[i] for i, cond in enumerate(train) if cond]
+            X_test = [X[i] for i, cond in enumerate(test) if cond]
+
         elif score_func is not None:
             y_pred = clf.predict(X[test])
             this_score = score_func(y_test, y_pred)
+        else:
+            this_score = clf.score(X_test, y[test])
+        clf.fit(X_train, y[train], **fit_params)
         if loss_func is not None:
             y_pred = clf.predict(X_test)
             this_score = -loss_func(y[test], y_pred)
         else:
-            if sp.issparse(X):
-                # slicing only works with indices, no masked array with sparse
-                # matrices
-                ind = np.arange(X.shape[0])
-                train = ind[train]
-                test = ind[test]
-            X_train = X[train]
-            X_test = X[test]
+            this_score = clf.score(X_test, y[test])
         if iid:
             this_n_test_samples = y.shape[0]
             this_score *= this_n_test_samples
@@ -103,10 +97,8 @@ def fit_grid_point(X, y, base_clf, clf_params, cv, loss_func, score_func, iid,
         score += this_score
     if iid:
         score /= n_test_samples
+
     return score, clf
-
-
-
 
 
 class GridSearchCV(BaseEstimator):
@@ -169,6 +161,7 @@ class GridSearchCV(BaseEstimator):
     >>> clf.fit(X, y).predict([[-0.8, -1]])
     array([ 1.14])
     """
+
     def __init__(self, estimator, param_grid, loss_func=None, score_func=None,
                  fit_params={}, n_jobs=1, iid=True):
         assert hasattr(estimator, 'fit') and hasattr(estimator, 'predict'), (
@@ -182,11 +175,13 @@ class GridSearchCV(BaseEstimator):
                     "should have a 'score' method. The estimator %s "
                     "does not." % estimator
                     )
+
         self.estimator = estimator
         self.param_grid = param_grid
-        self.loss_func = loss_func
         self.score_func = score_func
+        self.loss_func = loss_func
         self.n_jobs = n_jobs
+
         self.fit_params = fit_params
         self.iid = iid
     def fit(self, X, y, refit=True, cv=None, **kw):
@@ -222,6 +217,7 @@ class GridSearchCV(BaseEstimator):
                 cv = StratifiedKFold(y, k=3)
             else:
                 cv = KFold(n_samples, k=3)
+
         grid = iter_grid(self.param_grid)
         base_clf = clone(self.estimator)
         out = Parallel(n_jobs=self.n_jobs)(
@@ -229,7 +225,9 @@ class GridSearchCV(BaseEstimator):
                 X, y, base_clf, clf_params, cv, self.loss_func,
                 self.score_func, self.iid, **self.fit_params)
                     for clf_params in grid)
+
         # Out is a list of pairs: score, estimator
+
         # Note: we do not use max(out) to make ties deterministic even if
         # comparison on estimator instances is not deterministic
         best_score = None
@@ -241,32 +239,28 @@ class GridSearchCV(BaseEstimator):
                 if score >= best_score:
                     best_score = score
                     best_estimator = estimator
+
         self.best_score = best_score
+
         if refit:
             # fit the best estimator using the entire dataset
             best_estimator.fit(X, y)
+
         self.best_estimator = best_estimator
         self.predict = best_estimator.predict
         if hasattr(best_estimator, 'score'):
             self.score = best_estimator.score
+
         # Store the computed scores
         grid = iter_grid(self.param_grid)
         self.grid_points_scores_ = dict((tuple(clf_params.items()), score)
                     for clf_params, (score, _) in zip(grid, out))
+
         return self
+
     def score(self, X, y=None):
         # This method is overridden during the fit if the best estimator
         # found has a score function.
         y_predicted = self.predict(X)
         return self.score_func(y, y_predicted)
-
-
-
-
-
-
-
-
-
-
 

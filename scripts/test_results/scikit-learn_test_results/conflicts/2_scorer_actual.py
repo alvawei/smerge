@@ -36,9 +36,11 @@ class _BaseScorer(six.with_metaclass(ABCMeta, object)):
         self._kwargs = kwargs
         self._score_func = score_func
         self._sign = sign
+
     @abstractmethod
     def __call__(self, estimator, X, y, sample_weight=None):
         pass
+
     def __repr__(self):
         kwargs_string = "".join([", %s=%s" % (str(k), str(v))
                                  for k, v in self._kwargs.items()])
@@ -46,12 +48,10 @@ class _BaseScorer(six.with_metaclass(ABCMeta, object)):
                 % (self._score_func.__name__,
                    "" if self._sign > 0 else ", greater_is_better=False",
                    self._factory_args(), kwargs_string))
+
     def _factory_args(self):
         """Return non-default make_scorer arguments for repr."""
         return ""
-
-
-
 
 
 class _PredictScorer(_BaseScorer):
@@ -120,9 +120,9 @@ class _ProbaScorer(_BaseScorer):
                                                  **self._kwargs)
         else:
             return self._sign * self._score_func(y, y_pred, **self._kwargs)
+
     def _factory_args(self):
         return ", needs_proba=True"
-
 
 
 class _ThresholdScorer(_BaseScorer):
@@ -155,31 +155,31 @@ class _ThresholdScorer(_BaseScorer):
         y_type = type_of_target(y)
         if y_type not in ("binary", "multilabel-indicator"):
             raise ValueError("{0} format is not supported".format(y_type))
+
         try:
             y_pred = clf.decision_function(X)
+
             # For multi-output multi-class estimator
             if isinstance(y_pred, list):
                 y_pred = np.vstack(p for p in y_pred).T
+
         except (NotImplementedError, AttributeError):
             y_pred = clf.predict_proba(X)
+
             if y_type == "binary":
                 y_pred = y_pred[:, 1]
             elif isinstance(y_pred, list):
                 y_pred = np.vstack([p[:, -1] for p in y_pred]).T
+
         if sample_weight is not None:
             return self._sign * self._score_func(y, y_pred,
                                                  sample_weight=sample_weight,
                                                  **self._kwargs)
         else:
             return self._sign * self._score_func(y, y_pred, **self._kwargs)
+
     def _factory_args(self):
         return ", needs_threshold=True"
-
-
-
-
-
-
 
 
 def get_scorer(scoring):

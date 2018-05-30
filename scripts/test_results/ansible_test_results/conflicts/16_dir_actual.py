@@ -29,6 +29,7 @@ from ansible import errors
 
 class InventoryDirectory(object):
     ''' Host inventory parser for ansible using a directory of inventories. '''
+
     def __init__(self, filename=C.DEFAULT_HOST_LIST):
         self.names = os.listdir(filename)
         self.names.sort()
@@ -36,6 +37,7 @@ class InventoryDirectory(object):
         self.parsers = []
         self.hosts = {}
         self.groups = {}
+ 
         for i in self.names:
             # Skip files that end with certain extensions or characters
             if any(i.endswith(ext) for ext in ("~", ".orig", ".bak", ".ini", ".retry", ".pyc", ".pyo")):
@@ -51,6 +53,7 @@ class InventoryDirectory(object):
                 parser = InventoryDirectory(filename=fullpath)
             elif utils.is_executable(fullpath):
                 parser = InventoryScript(filename=fullpath)
+
             # retrieve all groups and hosts form the parser and add them to
             # self, don't look at group lists yet, to avoid
             # recursion trouble, but just make sure all objects exist in self
@@ -60,6 +63,7 @@ class InventoryDirectory(object):
                     self._add_host(host)
             for group in newgroups:
                 self._add_group(group)
+
             # now check the objects lists so they contain only objects from
             # self; membership data in groups is already fine (except all &
             # ungrouped, see later), but might still reference objects not in self
@@ -85,9 +89,11 @@ class InventoryDirectory(object):
                     # also contained in the host's group list
                     if group not in self.hosts[host.name].groups:
                         self.hosts[host.name].groups.append(group)
+
             else:
                 parser = InventoryParser(filename=fullpath)
             self.parsers.append(parser)
+
         # extra checks on special groups all and ungrouped
         # remove hosts from 'ungrouped' if they became member of other groups
         if 'ungrouped' in self.groups:
@@ -97,6 +103,7 @@ class InventoryDirectory(object):
                 if len(host.groups) > 1:
                     host.groups.remove(ungrouped)
                     ungrouped.hosts.remove(host)
+
         # remove hosts from 'all' if they became member of other groups
         # all should only contain direct children, not grandchildren
         # direct children should have dept == 1
@@ -116,15 +123,19 @@ class InventoryDirectory(object):
                     # a parent any more; the info in the group is the correct
                     # info
                     allgroup.child_groups.remove(group)
+
+
     def _add_group(self, group):
         """ Merge an existing group or add a new one;
             Track parent and child groups, and hosts of the new one """
+
         if group.name not in self.groups:
             # it's brand new, add him!
             self.groups[group.name] = group
         if self.groups[group.name] != group:
             # different object, merge
             self._merge_groups(self.groups[group.name], group)
+
     def _add_host(self, host):
         if host.name not in self.hosts:
             # Papa's got a brand new host
@@ -132,17 +143,21 @@ class InventoryDirectory(object):
         if self.hosts[host.name] != host:
             # different object, merge
             self._merge_hosts(self.hosts[host.name], host)
+
     def _merge_groups(self, group, newgroup):
         """ Merge all of instance newgroup into group,
             update parent/child relationships
             group lists may still contain group objects that exist in self with
             same name, but was instanciated as a different object in some other
             inventory parser; these are handled later """
+
         # name
         if group.name != newgroup.name:
             raise errors.AnsibleError("Cannot merge group %s with %s" % (group.name, newgroup.name))
+
         # depth
         group.depth = max([group.depth, newgroup.depth])
+
         # hosts list (host objects are by now already added to self.hosts)
         for host in newgroup.hosts:
             grouphosts = dict([(h.name, h) for h in group.hosts])
@@ -158,6 +173,8 @@ class InventoryDirectory(object):
                 for hostgroup in [g for g in host.groups]:
                     if hostgroup.name == group.name and hostgroup != self.groups[group.name]:
                         self.hosts[host.name].groups.remove(hostgroup)
+
+
         # group child membership relation
         for newchild in newgroup.child_groups:
             # dict with existing child groups:
@@ -165,6 +182,7 @@ class InventoryDirectory(object):
             # check if child of new group is already known as a child
             if newchild.name not in childgroups:
                 self.groups[group.name].add_child_group(newchild)
+
         # group parent membership relation
         for newparent in newgroup.parent_groups:
             # dict with existing parent groups:
@@ -176,13 +194,17 @@ class InventoryDirectory(object):
                     self.groups[newparent.name] = newparent
                 # group now exists but not yet as a parent here
                 self.groups[newparent.name].add_child_group(group)
+
         # variables
         group.vars = utils.combine_vars(group.vars, newgroup.vars)
+
     def _merge_hosts(self,host, newhost):
         """ Merge all of instance newhost into host """
+
         # name
         if host.name != newhost.name:
             raise errors.AnsibleError("Cannot merge host %s with %s" % (host.name, newhost.name))
+
         # group membership relation
         for newgroup in newhost.groups:
             # dict with existing groups:
@@ -194,37 +216,15 @@ class InventoryDirectory(object):
                     self.groups[newgroup.name] = newgroup
                 # group now exists but doesn't have host yet
                 self.groups[newgroup.name].add_host(host)
+
         # variables
         host.vars = utils.combine_vars(host.vars, newhost.vars)
+
     def get_host_variables(self, host):
         """ Gets additional host variables from all inventories """
         vars = {}
         for i in self.parsers:
             vars.update(i.get_host_variables(host))
         return vars
-
- 
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

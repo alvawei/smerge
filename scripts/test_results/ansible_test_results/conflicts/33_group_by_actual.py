@@ -25,25 +25,34 @@ import ansible.utils.template as template
 
 class ActionModule(object):
     ''' Create inventory groups based on variables '''
+
     ### We need to be able to modify the inventory
     BYPASS_HOST_LOOP = True
     NEEDS_TMPPATH = False
+
     def __init__(self, runner):
         self.runner = runner
+
     def run(self, conn, tmp, module_name, module_args, inject, complex_args=None, **kwargs):
         # the group_by module does not need to pay attention to check mode.
         # it always runs.
+
         args = {}
         if complex_args:
             args.update(complex_args)
         args.update(parse_kv(self.runner.module_args))
         if not 'key' in args:
             raise ae("'key' is a required argument.")
+
         vv("created 'group_by' ActionModule: key=%s"%(args['key']))
+
         inventory = self.runner.inventory
+
         result = {'changed': False}
+
         ### find all groups
         groups = {}
+
         for host in self.runner.host_set:
             if not check_conditional(template.template(self.runner.basedir, self.runner.conditional, inject)):
                 continue
@@ -52,7 +61,10 @@ class ActionModule(object):
             if group_name not in groups:
                 groups[group_name] = []
             groups[group_name].append(host)
+
+
         result['groups'] = groups
+
         ### add to inventory
         for group, hosts in groups.items():
             inv_group = inventory.get_group(group)
@@ -67,19 +79,7 @@ class ActionModule(object):
                 if inv_group not in inv_host.get_groups():
                     result['changed'] = True
                     inv_group.add_host(inv_host)
+
         return ReturnData(conn=conn, comm_ok=True, result=result)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

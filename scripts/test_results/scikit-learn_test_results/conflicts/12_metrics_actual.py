@@ -67,6 +67,7 @@ def auc(x, y, reorder=False):
     if x.shape[0] < 2:
         raise ValueError('At least 2 points are needed to compute'
                          ' area under curve, but x.shape = %s' % x.shape)
+
     if reorder:
         # reorder the data points according to the x axis and using y to
         # break ties
@@ -78,10 +79,9 @@ def auc(x, y, reorder=False):
             h *= -1
             assert not np.any(h < 0), ("Reordering is not turned on, and "
                                        "The x array is not increasing: %s" % x)
+
     area = np.sum(h * (y[1:] + y[:-1])) / 2.0
     return area
-
-
 
 
 def unique_labels(*lists_of_labels):
@@ -138,19 +138,19 @@ def hinge_loss(y_true, pred_decision, pos_label=1, neg_label=-1):
 
     """
     # TODO: multi-class hinge-loss
+
     if pos_label != 1 or neg_label != -1:
         # the rest of the code assumes that positive and negative labels
         # are encoded as +1 and -1 respectively
         y_true = y_true.copy()
         y_true[y_true == pos_label] = 1
         y_true[y_true == neg_label] = -1
+
     margin = y_true * pred_decision
     losses = 1 - margin
     # The hinge doesn't penalize good enough predictions.
     losses[losses <= 0] = 0
     return np.mean(losses)
-
-
 
 
 ###############################################################################
@@ -235,9 +235,9 @@ def auc_score(y_true, y_score):
     0.75
 
     """
+
     fpr, tpr, tresholds = roc_curve(y_true, y_score)
     return auc(fpr, tpr, reorder=True)
-
 
 
 def matthews_corrcoef(y_true, y_pred):
@@ -350,6 +350,7 @@ def precision_recall_curve(y_true, probas_pred):
     """
     y_true = np.ravel(y_true)
     probas_pred = np.ravel(probas_pred)
+
     # Make sure input is boolean
     labels = np.unique(y_true)
     if np.all(labels == np.array([-1, 1])):
@@ -358,10 +359,12 @@ def precision_recall_curve(y_true, probas_pred):
         y_true[y_true == -1] = 0
     elif not np.all(labels == np.array([0, 1])):
         raise ValueError("y_true contains non binary labels: %r" % labels)
+
     # Sort pred_probas (and corresponding true labels) by pred_proba value
     decreasing_probas_indices = np.argsort(probas_pred, kind="mergesort")[::-1]
     probas_pred = probas_pred[decreasing_probas_indices]
     y_true = y_true[decreasing_probas_indices]
+
     # probas_pred typically has many tied values. Here we extract
     # the indices associated with the distinct values. We also
     # concatenate values for the beginning and end of the curve.
@@ -369,12 +372,14 @@ def precision_recall_curve(y_true, probas_pred):
     threshold_idxs = np.hstack([0,
                                 distinct_value_indices,
                                 len(probas_pred)])
+
     # Initialize true and false positive counts, precision and recall
     total_positive = float(y_true.sum())
     tp_count, fp_count = 0., 0.  # Must remain floats to prevent int division
     precision = [1.]
     recall = [0.]
     thresholds = []
+
     # Iterate over indices which indicate distinct values (thresholds) of
     # probas_pred. Each of these threshold values will be represented in the
     # curve with a coordinate in precision-recall space. To calculate the
@@ -395,17 +400,12 @@ def precision_recall_curve(y_true, probas_pred):
         thresholds.append(probas_pred[l_idx])
         if tp_count == total_positive:
             break
+
     # sklearn expects these in reverse order
     thresholds = np.array(thresholds)[::-1]
     precision = np.array(precision)[::-1]
     recall = np.array(recall)[::-1]
     return precision, recall, thresholds
-
-
-
-
-
-
 
 
 def roc_curve(y_true, y_score, pos_label=None):
@@ -462,6 +462,7 @@ def roc_curve(y_true, y_score, pos_label=None):
     y_true = np.ravel(y_true)
     y_score = np.ravel(y_score)
     classes = np.unique(y_true)
+
     # ROC only for binary classification if pos_label not given
     if (pos_label is None and
         not (np.all(classes == [0, 1]) or
@@ -473,10 +474,12 @@ def roc_curve(y_true, y_score, pos_label=None):
                          "pos_label should be explicitly given")
     elif pos_label is None:
         pos_label = 1.
+
     # y_true will be transformed into a boolean vector
     y_true = (y_true == pos_label)
     n_pos = float(y_true.sum())
     n_neg = y_true.shape[0] - n_pos
+
     if n_pos == 0:
         warnings.warn("No positive samples in y_true, "
                       "true positve value should be meaningless")
@@ -485,12 +488,16 @@ def roc_curve(y_true, y_score, pos_label=None):
         warnings.warn("No negative samples in y_true, "
                       "false positve value should be meaningless")
         n_neg = np.nan
+
     thresholds = np.unique(y_score)
     neg_value, pos_value = False, True
+
     tpr = np.empty(thresholds.size, dtype=np.float)  # True positive rate
     fpr = np.empty(thresholds.size, dtype=np.float)  # False positive rate
+
     # Build tpr/fpr vector
     current_pos_count = current_neg_count = sum_pos = sum_neg = idx = 0
+
     signal = np.c_[y_score, y_true]
     sorted_signal = signal[signal[:, 0].argsort(), :][::-1]
     last_score = sorted_signal[0][0]
@@ -512,6 +519,7 @@ def roc_curve(y_true, y_score, pos_label=None):
     else:
         tpr[-1] = (sum_pos + current_pos_count) / n_pos
         fpr[-1] = (sum_neg + current_neg_count) / n_neg
+
     # hard decisions, add (0,0)
     if fpr.shape[0] == 2:
         fpr = np.array([0.0, fpr[0], fpr[1]])
@@ -520,22 +528,14 @@ def roc_curve(y_true, y_score, pos_label=None):
     elif fpr.shape[0] == 1:
         fpr = np.array([0.0, fpr[0], 1.0])
         tpr = np.array([0.0, tpr[0], 1.0])
+
     if n_pos is np.nan:
         tpr[0] = np.nan
+
     if n_neg is np.nan:
         fpr[0] = np.nan
+
     return fpr, tpr, thresholds[::-1]
-
-
-
-
-
-
-
-
-
-
-
 
 
 ###############################################################################
@@ -585,22 +585,22 @@ def confusion_matrix(y_true, y_pred, labels=None):
         labels = unique_labels(y_true, y_pred)
     else:
         labels = np.asarray(labels, dtype=np.int)
+
     n_labels = labels.size
     label_to_ind = dict((y, x) for x, y in enumerate(labels))
     # convert yt, yp into index
     y_pred = np.array([label_to_ind.get(x, n_labels + 1) for x in y_pred])
     y_true = np.array([label_to_ind.get(x, n_labels + 1) for x in y_true])
+
     # intersect y_pred, y_true with labels, eliminate items not in labels
     ind = np.logical_and(y_pred < n_labels, y_true < n_labels)
     y_pred = y_pred[ind]
     y_true = y_true[ind]
+
     CM = np.asarray(coo_matrix((np.ones(y_true.shape[0]), (y_true, y_pred)),
                                shape=(n_labels, n_labels),
                                dtype=np.int).todense())
     return CM
-
-
-
 
 
 ###############################################################################
@@ -1027,40 +1027,50 @@ def precision_recall_fscore_support(y_true, y_pred, beta=1.0, labels=None,
     """
     if beta <= 0:
         raise ValueError("beta should be >0 in the F-beta score")
+
     y_true, y_pred = check_arrays(y_true, y_pred)
     if labels is None:
         labels = unique_labels(y_true, y_pred)
     else:
         labels = np.asarray(labels, dtype=np.int)
+
     n_labels = labels.size
     true_pos = np.zeros(n_labels, dtype=np.double)
     false_pos = np.zeros(n_labels, dtype=np.double)
     false_neg = np.zeros(n_labels, dtype=np.double)
     support = np.zeros(n_labels, dtype=np.long)
+
     for i, label_i in enumerate(labels):
         true_pos[i] = np.sum(y_pred[y_true == label_i] == label_i)
         false_pos[i] = np.sum(y_pred[y_true != label_i] == label_i)
         false_neg[i] = np.sum(y_pred[y_true == label_i] != label_i)
         support[i] = np.sum(y_true == label_i)
+
     try:
         # oddly, we may get an "invalid" rather than a "divide" error here
         old_err_settings = np.seterr(divide='ignore', invalid='ignore')
+
         # precision and recall
         precision = true_pos / (true_pos + false_pos)
         recall = true_pos / (true_pos + false_neg)
+
         # handle division by 0.0 in precision and recall
         precision[(true_pos + false_pos) == 0.0] = 0.0
         recall[(true_pos + false_neg) == 0.0] = 0.0
+
         # fbeta score
         beta2 = beta ** 2
         fscore = (1 + beta2) * (precision * recall) / (
             beta2 * precision + recall)
+
         # handle division by 0.0 in fscore
         fscore[(precision + recall) == 0.0] = 0.0
     finally:
         np.seterr(**old_err_settings)
+
     if not average:
         return precision, recall, fscore, support
+
     elif n_labels == 2 and pos_label is not None:
         if pos_label not in labels:
             raise ValueError("pos_label=%d is not a valid label: %r" %
@@ -1087,18 +1097,8 @@ def precision_recall_fscore_support(y_true, y_pred, beta=1.0, labels=None,
         else:
             raise ValueError('average has to be one of ' +
                              str(average_options))
+
         return avg_precision, avg_recall, avg_fscore, None
-
-
-
-
-
-
-
-
-
-
-
 
 
 def precision_score(y_true, y_pred, labels=None, pos_label=1,
@@ -1329,35 +1329,44 @@ def classification_report(y_true, y_pred, labels=None, target_names=None):
     <BLANKLINE>
 
     """
+
     if labels is None:
         labels = unique_labels(y_true, y_pred)
     else:
         labels = np.asarray(labels, dtype=np.int)
+
     last_line_heading = 'avg / total'
+
     if target_names is None:
         width = len(last_line_heading)
         target_names = ['%d' % l for l in labels]
     else:
         width = max(len(cn) for cn in target_names)
         width = max(width, len(last_line_heading))
+
     headers = ["precision", "recall", "f1-score", "support"]
     fmt = '%% %ds' % width  # first column: class name
     fmt += '  '
     fmt += ' '.join(['% 9s' for _ in headers])
     fmt += '\n'
+
     headers = [""] + headers
     report = fmt % tuple(headers)
     report += '\n'
+
     p, r, f1, s = precision_recall_fscore_support(y_true, y_pred,
                                                   labels=labels,
                                                   average=None)
+
     for i, label in enumerate(labels):
         values = [target_names[i]]
         for v in (p[i], r[i], f1[i]):
             values += ["%0.2f" % float(v)]
         values += ["%d" % int(s[i])]
         report += fmt % tuple(values)
+
     report += '\n'
+
     # compute averages
     values = [last_line_heading]
     for v in (np.average(p, weights=s),
@@ -1367,15 +1376,6 @@ def classification_report(y_true, y_pred, labels=None, target_names=None):
     values += ['%d' % np.sum(s)]
     report += fmt % tuple(values)
     return report
-
-
-
-
-
-
-
-
-
 
 
 ###############################################################################
@@ -1539,6 +1539,7 @@ def r2_score(y_true, y_pred):
                          " sample.")
     numerator = ((y_true - y_pred) ** 2).sum()
     denominator = ((y_true - y_true.mean(axis=0)) ** 2).sum()
+
     if denominator == 0.0:
         if numerator == 0.0:
             return 1.0
@@ -1547,7 +1548,6 @@ def r2_score(y_true, y_pred):
             # y_true is not interesting for scoring a regression anyway
             return 0.0
     return 1 - numerator / denominator
-
 
 
 def weighted_r2_score(y_true, y_pred, weights=None):

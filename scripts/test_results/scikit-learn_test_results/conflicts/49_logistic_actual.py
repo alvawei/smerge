@@ -78,6 +78,7 @@ class LogisticRegression(BaseLibLinear, ClassifierMixin,
     LIBLINEAR -- A Library for Large Linear Classification
     http://www.csie.ntu.edu.tw/~cjlin/liblinear/
     """
+
     def __init__(self, penalty='l2', dual=False, tol=1e-4, C=1.0,
                  fit_intercept=True, intercept_scaling=1,
                  scale_C=False):
@@ -85,6 +86,8 @@ class LogisticRegression(BaseLibLinear, ClassifierMixin,
             dual=dual, loss='lr', tol=tol, C=C,
             fit_intercept=fit_intercept, intercept_scaling=intercept_scaling,
             scale_C=scale_C)
+
+
     def predict_proba(self, X):
         """Probability estimates.
 
@@ -110,6 +113,7 @@ class LogisticRegression(BaseLibLinear, ClassifierMixin,
                                       self.class_weight, self.label_,
                                       self._get_bias())
         return probas[:, np.argsort(self.label_)]
+
     def predict_log_proba(self, X):
         """Log of Probability estimates.
 
@@ -128,8 +132,4 @@ class LogisticRegression(BaseLibLinear, ClassifierMixin,
             order.
         """
         return np.log(self.predict_proba(X))
-
-
-
-
 

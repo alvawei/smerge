@@ -68,34 +68,41 @@ def k_init(X, k, n_local_trials=None, random_state=None, x_squared_norms=None):
     """
     n_samples, n_features = X.shape
     random_state = check_random_state(random_state)
+
     centers = np.empty((k, n_features))
+
     # Set the number of local seeding trials if none is given
     if n_local_trials is None:
         # This is what Arthur/Vassilvitskii tried, but did not report
         # specific results for other than mentioning in the conclusion
         # that it helped.
         n_local_trials = 2 + int(np.log(k))
+
     # Pick first center randomly
     center_id = random_state.randint(n_samples)
     if sp.issparse(X):
         centers[0] = X[center_id].toarray()
     else:
         centers[0] = X[center_id]
+
     # Initialize list of closest distances and calculate current potential
     if x_squared_norms is None:
         x_squared_norms = _squared_norms(X)
     closest_dist_sq = euclidean_distances(
         centers[0], X, Y_norm_squared=x_squared_norms, squared=True)
     current_pot = closest_dist_sq.sum()
+
     # Pick the remaining k-1 points
     for c in xrange(1, k):
         # Choose center candidates by sampling with probability proportional
         # to the squared distance to the closest existing center
         rand_vals = random_state.random_sample(n_local_trials) * current_pot
         candidate_ids = np.searchsorted(closest_dist_sq.cumsum(), rand_vals)
+
         # Compute distances to center candidates
         distance_to_candidates = euclidean_distances(
             X[candidate_ids], X, Y_norm_squared=x_squared_norms, squared=True)
+
         # Decide which candidate is the best
         best_candidate = None
         best_pot = None
@@ -105,11 +112,13 @@ def k_init(X, k, n_local_trials=None, random_state=None, x_squared_norms=None):
             new_dist_sq = np.minimum(closest_dist_sq,
                                      distance_to_candidates[trial])
             new_pot = new_dist_sq.sum()
+
             # Store result if it is the best local trial so far
             if (best_candidate is None) or (new_pot < best_pot):
                 best_candidate = candidate_ids[trial]
                 best_pot = new_pot
                 best_dist_sq = new_dist_sq
+
         # Permanently add best center candidate found in local tries
         if sp.issparse(X):
             centers[c] = X[best_candidate].toarray()
@@ -117,24 +126,16 @@ def k_init(X, k, n_local_trials=None, random_state=None, x_squared_norms=None):
             centers[c] = X[best_candidate]
         current_pot = best_pot
         closest_dist_sq = best_dist_sq
+
     return centers
-
-
-
-
-
-
-
-
-
-
 
 
 ###############################################################################
 # K-means batch estimation by EM (expectation maximization)
 
 
-def k_means(X, k, init='k-means++', n_init=10, max_iter=300, verbose=0,
+def k_means(X, k, init='k-means++', precompute_distances=True,
+            n_init=10, max_iter=300, verbose=0,
             tol=1e-4, random_state=None, copy_x=True):
     """K-means clustering algorithm.
 
@@ -204,14 +205,17 @@ def k_means(X, k, init='k-means++', n_init=10, max_iter=300, verbose=0,
 
     """
     random_state = check_random_state(random_state)
+
     mean_variance = np.mean(np.var(X, 0))
     best_inertia = np.infty
     X = as_float_array(X, copy=copy_x)
+
     # subtract of mean of x for more accurate distance computations
     X_mean = X.mean(axis=0)
     if copy_x:
         X = X.copy()
     X -= X_mean
+
     if hasattr(init, '__array__'):
         init = np.asarray(init).copy()
         init -= X_mean
@@ -221,69 +225,110 @@ def k_means(X, k, init='k-means++', n_init=10, max_iter=300, verbose=0,
                 'performing only one init in the k-means instead of %d'
                 % n_init)
             n_init = 1
+
     # precompute squared norms of data points
     x_squared_norms = _squared_norms(X)
+
     best_labels, best_inertia, best_centers = None, None, None
+
     for it in range(n_init):
         # init
         centers = _init_centroids(X, k, init, random_state=random_state,
                                   x_squared_norms=x_squared_norms)
         if verbose:
             print 'Initialization complete'
-        # Allocate memory to store the distances for each sample to it's
-        # closer center for reallocation in case of ties
-        distances = np.zeros(shape=(X.shape[0],), dtype=np.float64)
+
         # iterations
         for i in range(max_iter):
             centers_old = centers.copy()
             # labels assignement is also called the E-step of EM
-<<<<<<< REMOTE
-labels, inertia = _labels_inertia(X, x_squared_norms, centers,
-                                              distances=distances)
-=======
-labels, inertia = _labels_inertia(X, x_squared_norms, centers,
+            labels, inertia = _labels_inertia(X, x_squared_norms, centers,
                                               precompute_distances)
->>>>>>> LOCAL
-            centers = _centers(X, labels, k, distances)
+
             # computation of the means is also called the M-step of EM
+            centers = _centers(X, labels, k)
+
             if verbose:
                 print 'Iteration %i, inertia %s' % (i, inertia)
+
             if best_inertia is None or inertia < best_inertia:
                 best_labels = labels.copy()
                 best_centers = centers.copy()
                 best_inertia = inertia
+
             if np.sum((centers_old - centers) ** 2) < tol * mean_variance:
                 if verbose:
                     print 'Converged to similar centers at iteration', i
                 break
+
     if not copy_x:
         X += X_mean
     return best_centers + X_mean, best_labels, best_inertia
 
 
+def _labels_inertia_precompute_dense(X, x_squared_norms, centers):
+    n_samples = X.shape[0]
+    k = centers.shape[0]
+    distances = euclidean_distances(centers, X, x_squared_norms,
+                                    squared=True)
+    labels = np.empty(n_samples, dtype=np.int)
+    labels.fill(-1)
+    mindist = np.empty(n_samples)
+    mindist.fill(np.infty)
+    for center_id in range(k):
+        dist = distances[center_id]
+        labels[dist < mindist] = center_id
+        mindist = np.minimum(dist, mindist)
+    inertia = mindist.sum()
+    return labels, inertia
+
+
+<<<<<<< REMOTE
+def _centers(X, labels, n_clusters, distances):
+    """M step of the K-means EM algorithm
+
+    Computation of cluster centers / means.
+
+    Parameters
+    ----------
+    X: array, shape (n_samples, n_features)
+
+    labels: array of integers, shape (n_samples)
+        Current label assignment
+
+    n_clusters: int
+        Number of desired clusters
+
+    Returns
+    -------
+    centers: array, shape (n_clusters, n_features)
+        The resulting centers
+    """
+    # TODO: add support for CSR input
+    n_features = X.shape[1]
+
+    # TODO: explicit dtype handling
+    centers = np.empty((n_clusters, n_features))
+    far_from_centers = None
+    reallocated_idx = 0
+
+    for center_id in range(n_clusters):
+        center_mask = labels == center_id
+        if not np.any(center_mask):
+            # Reassign empty cluster center to sample far from any cluster
+            if far_from_centers is None:
+                far_from_centers = distances.argsort()[::-1]
+            centers[center_id] = X[far_from_centers[reallocated_idx]]
+            reallocated_idx += 1
+        else:
+            centers[center_id] = np.mean(X[center_mask], axis=0)
+    return centers
 
 
 
-
-
-
-
-
-
-
-
-
-def _squared_norms(X):
-    """Compute the squared euclidean norms of the rows of X"""
-    if sp.issparse(X):
-        return _k_means.csr_row_norm_l2(X, squared=True)
-    else:
-        # TODO: implement a cython version to avoid the memory copy of the
-        # input data
-        return (X ** 2).sum(axis=1)
-
-
-def _labels_inertia(X, x_squared_norms, centers, distances=None):
+=======
+def _labels_inertia(X, x_squared_norms, centers,
+                    precompute_distances=True, distances=None):
     """E step of the K-means EM algorithm
 
     Compute the labels and the inertia of the given samples and centers
@@ -315,54 +360,30 @@ def _labels_inertia(X, x_squared_norms, centers, distances=None):
     # set the default value of centers to -1 to be able to detect any anomaly
     # easily
     labels = - np.ones(n_samples, np.int32)
-    if distances is None:
+    if distances == None:
         distances = np.zeros(shape=(0,), dtype=np.float64)
     if sp.issparse(X):
         inertia = _k_means._assign_labels_csr(
             X, x_squared_norms, centers, labels, distances=distances)
     else:
+        if precompute_distances:
+            return _labels_inertia_precompute_dense(X, x_squared_norms,
+                                                    centers)
         inertia = _k_means._assign_labels_array(
             X, x_squared_norms, centers, labels, distances=distances)
     return labels, inertia
 
 
-def _centers(X, labels, n_clusters):
-    """M step of the K-means EM algorithm
 
-    Computation of cluster centers / means.
-
-    Parameters
-    ----------
-    X: array, shape (n_samples, n_features)
-
-    labels: array of integers, shape (n_samples)
-        Current label assignment
-
-    n_clusters: int
-        Number of desired clusters
-
-    Returns
-    -------
-    centers: array, shape (n_clusters, n_features)
-        The resulting centers
-    """
-    # TODO: add support for CSR input
-    n_features = X.shape[1]
-    # TODO: explicit dtype handling
-    centers = np.empty((n_clusters, n_features))
-    X_center = None
-    for center_id in range(n_clusters):
-        center_mask = labels == center_id
-        if not np.any(center_mask):
-            # Reassign empty cluster center to sample far from any cluster
-            if far_from_centers is None:
-                far_from_centers = distances.argsort()[::-1]
-            centers[center_id] = X[far_from_centers[reallocated_idx]]
-            reallocated_idx += 1
-        else:
-            centers[center_id] = np.mean(X[center_mask], axis=0)
-    return centers
-
+>>>>>>> LOCAL
+def _squared_norms(X):
+    """Compute the squared euclidean norms of the rows of X"""
+    if sp.issparse(X):
+        return _k_means.csr_row_norm_l2(X, squared=True)
+    else:
+        # TODO: implement a cython version to avoid the memory copy of the
+        # input data
+        return (X ** 2).sum(axis=1)
 
 
 def _init_centroids(X, k, init, random_state=None, x_squared_norms=None,
@@ -399,12 +420,14 @@ def _init_centroids(X, k, init, random_state=None, x_squared_norms=None,
     """
     random_state = check_random_state(random_state)
     n_samples = X.shape[0]
+
     if init_size is not None and init_size < n_samples:
         init_indices = random_state.random_integers(
                 0, n_samples - 1, init_size)
         X = X[init_indices]
         x_squared_norms = x_squared_norms[init_indices]
         n_samples = X.shape[0]
+
     if init == 'k-means++':
         centers = k_init(X, k,
                         random_state=random_state,
@@ -420,15 +443,12 @@ def _init_centroids(X, k, init, random_state=None, x_squared_norms=None,
         raise ValueError("the init parameter for the k-means should "
             "be 'k-means++' or 'random' or an ndarray, "
             "'%s' (type '%s') was passed.")
+
+
+
     if sp.issparse(centers):
         centers = centers.toarray()
     return centers
-
-
-
-
-
-
 class KMeans(BaseEstimator):
     """K-Means clustering
 
@@ -508,12 +528,14 @@ class KMeans(BaseEstimator):
         probably much faster to than the default batch implementation.
 
     """
+
     def __init__(self, k=8, init='k-means++', n_init=10, max_iter=300,
                  tol=1e-4, precompute_distances=True,
                  verbose=0, random_state=None, copy_x=True):
         if hasattr(init, '__array__'):
             k = init.shape[0]
             init = np.asanyarray(init, dtype=np.float64)
+
         self.k = k
         self.init = init
         self.max_iter = max_iter
@@ -523,6 +545,8 @@ class KMeans(BaseEstimator):
         self.verbose = verbose
         self.random_state = random_state
         self.copy_x = copy_x
+
+
     def _check_fit_data(self, X):
         """Verify that the number of samples given is larger than k"""
         if sp.issparse(X):
@@ -533,6 +557,7 @@ class KMeans(BaseEstimator):
                 X.shape[0], self.k))
         X = as_float_array(X, copy=False)
         return X
+
     def _check_test_data(self, X):
         X = atleast2d_or_csr(X)
         n_samples, n_features = X.shape
@@ -542,18 +567,22 @@ class KMeans(BaseEstimator):
                              "Got %d features, expected %d" % (
                                  n_features, expected_n_features))
         return X
+
     def _check_fitted(self):
         if not hasattr(self, "cluster_centers_"):
             raise AttributeError("Model has not been trained yet.")
+
     def fit(self, X, y=None):
         """Compute k-means"""
         self.random_state = check_random_state(self.random_state)
         X = self._check_fit_data(X)
+
         self.cluster_centers_, self.labels_, self.inertia_ = k_means(
             X, k=self.k, init=self.init, n_init=self.n_init,
             max_iter=self.max_iter, verbose=self.verbose,
             precompute_distances=self.precompute_distances,
             tol=self.tol, random_state=self.random_state, copy_x=self.copy_x)
+
         return self
     def transform(self, X, y=None):
         """Transform the data to a cluster-distance space
@@ -575,6 +604,7 @@ class KMeans(BaseEstimator):
         self._check_fitted()
         X = self._check_test_data(X)
         return euclidean_distances(X, self.cluster_centers_)
+
     def predict(self, X):
         """Predict the closest cluster each sample in X belongs to.
 
@@ -596,6 +626,7 @@ class KMeans(BaseEstimator):
         X = self._check_test_data(X)
         x_squared_norms = _squared_norms(X)
         return _labels_inertia(X, x_squared_norms, self.cluster_centers_)[0]
+
     def score(self, X):
         """Opposite of the value of X on the K-means objective.
 
@@ -613,16 +644,6 @@ class KMeans(BaseEstimator):
         X = self._check_test_data(X)
         x_squared_norms = _squared_norms(X)
         return -_labels_inertia(X, x_squared_norms, self.cluster_centers_)[1]
-
-
-
-
-
-
-
-
-
-
 
 
 def _mini_batch_step(X, x_squared_norms, centers, counts,
@@ -653,46 +674,46 @@ def _mini_batch_step(X, x_squared_norms, centers, counts,
     # Perform label assignement to nearest centers
     nearest_center, inertia = _labels_inertia(X, x_squared_norms, centers,
                                               distances=distances)
+
     # implementation for the sparse CSR reprensation completely written in
     # cython
+    k = centers.shape[0]
     if sp.issparse(X):
         return inertia, _k_means._mini_batch_update_csr(
             X, x_squared_norms, centers, counts, nearest_center,
             old_center_buffer, compute_squared_diff)
-    k = centers.shape[0]
-    # dense variant in mostly numpy (not as memory efficient though)
+
     for center_idx in range(k):
         # find points from minibatch that are assigned to this center
         center_mask = nearest_center == center_idx
         count = center_mask.sum()
+
         if count > 0:
             if compute_squared_diff:
                 old_center_buffer[:] = centers[center_idx]
+
             # inplace remove previous count scaling
             centers[center_idx] *= counts[center_idx]
+
             # inplace sum with new points members of this cluster
             centers[center_idx] += np.sum(X[center_mask], axis=0)
+
             # update the count statistics for this center
             counts[center_idx] += count
+
             # inplace rescale to compute mean of all points (old and new)
             centers[center_idx] /= counts[center_idx]
+
             # update the squared diff if necessary
             if compute_squared_diff:
                 squared_diff += np.sum(
                     (centers[center_idx] - old_center_buffer) ** 2)
+
+    # dense variant in mostly numpy (not as memory efficient though)
+
+
     squared_diff = 0.0
     return inertia, squared_diff
-
-
-
-
-
-
-
-
-
-
-
 def _mini_batch_convergence(model, iteration_idx, n_iterations, tol,
                             n_samples, centers_squared_diff, batch_inertia,
                             context, verbose=0):
@@ -701,6 +722,7 @@ def _mini_batch_convergence(model, iteration_idx, n_iterations, tol,
     # batch_size changes
     batch_inertia /= model.batch_size
     centers_squared_diff /= model.batch_size
+
     # Compute an Exponentially Weighted Average of the squared
     # diff to monitor the convergence while discarding
     # minibatch-local stochastic variability:
@@ -715,6 +737,7 @@ def _mini_batch_convergence(model, iteration_idx, n_iterations, tol,
         alpha = 1.0 if alpha > 1.0 else alpha
         ewa_diff = ewa_diff * (1 - alpha) + centers_squared_diff * alpha
         ewa_inertia = ewa_inertia * (1 - alpha) + batch_inertia * alpha
+
     # Log progress to be able to monitor convergence
     if verbose:
         progress_msg = (
@@ -723,6 +746,7 @@ def _mini_batch_convergence(model, iteration_idx, n_iterations, tol,
                 iteration_idx + 1, n_iterations, batch_inertia,
                 ewa_inertia))
         print progress_msg
+
     # Early stopping based on absolute tolerance on squared change of
     # centers postion (using EWA smoothing)
     if tol > 0.0 and ewa_diff < tol:
@@ -730,6 +754,7 @@ def _mini_batch_convergence(model, iteration_idx, n_iterations, tol,
             print 'Converged (small centers change) at iteration %d/%d' % (
                 iteration_idx + 1, n_iterations)
         return True
+
     # Early stopping heuristic due to lack of improvement on smoothed inertia
     ewa_inertia_min = context.get('ewa_inertia_min')
     no_improvement = context.get('no_improvement', 0)
@@ -738,6 +763,7 @@ def _mini_batch_convergence(model, iteration_idx, n_iterations, tol,
         ewa_inertia_min = ewa_inertia
     else:
         no_improvement += 1
+
     if (model.max_no_improvement is not None
         and no_improvement >= model.max_no_improvement):
         if verbose:
@@ -745,20 +771,15 @@ def _mini_batch_convergence(model, iteration_idx, n_iterations, tol,
                    ' at iteration %d/%d' % (
                        iteration_idx + 1, n_iterations))
         return True
+
     # update the convergence context to maintain state across sucessive calls:
     context['ewa_diff'] = ewa_diff
     context['ewa_inertia'] = ewa_inertia
     context['ewa_inertia_min'] = ewa_inertia_min
     context['no_improvement'] = no_improvement
+
+
     return False
-
-
-
-
-
-
-
-
 class MiniBatchKMeans(KMeans):
     """Mini-Batch K-Means clustering
 
@@ -848,6 +869,8 @@ class MiniBatchKMeans(KMeans):
     ----------
     http://www.eecs.tufts.edu/~dsculley/papers/fastkmeans.pdf
     """
+
+
     def __init__(self, k=8, init='k-means++', max_iter=100,
                  batch_size=100, verbose=0, compute_labels=True,
                  random_state=None, tol=0.0, max_no_improvement=10,
@@ -855,6 +878,7 @@ class MiniBatchKMeans(KMeans):
         super(MiniBatchKMeans, self).__init__(k=k, init=init,
               max_iter=max_iter, verbose=verbose, random_state=random_state,
               tol=tol, n_init=n_init)
+
         self.max_no_improvement = max_no_improvement
         if chunk_size is not None:
             warnings.warn(
@@ -862,6 +886,7 @@ class MiniBatchKMeans(KMeans):
             batch_size = chunk_size
         self.batch_size = batch_size
         self.compute_labels = compute_labels
+
         self.init_size = batch_size if init_size is None else 3 * init_size
     def fit(self, X, y=None):
         """Compute the centroids on X by chunking it into mini-batches.
@@ -878,15 +903,19 @@ class MiniBatchKMeans(KMeans):
         if n_samples < self.k:
             raise ValueError("Number of samples smaller than number "\
                              "of clusters.")
+
         if hasattr(self.init, '__array__'):
             self.init = np.ascontiguousarray(self.init, dtype=np.float64)
+
         x_squared_norms = _squared_norms(X)
+
         if self.tol > 0.0:
             if not sp.issparse(X):
                 mean_variance = np.mean(np.var(X, 0))
             else:
                 mean_variance = np.mean(mean_variance_axis0(X)[1])
             tol = self.tol * mean_variance
+
             # using tol-based early stopping needs the allocation of a
             # dedicated before which can be expensive for high dim data:
             # hence we allocate it outside of the main loop
@@ -896,18 +925,22 @@ class MiniBatchKMeans(KMeans):
             # no need for the center buffer if tol-based early stopping is
             # disabled
             old_center_buffer = np.zeros(0, np.double)
+
         distances = np.zeros(self.batch_size, dtype=np.float64)
         n_batches = int(np.ceil(float(n_samples) / self.batch_size))
         n_iterations = int(self.max_iter * n_batches)
         init_size = self.init_size
         if init_size > n_samples:
             init_size = n_samples
+
         validation_indices = self.random_state.random_integers(
                 0, n_samples - 1, init_size)
+
         X_valid = X[validation_indices]
         x_squared_norms_valid = x_squared_norms[validation_indices]
         # perform several inits with random sub-sets
         best_inertia = None
+
         for init_idx in range(self.n_init):
             if self.verbose:
                 print "Init %d/%d with method: %s" % (
@@ -916,12 +949,14 @@ class MiniBatchKMeans(KMeans):
             # TODO: once the `k_means` function works with sparse input we
             # should refactor the following init to use it instead.
             # Initialize the centers using only a fraction of the data as we
+
             # expect n_samples to be very large when using MiniBatchKMeans
             cluster_centers = _init_centroids(
                 X, self.k, self.init,
                 random_state=self.random_state,
                 x_squared_norms=x_squared_norms,
                 init_size=init_size)
+
             # Compute the label assignement on the init dataset
             batch_inertia, centers_squared_diff = _mini_batch_step(
                 X_valid, x_squared_norms[validation_indices],
@@ -938,15 +973,19 @@ class MiniBatchKMeans(KMeans):
                 self.cluster_centers_ = cluster_centers
                 self.counts_ = counts
                 best_inertia = inertia
+
         # Empty context to be used inplace by the convergence check routine
         convergence_context = {}
         # Perform the iterative optimization untill the final convergence
+
         # criterion
         for iteration_idx in xrange(n_iterations):
             # Sample the minibatch from the full dataset
             minibatch_indices = self.random_state.random_integers(
                 0, n_samples - 1, self.batch_size)
+
             # Perform the actual update step on the minibatch data
+
             batch_inertia, centers_squared_diff = _mini_batch_step(
                 X[minibatch_indices], x_squared_norms[minibatch_indices],
                 self.cluster_centers_, self.counts_,
@@ -957,11 +996,13 @@ class MiniBatchKMeans(KMeans):
                 centers_squared_diff, batch_inertia, convergence_context,
                 verbose=self.verbose):
                 break
+
         if self.compute_labels:
             if self.verbose:
                 print 'Computing label assignements and total inertia'
             self.labels_, self.inertia_ = _labels_inertia(
                 X, x_squared_norms, self.cluster_centers_)
+
         return self
     def partial_fit(self, X, y=None):
         """Update k means estimate on a single mini-batch X.
@@ -972,13 +1013,18 @@ class MiniBatchKMeans(KMeans):
             Coordinates of the data points to cluster.
         """
         self.random_state = check_random_state(self.random_state)
+
         X = check_arrays(X, sparse_format="csr", copy=False)[0]
         n_samples, n_features = X.shape
         if hasattr(self.init, '__array__'):
             self.init = np.ascontiguousarray(self.init, dtype=np.float64)
+
         if n_samples == 0:
             return self
+
+
         x_squared_norms = _squared_norms(X)
+
         if (not hasattr(self, 'counts_')
             or not hasattr(self, 'cluster_centers_')):
             # this is the first call partial_fit on this object:
@@ -986,43 +1032,14 @@ class MiniBatchKMeans(KMeans):
             self.cluster_centers_ = _init_centroids(
                 X, self.k, self.init, random_state=self.random_state,
                 x_squared_norms=x_squared_norms, init_size=self.init_size)
+
+
             self.counts_ = np.zeros(self.k, dtype=np.int32)
         _mini_batch_step(X, x_squared_norms, self.cluster_centers_,
                          self.counts_, np.zeros(0, np.double), 0)
         if self.compute_labels:
             self.labels_, self.inertia_ = _labels_inertia(
                 X, x_squared_norms, self.cluster_centers_)
+
         return self
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

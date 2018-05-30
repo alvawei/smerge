@@ -9,28 +9,76 @@ import sys
 import os
 import shutil
 
+if sys.version_info[0] < 3:
+    import __builtin__ as builtins
+else:
+    import builtins
+
+# This is a bit (!) hackish: we are setting a global variable so that the main
+# sklearn __init__ can detect if it is being loaded by the setup routine, to
+# avoid attempting to load components that aren't built yet.
+builtins.__SKLEARN_SETUP__ = True
+<<<<<<< REMOTE
+URL = 'http://scikit-learn.sourceforge.net'
+=======
+###############################################################################
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+LICENSE = 'new BSD'
+=======
+# Optional setuptools features
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+
+=======
+# For some commands, use setuptools
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+# We can actually import a restricted version of sklearn that
+=======
+if len(set(('develop', 'release', 'bdist_egg', 'bdist_rpm',
+           'bdist_wininst', 'install_egg_info', 'build_sphinx',
+           'egg_info', 'easy_install', 'upload',
+            )).intersection(sys.argv)) > 0:
+    extra_setuptools_args = dict(
+            zip_safe=False, # the package can run out of an .egg file
+            include_package_data=True,
+        )
+
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+# does not need the compiled code
+=======
+else:
+    extra_setuptools_args = dict()
+
+
+>>>>>>> LOCAL
+VERSION = sklearn.__version__
+
+
+
 DISTNAME = 'scikit-learn'
 DESCRIPTION = 'A set of python modules for machine learning and data mining'
+
 LONG_DESCRIPTION = open('README.rst').read()
 MAINTAINER = 'Fabian Pedregosa'
-MAINTAINER_EMAIL = 'fabian.pedregosa@inria.fr'
-URL = 'http://scikit-learn.sourceforge.net'
-LICENSE = 'new BSD'
-DOWNLOAD_URL = 'http://sourceforge.net/projects/scikit-learn/files/'
-
 from numpy.distutils.core import setup
-
 
 def configuration(parent_package='', top_path=None):
     if os.path.exists('MANIFEST'):
         os.remove('MANIFEST')
+
     from numpy.distutils.misc_util import Configuration
+    config = Configuration(None, parent_package, top_path,
+        namespace_packages=['scikits'])
+    config.add_subpackage('scikits.learn')
+
+    config.add_data_files('scikits/__init__.py')
+
+
     config.add_subpackage('sklearn')
     return config
-
-
-
-
 
 if __name__ == "__main__":
     old_path = os.getcwd()
@@ -59,10 +107,27 @@ if __name__ == "__main__":
             res = lib2to3.main.main("lib2to3.fixes", ['-x', 'import', '-w', local_path])
         finally:
             sys.stdout = _old_stdout
+
         if res != 0:
             raise Exception('2to3 failed, exiting ...')
+
     os.chdir(local_path)
+
     sys.path.insert(0, local_path)
+    <<<<<<< REMOTE
+setup(configuration=configuration,
+          name=DISTNAME,
+          maintainer=MAINTAINER,
+          include_package_data=True,
+          maintainer_email=MAINTAINER_EMAIL,
+          description=DESCRIPTION,
+          license=LICENSE,
+          url=URL,
+          version=VERSION,
+          download_url=DOWNLOAD_URL,
+          long_description=LONG_DESCRIPTION,
+          zip_safe=False,  # the package can run out of an .egg file
+          classifiers=[
               'Intended Audience :: Science/Research',
               'Intended Audience :: Developers',
               'License :: OSI Approved',
@@ -74,9 +139,59 @@ if __name__ == "__main__":
               'Operating System :: POSIX',
               'Operating System :: Unix',
               'Operating System :: MacOS'
+             ]
     )
-
-
-
-
+=======
+setup(configuration=configuration,
+          name=DISTNAME,
+          maintainer=MAINTAINER,
+          include_package_data=True,
+          maintainer_email=MAINTAINER_EMAIL,
+          description=DESCRIPTION,
+          license=LICENSE,
+          url=URL,
+          version=VERSION,
+          download_url=DOWNLOAD_URL,
+          long_description=LONG_DESCRIPTION,
+          zip_safe=False, # the package can run out of an .egg file
+          classifiers=[
+              'Intended Audience :: Science/Research',
+              'Intended Audience :: Developers',
+              'License :: OSI Approved',
+              'Programming Language :: C',
+              'Programming Language :: Python',
+              'Topic :: Software Development',
+              'Topic :: Scientific/Engineering',
+              'Operating System :: Microsoft :: Windows',
+              'Operating System :: POSIX',
+              'Operating System :: Unix',
+              'Operating System :: MacOS'
+             ]
+    )
+=======
+setup(configuration=configuration,
+          name=DISTNAME,
+          maintainer=MAINTAINER,
+          maintainer_email=MAINTAINER_EMAIL,
+          description=DESCRIPTION,
+          license=LICENSE,
+          url=URL,
+          version=VERSION,
+          download_url=DOWNLOAD_URL,
+          long_description=LONG_DESCRIPTION,
+          classifiers=[
+              'Intended Audience :: Science/Research',
+              'Intended Audience :: Developers',
+              'License :: OSI Approved',
+              'Programming Language :: C',
+              'Programming Language :: Python',
+              'Topic :: Software Development',
+              'Topic :: Scientific/Engineering',
+              'Operating System :: Microsoft :: Windows',
+              'Operating System :: POSIX',
+              'Operating System :: Unix',
+              'Operating System :: MacOS'
+             ],
+      **extra_setuptools_args)
+>>>>>>> LOCAL
 

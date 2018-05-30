@@ -27,6 +27,9 @@ from . import svm
 from . import feature_selection
 from . import sgd
 
+__all__ = ['cross_val', 'ball_tree', 'cluster', 'covariance',
+           'datasets', 'gmm', 'glm', 'lda', 'metrics', 'svm',
+           'features', 'clone', 'test']
 try:
     from numpy.testing import nosetester
     class NoseTester(nosetester.NoseTester):
@@ -37,12 +40,9 @@ try:
             return super(NoseTester, self).test(label=label, verbose=verbose,
                                     extra_argv=extra_argv,
                                     doctests=doctests, coverage=coverage)
+        
     test = NoseTester().test
     del nosetester
-        
-__all__ = ['cross_val', 'ball_tree', 'cluster', 'covariance',
-           'datasets', 'gmm', 'glm', 'lda', 'metrics', 'svm',
-           'features', 'clone', 'test']
 except:
     pass
 

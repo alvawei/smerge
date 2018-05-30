@@ -3,32 +3,18 @@
     flask
     ~~~~~
 
-    <<<<<<< REMOTE
-A microframework based on Werkzeug.  It's extensively documented
+    A microframework based on Werkzeug.  It's extensively documented
     and follows best practice patterns.
 
     :copyright: © 2010 by the Pallets team.
     :license: BSD, see LICENSE for more details.
 """
 
+<<<<<<< REMOTE
 __version__ = '1.0.1.dev'
 =======
-A microframework based on Werkzeug.  It's extensively documented
-    and follows best practice patterns.
-
-    :copyright: © 2010 by the Pallets team.
-    :license: BSD, see LICENSE for more details.
-"""
-
 __version__ = '1.0-dev'
 =======
-A microframework based on Werkzeug.  It's extensively documented
-    and follows best practice patterns.
-
-    :copyright: © 2010 by the Pallets team.
-    :license: BSD, see LICENSE for more details.
-"""
-
 __version__ = '1.1.dev'
 >>>>>>> LOCAL
 

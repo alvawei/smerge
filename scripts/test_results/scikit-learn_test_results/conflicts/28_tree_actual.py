@@ -94,10 +94,12 @@ def export_graphviz(decision_tree, out_file=None, feature_names=None):
                 feature = feature_names[tree.feature[node_id]]
             else:
                 feature = "X[%s]" % tree.feature[node_id]
+
             return "%s <= %s\\nerror = %s\\nsamples = %s\\nvalue = %s" \
                    % (feature, tree.threshold[node_id],
                       tree.init_error[node_id], tree.n_samples[node_id],
                       tree.value[node_id])
+
     def recurse(tree, node_id):
         if node_id == Tree.LEAF:
             raise ValueError("Invalid node_id %s" % Tree.LEAF)
@@ -110,28 +112,68 @@ def export_graphviz(decision_tree, out_file=None, feature_names=None):
             "right_child": right_child,
             "right_child_gv": node_to_str(tree, right_child),
         }
+
         out_file.write(GRAPHVIZ_TREE_TEMPLATE % node_data)
+
         if not (tree.children[left_child, 0] == tree.children[left_child, 1] \
                 == Tree.LEAF):
             recurse(tree, left_child)
         if not (tree.children[right_child, 0] == \
                 tree.children[right_child, 1] == Tree.LEAF):
             recurse(tree, right_child)
+
     if out_file is None:
         out_file = open("tree.dot", "w")
     elif isinstance(out_file, basestring):
         out_file = open(out_file, "w")
+
     out_file.write("digraph Tree {\n")
     recurse(decision_tree.tree_, 0)
     out_file.write("}")
+
     return out_file
 
 
+def compute_feature_importances(tree, n_features, method='gini'):
+    """Computes the importance of each feature (aka variable).
 
+    The following `method`s are supported:
 
+      * 'gini' : The difference of the initial error and the error of the
+                 split times the number of samples that passed the node.
+      * 'squared' : The empirical improvement in squared error.
 
+    Parameters
+    ----------
+    tree : tree.Tree
+        A `Tree` object.
+    n_features : int
+        The number of features.
+    method : str
+        The method to estimate the importance of a feature. Either 'gini'
+        or 'mse'.
+    """
+    gini = lambda tree, node: (tree.n_samples[node] * \
+                               (tree.init_error[node] - tree.best_error[node]))
+    squared = lambda tree, node: (tree.init_error[node] - \
+                                  tree.best_error[node]) ** 2.0
+    method = {
+        'gini': gini,
+        'squared': squared
+        }[method]
 
+    importances = np.zeros((n_features,), dtype=np.float64)
 
+    for node in range(tree.node_count):
+        if (tree.children[node, 0]
+            == tree.children[node, 1]
+            == Tree.LEAF):
+            continue
+        else:
+            importances[tree.feature[node]] += method(tree, node)
+
+    importances /= np.sum(importances)
+    return importances
 
 
 class Tree(object):
@@ -174,25 +216,34 @@ class Tree(object):
     n_samples : np.ndarray of np.int32
         The number of samples at each node.
     """
+
     LEAF = -1
     UNDEFINED = -2
+
     def __init__(self, k, capacity=3):
         self.node_count = 0
+
         self.children = np.empty((capacity, 2), dtype=np.int32)
         self.children.fill(Tree.UNDEFINED)
+
         self.feature = np.empty((capacity,), dtype=np.int32)
         self.feature.fill(Tree.UNDEFINED)
+
         self.threshold = np.empty((capacity,), dtype=np.float64)
         self.value = np.empty((capacity, k), dtype=np.float64)
+
         self.best_error = np.empty((capacity,), dtype=np.float32)
         self.init_error = np.empty((capacity,), dtype=np.float32)
         self.n_samples = np.empty((capacity,), dtype=np.int32)
+
     def resize(self, capacity=None):
         """Resize tree arrays to `capacity`, if `None` double capacity. """
         if capacity is None:
             capacity = int(self.children.shape[0] * 2.0)
+
         if capacity == self.children.shape[0]:
             return
+
         self.children.resize((capacity, 2), refcheck=False)
         self.feature.resize((capacity,), refcheck=False)
         self.threshold.resize((capacity,), refcheck=False)
@@ -200,9 +251,11 @@ class Tree(object):
         self.best_error.resize((capacity,), refcheck=False)
         self.init_error.resize((capacity,), refcheck=False)
         self.n_samples.resize((capacity,), refcheck=False)
+
         # if capacity smaller than node_count, adjust the counter
         if capacity < self.node_count:
             self.node_count = capacity
+
     def add_split_node(self, parent, is_left_child, feature, threshold,
                        best_error, init_error, n_samples, value):
         """Add a splitting node to the tree. The new node registers itself as
@@ -210,37 +263,47 @@ class Tree(object):
         node_id = self.node_count
         if node_id >= self.children.shape[0]:
             self.resize()
+
         self.feature[node_id] = feature
         self.threshold[node_id] = threshold
+
         self.init_error[node_id] = init_error
         self.best_error[node_id] = best_error
         self.n_samples[node_id] = n_samples
         self.value[node_id] = value
+
         # set as left or right child of parent
         if parent > Tree.LEAF:
             if is_left_child:
                 self.children[parent, 0] = node_id
             else:
                 self.children[parent, 1] = node_id
+
         self.node_count += 1
         return node_id
+
     def add_leaf(self, parent, is_left_child, value, error, n_samples):
         """Add a leaf to the tree. The new node registers itself as the
         child of its parent. """
         node_id = self.node_count
         if node_id >= self.children.shape[0]:
             self.resize()
+
         self.value[node_id] = value
         self.n_samples[node_id] = n_samples
         self.init_error[node_id] = error
         self.best_error[node_id] = error
+
         if is_left_child:
             self.children[parent, 0] = node_id
         else:
             self.children[parent, 1] = node_id
+
         self.children[node_id, :] = Tree.LEAF
+
         self.node_count += 1
         return node_id
+
     def predict(self, X):
         out = np.empty((X.shape[0], self.value.shape[1]), dtype=np.float64)
         _tree._predict_tree(X, self.children, self.feature, self.threshold,
@@ -248,139 +311,109 @@ class Tree(object):
         return out
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def _build_tree(X, y, is_classification, criterion,
-                max_depth, min_samples_split, min_samples_leaf,
-                min_density, max_features, random_state, n_classes, find_split,
-                sample_mask=None, X_argsorted=None):
+def _build_tree(X, y, criterion, max_depth, min_samples_split,
+                min_samples_leaf, min_density, max_features, random_state,
+                n_classes, find_split, sample_mask=None, X_argsorted=None,
+                store_terminal_region=False):
     """Build a tree by recursively partitioning the data. """
+
     if max_depth <= 10:
         init_capacity = (2 ** (max_depth + 1)) - 1
-        else:
+    else:
         init_capacity = 2047  # num nodes of tree with depth 10
+
     tree = Tree(n_classes, init_capacity)
+
     # Recursively partition X
     def recursive_partition(X, X_argsorted, y, sample_mask, depth,
                             parent, is_left_child, sample_indices):
         # Count samples
         n_node_samples = sample_mask.sum()
+
         if n_node_samples == 0:
             raise ValueError("Attempting to find a split "
                              "with an empty sample_mask")
+
         # Split samples
         if depth < max_depth and n_node_samples >= min_samples_split \
            and n_node_samples >= 2 * min_samples_leaf:
             feature, threshold, best_error, init_error = find_split(X, y,
                     X_argsorted, sample_mask, n_node_samples, min_samples_leaf,
                     max_features, criterion, random_state)
-    else:
-            feature = -1
-        # Value at this node
-        current_y = y[sample_mask]
-        if is_classification:
-            value = np.zeros((n_classes,))
-            t = current_y.max() + 1
-            value[:t] = np.bincount(current_y.astype(np.int))
         else:
             feature = -1
             init_error = _tree._error_at_leaf(y, sample_mask, criterion,
                                               n_node_samples)
-        # Terminal node
+
+        value = criterion.init_value()
+
+        # Current node is leaf
         if feature == -1:
             node_id = tree.add_leaf(parent, is_left_child, value, init_error,
                                     n_node_samples)
+
             if store_terminal_region:
                 # remember which samples ended up in this leaf
                 tree.terminal_region[sample_indices[sample_mask]] = node_id
-        # Internal node
+
+        # Current node is internal node (= split node)
         else:
             # Sample mask is too sparse?
             if n_node_samples / X.shape[0] <= min_density:
                 X = X[sample_mask]
+                sample_indices = sample_indices[sample_mask]
                 X_argsorted = np.asfortranarray(
                     np.argsort(X.T, axis=1).astype(np.int32).T)
-                X_argsorted = np.asfortranarray(
-                    np.argsort(X.T, axis=1).astype(np.int32).T)
-                y = current_y
+                y = y[sample_mask]
                 sample_mask = np.ones((X.shape[0],), dtype=np.bool)
+
             # Split and and recurse
             split = X[:, feature] <= threshold
+
             node_id = tree.add_split_node(parent, is_left_child, feature,
                                           threshold, best_error, init_error,
                                           n_node_samples, value)
+
             # left child recursion
-            <<<<<<< REMOTE
-recursive_partition(X, X_argsorted, y,
-                                np.logical_and(split, sample_mask),
-                                depth + 1, node_id, True)
-=======
-recursive_partition(X, X_argsorted, y,
-                                split & sample_mask,
-                                depth + 1, node_id, True)
-=======
-recursive_partition(X, X_argsorted, y,
+            recursive_partition(X, X_argsorted, y,
                                 split & sample_mask,
                                 depth + 1, node_id, True, sample_indices)
->>>>>>> LOCAL
+
             # right child recursion
             recursive_partition(X, X_argsorted, y,
-                                np.logical_and(np.logical_not(split),
-                                                sample_mask),
-                                depth + 1, node_id, False)
-    # Launch the construction
+                                ~split & sample_mask,
+                                depth + 1, node_id, False, sample_indices)
+
+    # setup auxiliary data structures and check input before
+    # recursive partitioning
+
+    if store_terminal_region:
+        tree.terminal_region = np.empty((X.shape[0],), dtype=np.int32)
+        tree.terminal_region.fill(-1)
+
     if X.dtype != DTYPE or not np.isfortran(X):
         X = np.asanyarray(X, dtype=DTYPE, order="F")
+
     if y.dtype != DTYPE or not y.flags.contiguous:
         y = np.ascontiguousarray(y, dtype=DTYPE)
+
     if sample_mask is None:
         sample_mask = np.ones((X.shape[0],), dtype=np.bool)
+
     if X_argsorted is None:
         X_argsorted = np.asfortranarray(
             np.argsort(X.T, axis=1).astype(np.int32).T)
-    recursive_partition(X, X_argsorted, y, sample_mask, 0, -1, False)
+
+    sample_indices = np.arange(X.shape[0])
+
+    # build the tree by recursive partitioning
+    recursive_partition(X, X_argsorted, y, sample_mask, 0, -1, False,
+                        sample_indices)
+
+    # compactify the tree data structure
     tree.resize(tree.node_count)
+
     return tree
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class BaseDecisionTree(BaseEstimator, SelectorMixin):
@@ -405,12 +438,16 @@ class BaseDecisionTree(BaseEstimator, SelectorMixin):
         self.max_features = max_features
         self.compute_importances = compute_importances
         self.random_state = check_random_state(random_state)
+
         self.n_features_ = None
         self.classes_ = None
         self.n_classes_ = None
         self.find_split_ = _tree._find_best_split
+
         self.tree_ = None
         self.feature_importances_ = None
+
+
     def fit(self, X, y, sample_mask=None, X_argsorted=None):
         """Build a decision tree from the training set (X, y).
 
@@ -431,40 +468,54 @@ class BaseDecisionTree(BaseEstimator, SelectorMixin):
         # set min_samples_split sensibly
         self.min_samples_split = max(self.min_samples_split, 2 *
                 self.min_samples_leaf)
+
         # Convert data
         X = np.asarray(X, dtype=DTYPE, order='F')
         n_samples, self.n_features_ = X.shape
+
         is_classification = isinstance(self, ClassifierMixin)
+
         if is_classification:
             self.classes_ = np.unique(y)
             self.n_classes_ = self.classes_.shape[0]
             criterion = CLASSIFICATION[self.criterion](self.n_classes_)
             y = np.searchsorted(self.classes_, y)
+
         else:
             self.classes_ = None
             self.n_classes_ = 1
             criterion = REGRESSION[self.criterion]()
+
         y = np.ascontiguousarray(y, dtype=DTYPE)
+
         # Check parameters
         max_depth = np.inf if self.max_depth is None else self.max_depth
+
         if isinstance(self.max_features, basestring):
             if self.max_features == "auto":
                 if is_classification:
                     max_features = max(1, int(np.sqrt(self.n_features_)))
+
                 else:
                     max_features = self.n_features_
+
             elif self.max_features == "sqrt":
                 max_features = max(1, int(np.sqrt(self.n_features_)))
+
             elif self.max_features == "log2":
                 max_features = max(1, int(np.log2(self.n_features_)))
+
             else:
                 raise ValueError(
                     'Invalid value for max_features. Allowed string '
                     'values are "auto", "sqrt" or "log2".')
+
         elif self.max_features is None:
             max_features = self.n_features_
+
         else:
             max_features = self.max_features
+
         if len(y) != n_samples:
             raise ValueError("Number of labels=%d does not match "
                              "number of samples=%d" % (len(y), n_samples))
@@ -478,19 +529,23 @@ class BaseDecisionTree(BaseEstimator, SelectorMixin):
             raise ValueError("min_density must be in [0, 1]")
         if not (0 < max_features <= self.n_features_):
             raise ValueError("max_features must be in (0, n_features]")
+
         # Build tree
         self.tree_ = _build_tree(X, y, criterion, max_depth,
                 self.min_samples_split, self.min_samples_leaf,
                 self.min_density, max_features, self.random_state,
                 self.n_classes_, self.find_split_, sample_mask=sample_mask,
                 X_argsorted=X_argsorted)
+
         if self.compute_importances:
             if not self.tree_:
                 raise ValueError("Estimator not fitted, " \
                                  "call `fit` before `feature_importances_`.")
             self.feature_importances_ = compute_feature_importances(
                 self.tree_, self.n_features_)
+
         return self
+
     def predict(self, X):
         """Predict class or regression target for X.
 
@@ -510,47 +565,23 @@ class BaseDecisionTree(BaseEstimator, SelectorMixin):
         """
         X = array2d(X, dtype=DTYPE)
         n_samples, n_features = X.shape
+
         if self.tree_ is None:
             raise Exception("Tree not initialized. Perform a fit first")
+
         if self.n_features_ != n_features:
             raise ValueError("Number of features of the model must "
                              " match the input. Model n_features is %s and "
                              " input n_features is %s "
                              % (self.n_features_, n_features))
+
         if isinstance(self, ClassifierMixin):
             predictions = self.classes_.take(np.argmax(
                 self.tree_.predict(X), axis=1), axis=0)
         else:
             predictions = self.tree_.predict(X).ravel()
+
         return predictions
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class DecisionTreeClassifier(BaseDecisionTree, ClassifierMixin):
@@ -665,6 +696,8 @@ class DecisionTreeClassifier(BaseDecisionTree, ClassifierMixin):
                                                      max_features,
                                                      compute_importances,
                                                      random_state)
+
+
     def predict_proba(self, X):
         """Predict class probabilities of the input samples X.
 
@@ -681,18 +714,22 @@ class DecisionTreeClassifier(BaseDecisionTree, ClassifierMixin):
         """
         X = array2d(X, dtype=DTYPE)
         n_samples, n_features = X.shape
+
         if self.tree_ is None:
             raise Exception("Tree not initialized. Perform a fit first.")
+
         if self.n_features_ != n_features:
             raise ValueError("Number of features of the model must "
                              " match the input. Model n_features is %s and "
                              " input n_features is %s "
                              % (self.n_features_, n_features))
+
         P = self.tree_.predict(X)
         normalizer = P.sum(axis=1)[:, np.newaxis]
         normalizer[normalizer == 0.0] = 1.0
         P /= normalizer
         return P
+
     def predict_log_proba(self, X):
         """Predict class log-probabilities of the input samples X.
 
@@ -708,11 +745,6 @@ class DecisionTreeClassifier(BaseDecisionTree, ClassifierMixin):
             ordered by arithmetical order.
         """
         return np.log(self.predict_proba(X))
-
-
-
-
-
 
 
 class DecisionTreeRegressor(BaseDecisionTree, RegressorMixin):
@@ -869,9 +901,8 @@ class ExtraTreeClassifier(DecisionTreeClassifier):
                                                   max_features,
                                                   compute_importances,
                                                   random_state)
+
         self.find_split_ = _tree._find_best_random_split
-
-
 
 
 class ExtraTreeRegressor(DecisionTreeRegressor):
@@ -916,6 +947,6 @@ class ExtraTreeRegressor(DecisionTreeRegressor):
                                                  max_features,
                                                  compute_importances,
                                                  random_state)
-        self.find_split_ = _tree._find_best_random_split
 
+        self.find_split_ = _tree._find_best_random_split
 

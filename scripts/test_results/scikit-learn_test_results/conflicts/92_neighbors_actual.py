@@ -2,14 +2,18 @@
 
 # Author: Fabian Pedregosa <fabian.pedregosa@inria.fr>
 #         Alexandre Gramfort <alexandre.gramfort@inria.fr>
+#         Sparseness support by Lars Buitinck <L.J.Buitinck@uva.nl>
 #
-# License: BSD, (C) INRIA
+# License: BSD, (C) INRIA, University of Amsterdam
 
 import numpy as np
+from scipy import linalg
+from scipy.sparse import csr_matrix, issparse
 
 from .base import BaseEstimator, ClassifierMixin, RegressorMixin
 from .ball_tree import BallTree
 from .metrics import euclidean_distances
+from .utils import safe_asanyarray, atleast2d_or_csr
 
 
 class NeighborsClassifier(BaseEstimator, ClassifierMixin):
@@ -97,10 +101,12 @@ class NeighborsClassifier(BaseEstimator, ClassifierMixin):
     ----------
     http://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
     """
+
     def __init__(self, n_neighbors=5, algorithm='auto', leaf_size=20):
         self.n_neighbors = n_neighbors
         self.leaf_size = leaf_size
         self.algorithm = algorithm
+
     def fit(self, X, y, **params):
         """Fit the model using X, y as training data
 
@@ -120,6 +126,7 @@ class NeighborsClassifier(BaseEstimator, ClassifierMixin):
             raise ValueError("y must not be None")
         self._y = np.asanyarray(y)
         self._set_params(**params)
+
         if issparse(X):
             self.ball_tree = None
             self._fit_X = X.tocsr()
@@ -130,6 +137,7 @@ class NeighborsClassifier(BaseEstimator, ClassifierMixin):
             self.ball_tree = None
             self._fit_X = X
         return self
+
     def kneighbors(self, X, return_distance=True, **params):
         """Finds the K-neighbors of a point.
 
@@ -194,6 +202,7 @@ class NeighborsClassifier(BaseEstimator, ClassifierMixin):
         else:
             return self.ball_tree.query(X, self.n_neighbors,
                                         return_distance=return_distance)
+
     def predict(self, X, **params):
         """Predict the class labels for the provided data
 
@@ -213,20 +222,15 @@ class NeighborsClassifier(BaseEstimator, ClassifierMixin):
         """
         X = atleast2d_or_csr(X)
         self._set_params(**params)
+
         # get neighbors
         neigh_ind = self.kneighbors(X, return_distance=False)
+
         # compute the most popular label
         pred_labels = self._y[neigh_ind]
         from scipy import stats
         mode, _ = stats.mode(pred_labels, axis=1)
         return mode.flatten().astype(np.int)
-
-
-
-
-
-
-
 
 
 ###############################################################################
@@ -280,12 +284,14 @@ class NeighborsRegressor(NeighborsClassifier, RegressorMixin):
     choice of algorithm and leaf_size.
     http://en.wikipedia.org/wiki/K-nearest_neighbor_algorithm
     """
+
     def __init__(self, n_neighbors=5, mode='mean', algorithm='auto',
                  leaf_size=20):
         self.n_neighbors = n_neighbors
         self.leaf_size = leaf_size
         self.mode = mode
         self.algorithm = algorithm
+
     def predict(self, X, **params):
         """Predict the target for the provided data
 
@@ -305,28 +311,26 @@ class NeighborsRegressor(NeighborsClassifier, RegressorMixin):
         """
         X = atleast2d_or_csr(X)
         self._set_params(**params)
+
         # compute nearest neighbors
         neigh_ind = self.kneighbors(X, return_distance=False)
         if self.ball_tree is None:
             neigh = self._fit_X[neigh_ind]
         else:
             neigh = self.ball_tree.data[neigh_ind]
+
         # compute interpolation on y
         if self.mode == 'barycenter':
             W = barycenter_weights(X, neigh)
             return (W * self._y[neigh_ind]).sum(axis=1)
+
         elif self.mode == 'mean':
             return np.mean(self._y[neigh_ind], axis=1)
+
         else:
             raise ValueError(
                 'Unsupported mode, must be one of "barycenter" or '
                 '"mean" but got %s instead' % self.mode)
-
-
-
-
-
-
 
 
 ###############################################################################
@@ -364,6 +368,7 @@ def barycenter_weights(X, Z, reg=1e-3):
         Z = Z.astype(np.float)
     B = np.empty((n_samples, n_neighbors), dtype=X.dtype)
     v = np.ones(n_neighbors, dtype=X.dtype)
+
     # this might raise a LinalgError if G is singular and has trace
     # zero
     for i, A in enumerate(Z.transpose(0, 2, 1)):
@@ -378,7 +383,6 @@ def barycenter_weights(X, Z, reg=1e-3):
         w = linalg.solve(G, v, sym_pos=True)
         B[i, :] = w / np.sum(w)
     return B
-
 
 
 def kneighbors_graph(X, n_neighbors, mode='connectivity', reg=1e-3):
@@ -426,35 +430,32 @@ def kneighbors_graph(X, n_neighbors, mode='connectivity', reg=1e-3):
     else:
         X = np.asanyarray(X)
         ball_tree = BallTree(X)
+
     n_samples = X.shape[0]
     n_nonzero = n_neighbors * n_samples
     A_indptr = np.arange(0, n_nonzero + 1, n_neighbors)
+
     # construct CSR matrix representation of the k-NN graph
     if mode == 'connectivity':
         A_data = np.ones((n_samples, n_neighbors))
         A_ind = ball_tree.query(
             X, k=n_neighbors, return_distance=False)
+
     elif mode == 'distance':
         data, ind = ball_tree.query(X, k=n_neighbors + 1)
         A_data, A_ind = data[:, 1:], ind[:, 1:]
+
     elif mode == 'barycenter':
         ind = ball_tree.query(
             X, k=n_neighbors + 1, return_distance=False)
         A_ind = ind[:, 1:]
         A_data = barycenter_weights(X, X[A_ind], reg=reg)
+
     else:
         raise ValueError(
             'Unsupported mode, must be one of "connectivity", '
             '"distance" or "barycenter" but got %s instead' % mode)
+
     return csr_matrix((A_data.ravel(), A_ind.ravel(), A_indptr),
                       shape=(n_samples, n_samples))
-
-
-
-
-
-
-
-
-
 

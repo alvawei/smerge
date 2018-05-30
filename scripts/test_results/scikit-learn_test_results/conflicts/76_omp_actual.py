@@ -57,16 +57,20 @@ def _cholesky_omp(X, y, n_nonzero_coefs, eps=None, overwrite_X=False):
         X = X.copy('F')
     else:  # even if we are allowed to overwrite, still copy it if bad order
         X = np.asfortranarray(X)
+
     min_float = np.finfo(X.dtype).eps
     nrm2, swap = linalg.get_blas_funcs(('nrm2', 'swap'), (X,))
     potrs, = get_lapack_funcs(('potrs',), (X,))
+
     alpha = np.dot(X.T, y)
     residual = y
     n_active = 0
     idx = []
+
     max_features = X.shape[1] if eps is not None else n_nonzero_coefs
     L = np.empty((max_features, max_features), dtype=X.dtype)
     L[0, 0] = 1.
+
     while True:
         lam = np.argmax(np.abs(np.dot(X.T, residual)))
         if lam < n_active or alpha[lam] ** 2 < min_float:
@@ -89,18 +93,14 @@ def _cholesky_omp(X, y, n_nonzero_coefs, eps=None, overwrite_X=False):
         # solves LL'x = y as a composition of two triangular systems
         gamma, _ = potrs(L[:n_active, :n_active], alpha[:n_active], lower=True,
                          overwrite_b=False)
+
         residual = y - np.dot(X[:, :n_active], gamma)
         if eps is not None and nrm2(residual) ** 2 <= eps:
             break
         elif n_active == max_features:
             break
+
     return gamma, idx
-
-
-
-
-
-
 
 
 def _gram_omp(Gram, Xy, n_nonzero_coefs, eps_0=None, eps=None,
@@ -149,19 +149,24 @@ def _gram_omp(Gram, Xy, n_nonzero_coefs, eps_0=None, eps=None,
         Gram = Gram.copy('F')
     else:
         Gram = np.asfortranarray(Gram)
+
     if not overwrite_Xy:
         Xy = Xy.copy()
+
     min_float = np.finfo(Gram.dtype).eps
     nrm2, swap = linalg.get_blas_funcs(('nrm2', 'swap'), (Gram,))
     potrs, = get_lapack_funcs(('potrs',), (Gram,))
+
     idx = []
     alpha = Xy
     eps_curr = eps_0
     delta = 0
     n_active = 0
+
     max_features = len(Gram) if eps is not None else n_nonzero_coefs
     L = np.empty((max_features, max_features), dtype=Gram.dtype)
     L[0, 0] = 1.
+
     while True:
         lam = np.argmax(np.abs(alpha))
         if lam < n_active or alpha[lam] ** 2 < min_float:
@@ -184,6 +189,7 @@ def _gram_omp(Gram, Xy, n_nonzero_coefs, eps_0=None, eps=None,
         # solves LL'x = y as a composition of two triangular systems
         gamma, _ = potrs(L[:n_active, :n_active], Xy[:n_active], lower=True,
                          overwrite_b=False)
+
         beta = np.dot(Gram[:, :n_active], gamma)
         alpha = Xy - beta
         if eps is not None:
@@ -194,14 +200,8 @@ def _gram_omp(Gram, Xy, n_nonzero_coefs, eps_0=None, eps=None,
                 break
         elif n_active == max_features:
             break
+
     return gamma, idx
-
-
-
-
-
-
-
 
 
 def orthogonal_mp(X, y, n_nonzero_coefs=None, eps=None, precompute_gram=False,
@@ -297,13 +297,13 @@ def orthogonal_mp(X, y, n_nonzero_coefs=None, eps=None, precompute_gram=False,
         return orthogonal_mp_gram(G, Xy, n_nonzero_coefs, eps, norms_squared,
                                   overwrite_gram=overwrite_X,
                                   overwrite_Xy=True)
+
     coef = np.zeros((X.shape[1], y.shape[1]))
     for k in xrange(y.shape[1]):
         x, idx = _cholesky_omp(X, y[:, k], n_nonzero_coefs, eps,
                                overwrite_X=overwrite_X)
         coef[idx, k] = x
     return np.squeeze(coef)
-
 
 
 def orthogonal_mp_gram(Gram, Xy, n_nonzero_coefs=None, eps=None,
@@ -368,6 +368,7 @@ def orthogonal_mp_gram(Gram, Xy, n_nonzero_coefs=None, eps=None,
         Xy = Xy[:, np.newaxis]
         if eps is not None:
             norms_squared = [norms_squared]
+
     if n_nonzero_coefs == None and eps is None:
         n_nonzero_coefs = int(0.1 * len(Gram))
     if eps is not None and norms_squared == None:
@@ -388,7 +389,6 @@ def orthogonal_mp_gram(Gram, Xy, n_nonzero_coefs=None, eps=None,
                            overwrite_Xy=overwrite_Xy)
         coef[idx, k] = x
     return np.squeeze(coef)
-
 
 
 class OrthogonalMatchingPursuit(LinearModel):
@@ -460,6 +460,7 @@ class OrthogonalMatchingPursuit(LinearModel):
     LassoLars
 
     """
+
     def __init__(self, overwrite_X=False, overwrite_gram=False,
             overwrite_Xy=False, n_nonzero_coefs=None, eps=None,
             fit_intercept=True, normalize=True, precompute_gram=False):
@@ -472,6 +473,7 @@ class OrthogonalMatchingPursuit(LinearModel):
         self.overwrite_Xy = overwrite_Xy
         self.overwrite_X = overwrite_X
         self.eps = eps
+
     def fit(self, X, y, Gram=None, Xy=None, **params):
         """Fit the model using X, y as training data.
 
@@ -497,19 +499,24 @@ class OrthogonalMatchingPursuit(LinearModel):
             returns an instance of self.
         """
         self._set_params(**params)
+
         X = np.atleast_2d(X)
         y = np.atleast_1d(y)
+
         X, y, X_mean, y_mean, X_std = self._center_data(X, y, self.fit_intercept,
                 self.normalize, self.overwrite_X)
         if Gram is not None:
             Gram = np.atleast_2d(Gram)
+
             if not self.overwrite_gram:
                 overwrite_gram = True
                 Gram = Gram.copy('F')
             else:
                 Gram = np.asfortranarray(Gram)
+
             if y.shape[1] > 1:  # subsequent targets will be affected
                 overwrite_gram = False
+
             if Xy is None:
                 Xy = np.dot(X.T, y)
             else:
@@ -517,9 +524,11 @@ class OrthogonalMatchingPursuit(LinearModel):
                     Xy = Xy.copy()
                 if self.normalize:
                     Xy /= X_std
+
             if self.normalize:
                 Gram /= X_std
                 Gram /= X_std[:, np.newaxis]
+
             norms_sq = np.sum((y ** 2), axis=0) if self.eps is not None else None
             self.coef_ = orthogonal_mp_gram(Gram, Xy, self.n_nonzero_coefs,
                                             self.eps, norms_sq,
@@ -531,21 +540,7 @@ class OrthogonalMatchingPursuit(LinearModel):
             self.coef_ = orthogonal_mp(X, y, self.n_nonzero_coefs, self.eps,
                                        precompute_gram=precompute_gram,
                                        overwrite_X=self.overwrite_X).T
+
         self._set_intercept(X_mean, y_mean, X_std)
         return self
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

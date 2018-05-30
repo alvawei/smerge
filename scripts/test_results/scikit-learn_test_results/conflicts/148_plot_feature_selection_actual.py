@@ -45,14 +45,18 @@ x_indices = np.arange(x.shape[-1])
 
 ################################################################################
 # Univariate feature selection
-from scikits.learn.feature_selection import univariate_selection as us
+from scikits.learn.feature_selection import SelectFpr, f_classif
 # As a scoring function, we use a F test for classification
 # We use the default selection function: the 10% most significant
 # features
-
+<<<<<<< REMOTE
+selector = SelectFpr(f_classif, alpha=0.1)
+=======
 selector = us.SelectFpr(us.f_classif, alpha=0.1)
+>>>>>>> LOCAL
+
+scores = -np.log10(selector._pvalues)
 selector.fit(x, y)
-scores = -np.log(selector._scores)
 scores /= scores.max()
 pl.bar(x_indices-.45, scores, width=.3,
         label=r'Univariate score ($-Log(p_{value})$)',
@@ -82,13 +86,12 @@ pl.bar(x_indices-.15, svm_weights, width=.3, label='SVM weight',
 # pl.bar(x_indices+.15, full_svm_weights, width=.3,
 #         label='SVM weight after univariate selection',
 #         color='b')
+pl.legend(loc='upper right')
 
 
 pl.title("Comparing feature selection")
 pl.xlabel('Feature number')
 pl.yticks(())
 pl.axis('tight')
-pl.legend()
 pl.show()
- 
 
