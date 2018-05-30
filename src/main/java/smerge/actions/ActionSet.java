@@ -94,11 +94,11 @@ public class ActionSet {
 	 * @param oldPos - the position of the child in the base tree
 	 * @param newPos - the position of the child in the edit tree
 	 */
-	public void addShift(ASTNode parent, ASTNode edit, int oldPos, int newPos) {
-		if (!shiftSets.containsKey(parent.getID())) {
-			shiftSets.put(parent.getID(), new HashSet<>());
+	public void addShift(ASTNode baseParent, ASTNode baseChild, int oldPos, ASTNode editParent, ASTNode editChild, int newPos) {
+		if (!shiftSets.containsKey(baseParent.getID())) {
+			shiftSets.put(baseParent.getID(), new HashSet<>());
 		}
-		shiftSets.get(parent.getID()).add(new Shift(parent, edit, oldPos, newPos));
+		shiftSets.get(baseParent.getID()).add(new Shift(baseParent, baseChild, oldPos, editParent, editChild, newPos));
 	}
 	
 	/**
@@ -167,16 +167,8 @@ public class ActionSet {
 			// transform the shifts into a pair of inserts/deletes
 			for (Shift shift : shiftSet) {
 				if (shift.oldPosition != shift.newPosition) {
-					Insert insert = new Insert(shift.getParent(), shift.getChild(), shift.newPosition);
-					Map<Integer, Insert> positionToInsert = new HashMap<Integer, Insert>();
-					positionToInsert.put(shift.newPosition, insert);
-					insertSets.put(shift.getParent().getID(), positionToInsert);
-					
-					// do the same for deletes
-					Delete delete = new Delete(shift.getChild());
-					Map<Integer, Delete> positionToDelete = new HashMap<Integer, Delete>();
-					positionToDelete.put(shift.oldPosition, delete);
-					deleteSets.put(shift.getParent().getID(), positionToDelete);
+					addInsert(shift.getBaseParent(), shift.getEditChild(), shift.newPosition);
+					addDelete(shift.getBaseChild());
 				}
 			}
 		}

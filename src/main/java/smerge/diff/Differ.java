@@ -84,7 +84,7 @@ public class Differ {
 					actions.addUpdate(base, edit);
 					
 				} else if (baseNodeIndex != editNodeIndex) {
-					actions.addShift(parent, edit, baseNodeIndex, editNodeIndex);
+					actions.addShift(parent, base, baseNodeIndex, edit.getParent(), edit, editNodeIndex);
 				}
 			}
 			if (!base.getContent().equals(edit.getContent())) {

@@ -4,23 +4,37 @@ import smerge.ast.ASTNode;
 
 public class Shift {
 	
-	private ASTNode parent;
-	private ASTNode child;
-	public int oldPosition;
-	public int newPosition;
+	private ASTNode baseParent;
+	private ASTNode baseChild;
+	protected int oldPosition;
 	
-	public Shift(ASTNode parent, ASTNode child, int oldPosition, int newPosition) {
-		this.parent = parent;
-		this.child = child;
+	private ASTNode editParent;
+	private ASTNode editChild;
+	protected int newPosition;
+	
+	public Shift(ASTNode baseParent, ASTNode baseChild, int oldPosition,
+			ASTNode editParent, ASTNode editChild, int newPosition) {
+		this.baseParent = baseParent;
+		this.baseChild = baseChild;
 		this.oldPosition = oldPosition;
+		this.editParent = editParent;
+		this.editChild = editChild;
 		this.newPosition = newPosition;
 	}
 	
-	public ASTNode getParent() {
-		return this.parent;
+	public ASTNode getBaseParent() {
+		return baseParent;
 	}
 	
-	public ASTNode getChild() {
-		return this.child;
+	public ASTNode getBaseChild() {
+		return baseChild;
+	}
+	
+	public ASTNode getEditParent() {
+		return editParent;
+	}
+	
+	public ASTNode getEditChild() {
+		return editChild;
 	}
 }

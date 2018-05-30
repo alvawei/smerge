@@ -1,348 +1,145 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import
+import numpy as np
+from numpy.testing import *
+from nose.tools import *
 
-import theano
-import theano.tensor as T
-from theano.tensor.signal import downsample
+from scikits.learn import glm
 
-from .. import activations, initializations, regularizers, constraints
-from ..utils.theano_utils import shared_zeros, on_gpu
-from ..layers.core import Layer
-
-if on_gpu():
-    from theano.sandbox.cuda import dnn
-
-
-class Convolution1D(Layer):
-    def __init__(self, input_dim, nb_filter, filter_length,
-                 init='uniform', activation='linear', weights=None,
-                 border_mode='valid', subsample_length=1,
-                 W_regularizer=None, b_regularizer=None, activity_regularizer=None,
-                 W_constraint=None, b_constraint=None):
-        if border_mode not in {'valid', 'full', 'same'}:
-            raise Exception('Invalid border mode for Convolution1D:', border_mode)
-        super(Convolution1D, self).__init__()
-        self.nb_filter = nb_filter
-        self.input_dim = input_dim
-        self.filter_length = filter_length
-        self.subsample_length = subsample_length
-        self.init = initializations.get(init)
-        self.activation = activations.get(activation)
-        self.subsample = (subsample_length, 1)
-        self.border_mode = border_mode
-        self.input = T.tensor3()
-        self.W_shape = (nb_filter, input_dim, filter_length, 1)
-        self.W = self.init(self.W_shape)
-        self.b = shared_zeros((nb_filter,))
-        self.params = [self.W, self.b]
-        self.regularizers = []
-        self.W_regularizer = regularizers.get(W_regularizer)
-        if self.W_regularizer:
-            self.W_regularizer.set_param(self.W)
-            self.regularizers.append(self.W_regularizer)
-        self.b_regularizer = regularizers.get(b_regularizer)
-        if self.b_regularizer:
-            self.b_regularizer.set_param(self.b)
-            self.regularizers.append(self.b_regularizer)
-        self.activity_regularizer = regularizers.get(activity_regularizer)
-        if self.activity_regularizer:
-            self.activity_regularizer.set_layer(self)
-            self.regularizers.append(self.activity_regularizer)
-        self.W_constraint = constraints.get(W_constraint)
-        self.b_constraint = constraints.get(b_constraint)
-        self.constraints = [self.W_constraint, self.b_constraint]
-        if weights is not None:
-            self.set_weights(weights)
-    @property
-    def output_shape(self):
-        length = conv_output_length(self.input_shape[1], self.filter_length, self.border_mode, self.subsample[0])
-        return (self.input_shape[0], length, self.nb_filter)
-    def get_output(self, train=False):
-        X = self.get_input(train)
-        X = T.reshape(X, (X.shape[0], X.shape[1], X.shape[2], 1)).dimshuffle(0, 2, 1, 3)
-        border_mode = self.border_mode
 <<<<<<< REMOTE
-        if on_gpu() and dnn.dnn_available():
-            if border_mode == 'same':
-                assert(self.subsample_length == 1)
-                pad_x = (self.filter_length - self.subsample_length) // 2
-                conv_out = dnn.dnn_conv(img=X,
-                                        kerns=self.W,
-                                        border_mode=(pad_x, 0))
-            else:
-                conv_out = dnn.dnn_conv(img=X,
-                                        kerns=self.W,
-                                        border_mode=border_mode,
-                                        subsample=self.subsample)
+def test_predict():
+    """
+    Just see if predicted values are close from known response.
+    """
+    n, m = 10, 20
+    np.random.seed(0)
+    X = np.random.randn(n, m)
+    Y = np.random.randn(n)
+    Y = Y - Y.mean() # center response
+
+    Y_ = glm.LeastAngleRegression().fit(X, Y, intercept=False).predict(X)
+    print np.linalg.norm(Y - Y_)
+    assert np.linalg.norm(Y-Y_) < 1e-10
+
+
+    # the same but with an intercept
+    Y = Y + 10.
+    Y_ = glm.LeastAngleRegression().fit(X, Y).predict(X)
+    assert np.linalg.norm(Y-Y_) < 1e-10
 
 =======
-        if border_mode == 'same':
-            border_mode = 'full'
-            assert self.subsample == (1, 1)
-
+# XXX: there seems to be somthing borked in the shape reconstruction of the
 >>>>>>> LOCAL
+# sparse coef_path_ matrix
+
+def test_sparse_coding():
+    """Use LARS as a sparse encoder w.r.t to a given fixed dictionary"""
+    n_samples, n_features = 42, 50
+    n_dictionary = 30
+
+    # generate random input set
+    X = np.random.randn(n_samples, n_features)
+
+    # take the first vectors of the dataset as a dictionnary
+    D = X[:n_dictionary].T
+
+    assert_equal(D.shape, (n_features, n_dictionary))
+
+    def sparse_encode(vector):
+        return glm.LeastAngleRegression().fit(
+            D, vector, n_features=5, normalize=False, intercept=False).coef_
+
+    def sparse_decode(vector):
+        return np.dot(D, vector)
+
+    # sparse encode each vector and check the quality of the encoded
+    # representation
+    for i, x_i in enumerate(X):
+        # compute a sparse representation of x_i using the dictionary D
+        c_i = sparse_encode(x_i)
+
+        assert_equal(c_i.shape, (n_dictionary,))
+
+        if i < n_dictionary:
+            # x_i is one of the vector of D hence there is a trivial sparse code
+            expected_code = np.zeros(n_dictionary)
+            expected_code[i] = 1.0
+
+            assert_almost_equal(c_i, expected_code, decimal=2)
         else:
-            if border_mode == 'same':
-                border_mode = 'full'
-            conv_out = T.nnet.conv.conv2d(X, self.W,
-                                          border_mode=border_mode,
-                                          subsample=self.subsample)
-            if self.border_mode == 'same':
-                shift_x = (self.filter_length - 1) // 2
-                conv_out = conv_out[:, :, shift_x:X.shape[2] + shift_x, :]
-        output = self.activation(conv_out + self.b.dimshuffle('x', 0, 'x', 'x'))
-        output = T.reshape(output, (output.shape[0], output.shape[1], output.shape[2])).dimshuffle(0, 2, 1)
-        return output
-    def get_config(self):
-        return {"name": self.__class__.__name__,
-                "input_dim": self.input_dim,
-                "nb_filter": self.nb_filter,
-                "filter_length": self.filter_length,
-                "init": self.init.__name__,
-                "activation": self.activation.__name__,
-                "border_mode": self.border_mode,
-                "subsample_length": self.subsample_length,
-                "W_regularizer": self.W_regularizer.get_config() if self.W_regularizer else None,
-                "b_regularizer": self.b_regularizer.get_config() if self.b_regularizer else None,
-                "activity_regularizer": self.activity_regularizer.get_config() if self.activity_regularizer else None,
-                "W_constraint": self.W_constraint.get_config() if self.W_constraint else None,
-                "b_constraint": self.b_constraint.get_config() if self.b_constraint else None}
+            # x_i does not exactly belong to the dictionary, hence up to 5
+            # components of the dictionary are used to represent it
+            assert_true((c_i != 0.0).sum() < 6)
+            assert_true((abs(sparse_decode(c_i) - x_i) < 0.1).all())
 
 
 
+def test_toy():
+    """Very simple test on a small dataset"""
+    X = [[1, 0, -1.],
+         [0, 0, 0],
+         [0, 1, .9]]
+    Y = [1, 0, -1]
+
+    clf = glm.LeastAngleRegression().fit(X, Y, max_features=1)
+    assert_array_almost_equal(clf.coef_, [0, 0, -1.2624], decimal=4)
+    assert_array_almost_equal(clf.alphas_, [1.4135, 0.1510], decimal=4)
+    assert_array_almost_equal(clf.alphas_.shape, clf.coef_path_.shape[1])
+    assert np.linalg.norm(clf.predict(X) - Y) < 0.3
+    
+
+    clf = glm.LeastAngleRegression().fit(X, Y) # implicitly max_features=2
+    assert_array_almost_equal(clf.coef_, [0, -.0816, -1.34412], decimal=4)
+    assert_array_almost_equal(clf.alphas_, \
+                 [ 1.41356,   .1510,   3.919e-16], decimal=4)
+    assert_array_almost_equal(clf.alphas_.shape, clf.coef_path_.shape[1])
+    assert_array_almost_equal(clf.predict(X), np.array(Y))
+
+    # TODO: check that Lasso with coordinate descent finds the same
+    # coefficients
+
+def test_feature_selection():
+    n_samples, n_features = 442, 100
+    # deterministic test
+    np.random.seed(0)
+
+    # generate random input set
+    X = np.random.randn(n_samples, n_features)
+
+    # generate a ground truth model with only the first 10 features being non
+    # zeros (the other features are not correlated to Y and should be ignored by
+    # the L1 regularizer)
+    coef_ = np.random.randn(n_features)
+    coef_[10:] = 0.0
+
+    # generate the grand truth Y from the model and Y
+    Y = np.dot(X, coef_)
+    Y += np.random.normal(Y.shape) # make some (label) noise!
+
+    # fit the model assuming that will allready know that only 10 out of
+    # n_features are contributing to Y
+    clf = glm.LeastAngleRegression().fit(X, Y, max_features=None)
+
+    # ensure that only the first 10 coefs are non zeros and the remaining set to
+    # null, as in the ground thrutg model
+    assert_equal((clf.coef_[:10] == 0.0).sum(), 0)
+    assert_equal((clf.coef_[10:] != 0.0).sum(), 0)
+
+    # train again, but this time without knowing in advance how many features
+    # are useful:
 
 
+    clf = glm.LeastAngleRegression().fit(X, Y, max_features=10)
+    assert_equal((clf.coef_[:10] == 0.0).sum(), 0)
+    assert_equal((clf.coef_[10:] != 0.0).sum(), 89)
 
+    # explicitly set to zero parameters really close to zero (manual
+    # thresholding)
+    sparse_coef = np.where(abs(clf.coef_) < 1e-13,
+                           np.zeros(clf.coef_.shape),
+                           clf.coef_)
 
-
-
-
-
-
-
-
-
-
-
-class Convolution2D(Layer):
-    def __init__(self, nb_filter, stack_size, nb_row, nb_col,
-                 init='glorot_uniform', activation='linear', weights=None,
-                 border_mode='valid', subsample=(1, 1),
-                 W_regularizer=None, b_regularizer=None, activity_regularizer=None,
-                 W_constraint=None, b_constraint=None):
-        if border_mode not in {'valid', 'full', 'same'}:
-            raise Exception('Invalid border mode for Convolution2D:', border_mode)
-        super(Convolution2D, self).__init__()
-        self.init = initializations.get(init)
-        self.activation = activations.get(activation)
-        self.subsample = tuple(subsample)
-        self.border_mode = border_mode
-        self.nb_filter = nb_filter
-        self.stack_size = stack_size
-        self.nb_row = nb_row
-        self.nb_col = nb_col
-        self.input = T.tensor4()
-        self.W_shape = (nb_filter, stack_size, nb_row, nb_col)
-        self.W = self.init(self.W_shape)
-        self.b = shared_zeros((nb_filter,))
-        self.params = [self.W, self.b]
-        self.regularizers = []
-        self.W_regularizer = regularizers.get(W_regularizer)
-        if self.W_regularizer:
-            self.W_regularizer.set_param(self.W)
-            self.regularizers.append(self.W_regularizer)
-        self.b_regularizer = regularizers.get(b_regularizer)
-        if self.b_regularizer:
-            self.b_regularizer.set_param(self.b)
-            self.regularizers.append(self.b_regularizer)
-        self.activity_regularizer = regularizers.get(activity_regularizer)
-        if self.activity_regularizer:
-            self.activity_regularizer.set_layer(self)
-            self.regularizers.append(self.activity_regularizer)
-        self.W_constraint = constraints.get(W_constraint)
-        self.b_constraint = constraints.get(b_constraint)
-        self.constraints = [self.W_constraint, self.b_constraint]
-        if weights is not None:
-            self.set_weights(weights)
-    @property
-    def output_shape(self):
-        input_shape = self.input_shape
-        rows = input_shape[2]
-        cols = input_shape[3]
-        rows = conv_output_length(rows, self.nb_row, self.border_mode, self.subsample[0])
-        cols = conv_output_length(cols, self.nb_col, self.border_mode, self.subsample[1])
-        return (input_shape[0], self.nb_filter, rows, cols)
-    def get_output(self, train=False):
-        X = self.get_input(train)
-        border_mode = self.border_mode
-        if on_gpu() and dnn.dnn_available():
-            if border_mode == 'same':
-                assert(self.subsample == (1, 1))
-                pad_x = (self.nb_row - self.subsample[0]) // 2
-                pad_y = (self.nb_col - self.subsample[1]) // 2
-                conv_out = dnn.dnn_conv(img=X,
-                                        kerns=self.W,
-                                        border_mode=(pad_x, pad_y))
-            else:
-                conv_out = dnn.dnn_conv(img=X,
-                                        kerns=self.W,
-                                        border_mode=border_mode,
-                                        subsample=self.subsample)
-        else:
-        return self.activation(conv_out + self.b.dimshuffle('x', 0, 'x', 'x'))
-    def get_config(self):
-        return {"name": self.__class__.__name__,
-                "nb_filter": self.nb_filter,
-                "stack_size": self.stack_size,
-                "nb_row": self.nb_row,
-                "nb_col": self.nb_col,
-                "init": self.init.__name__,
-                "activation": self.activation.__name__,
-                "border_mode": self.border_mode,
-                "subsample": self.subsample,
-                "W_regularizer": self.W_regularizer.get_config() if self.W_regularizer else None,
-                "b_regularizer": self.b_regularizer.get_config() if self.b_regularizer else None,
-                "activity_regularizer": self.activity_regularizer.get_config() if self.activity_regularizer else None,
-                "W_constraint": self.W_constraint.get_config() if self.W_constraint else None,
-                "b_constraint": self.b_constraint.get_config() if self.b_constraint else None}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class MaxPooling1D(Layer):
-    def __init__(self, pool_length=2, stride=1, ignore_border=True):
-        super(MaxPooling1D, self).__init__()
-        self.pool_length = pool_length
-        self.stride = stride
-        else:
-            self.st = None
-        if self.stride:
-        self.st = (self.stride, 1)
-        self.input = T.tensor3()
-        self.poolsize = (pool_length, 1)
-        self.ignore_border = ignore_border
-    @property
-    def output_shape(self):
-        input_shape = self.input_shape
-        length = pool_output_length(input_shape[1], self.pool_length, self.ignore_border, self.stride)
-        return (input_shape[0], length, input_shape[2])
-    def get_output(self, train=False):
-        X = self.get_input(train)
-        X = T.reshape(X, (X.shape[0], X.shape[1], X.shape[2], 1)).dimshuffle(0, 2, 1, 3)
-        output = downsample.max_pool_2d(X, ds=self.poolsize, st=self.st, ignore_border=self.ignore_border)
-        output = output.dimshuffle(0, 2, 1, 3)
-        return T.reshape(output, (output.shape[0], output.shape[1], output.shape[2]))
-    def get_config(self):
-        return {"name": self.__class__.__name__,
-                "stride": self.stride,
-                "pool_length": self.pool_length,
-                "ignore_border": self.ignore_border}
-
-
-
-
-
-
-class MaxPooling2D(Layer):
-    def __init__(self, poolsize=(2, 2), stride=(1, 1), ignore_border=True):
-        super(MaxPooling2D, self).__init__()
-        self.input = T.tensor4()
-        self.poolsize = tuple(poolsize)
-        self.stride = tuple(stride)
-        self.ignore_border = ignore_border
-    @property
-    def output_shape(self):
-        input_shape = self.input_shape
-        rows = pool_output_length(input_shape[2], self.poolsize[0], self.ignore_border, self.stride[0])
-        cols = pool_output_length(input_shape[3], self.poolsize[1], self.ignore_border, self.stride[1])
-        return (input_shape[0], input_shape[1], rows, cols)
-    def get_output(self, train=False):
-        X = self.get_input(train)
-        output = downsample.max_pool_2d(X, ds=self.poolsize, st=self.stride, ignore_border=self.ignore_border)
-        return output
-    def get_config(self):
-        return {"name": self.__class__.__name__,
-                "poolsize": self.poolsize,
-                "ignore_border": self.ignore_border,
-                "stride": self.stride}
-
-
-
-
-class UpSample1D(Layer):
-    def __init__(self, length=2):
-        super(UpSample1D, self).__init__()
-        self.length = length
-        self.input = T.tensor3()
-    @property
-    def output_shape(self):
-        input_shape = self.input_shape
-        return (input_shape[0], self.length * input_shape[1], input_shape[2])
-    def get_output(self, train=False):
-        X = self.get_input(train)
-        output = theano.tensor.extra_ops.repeat(X, self.length, axis=1)
-        return output
-    def get_config(self):
-        return {"name": self.__class__.__name__,
-                "length": self.length}
-
-
-
-
-class UpSample2D(Layer):
-    def __init__(self, size=(2, 2)):
-        super(UpSample2D, self).__init__()
-        self.input = T.tensor4()
-        self.size = tuple(size)
-    @property
-    def output_shape(self):
-        input_shape = self.input_shape
-        return (input_shape[0], input_shape[1], self.size[0] * input_shape[2], self.size[1] * input_shape[3])
-    def get_output(self, train=False):
-        X = self.get_input(train)
-        Y = theano.tensor.extra_ops.repeat(X, self.size[0], axis=2)
-        output = theano.tensor.extra_ops.repeat(Y, self.size[1], axis=3)
-        return output
-    def get_config(self):
-        return {"name": self.__class__.__name__,
-                "size": self.size}
-
-
-
-
-class ZeroPadding2D(Layer):
-    def __init__(self, pad=(1, 1)):
-        super(ZeroPadding2D, self).__init__()
-        self.pad = tuple(pad)
-        self.input = T.tensor4()
-    @property
-    def output_shape(self):
-        input_shape = self.input_shape
-        return (input_shape[0], input_shape[1], input_shape[2] + 2 * self.pad[0], input_shape[3] + 2 * self.pad[1])
-    def get_output(self, train=False):
-        X = self.get_input(train)
-        pad = self.pad
-        in_shape = X.shape
-        out_shape = (in_shape[0], in_shape[1], in_shape[2] + 2 * pad[0], in_shape[3] + 2 * pad[1])
-        out = T.zeros(out_shape)
-        indices = (slice(None), slice(None), slice(pad[0], in_shape[2] + pad[0]), slice(pad[1], in_shape[3] + pad[1]))
-        return T.set_subtensor(out[indices], X)
-    def get_config(self):
-        return {"name": self.__class__.__name__,
-                "pad": self.pad}
+    # we find again that only the first 10 features are useful
+    assert_equal((sparse_coef[:10] == 0.0).sum(), 0)
+    assert_equal((sparse_coef[10:] != 0.0).sum(), 0)
 
 
 

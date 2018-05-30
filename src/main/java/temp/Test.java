@@ -51,10 +51,10 @@ public class Test {
         System.out.println(localTree.debugTree());
         System.out.println(remoteTree.debugTree());
         
-        System.out.println("Local Actions:");
+        System.out.println("Local Minimized Actions:");
         System.out.println(localActions);
         
-        System.out.println("Remote Actions:");
+        System.out.println("Remote Minimized Actions:");
         System.out.println(remoteActions);
         
         // MERGING
