@@ -20,10 +20,10 @@ public class Test {
         String remote = "conflicts/test/test_remote.py"; // args[2];
         String merged = "conflicts/test/test_merged.py"; // args[3];
         */
-		
-		String base = "scripts/test_results/keras_test_results/files/22_convolutional_base.py";
-		String local = "scripts/test_results/keras_test_results/files/22_convolutional_local.py";
-		String remote = "scripts/test_results/keras_test_results/files/22_convolutional_remote.py";
+		String init = "scripts/test_results/scikit-learn_test_results/files/155_test_glm";
+		String base = init + "_base.py";
+		String local = init + "_local.py";
+		String remote = init + "_remote.py";
 		String merged = "tmp/temp_out.py";
         
         // get the correct parser (pass in filename for file extension/type?)

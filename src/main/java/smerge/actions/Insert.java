@@ -16,7 +16,6 @@ public class Insert implements Action {
 	
 	// inserts the sutree with root node under the given parent at the given position
 	public void apply() {
-		// TODO should all the children of child still be attached?
 		parent.children().add(position, child);
 		child.setParent(parent);
 

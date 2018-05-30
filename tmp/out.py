@@ -88,8 +88,6 @@ def variable(value, dtype=None, name=None):
                               theano.tensor.TensorConstant)):
             # Support for RandomStreams().normal(), .uniform().
             value = value.eval()
-            # Support for RandomStreams().normal(), .uniform().
-            value = value.eval()
         value = np.asarray(value, dtype=dtype)
         variable = theano.shared(value=value, name=name, strict=False)
     variable._keras_shape = value.shape
@@ -634,13 +632,7 @@ def resize_images(X, height_factor, width_factor, data_format):
         output = repeat_elements(X, height_factor, axis=2)
         output = repeat_elements(output, width_factor, axis=3)
         return output
-        output = repeat_elements(X, height_factor, axis=2)
-        output = repeat_elements(output, width_factor, axis=3)
-        return output
     elif data_format == 'channels_last':
-        output = repeat_elements(X, height_factor, axis=1)
-        output = repeat_elements(output, width_factor, axis=2)
-        return output
         output = repeat_elements(X, height_factor, axis=1)
         output = repeat_elements(output, width_factor, axis=2)
         return output
@@ -661,15 +653,7 @@ def resize_volumes(X, depth_factor, height_factor, width_factor, data_format):
         output = repeat_elements(output, height_factor, axis=3)
         output = repeat_elements(output, width_factor, axis=4)
         return output
-        output = repeat_elements(X, depth_factor, axis=2)
-        output = repeat_elements(output, height_factor, axis=3)
-        output = repeat_elements(output, width_factor, axis=4)
-        return output
     elif data_format == 'channels_last':
-        output = repeat_elements(X, depth_factor, axis=1)
-        output = repeat_elements(output, height_factor, axis=2)
-        output = repeat_elements(output, width_factor, axis=3)
-        return output
         output = repeat_elements(X, depth_factor, axis=1)
         output = repeat_elements(output, height_factor, axis=2)
         output = repeat_elements(output, width_factor, axis=3)
@@ -722,6 +706,8 @@ def batch_flatten(x):
     return x
 
 
+
+
 def expand_dims(x, dim=-1):
     """Add a 1-sized dimension at index "dim".
     """
@@ -734,8 +720,6 @@ def expand_dims(x, dim=-1):
             dim = dim % x.type.ndim + 1
     pattern.insert(dim, 'x')
     return x.dimshuffle(pattern)
-
-
 def squeeze(x, axis):
     """Remove a 1-dimension from the tensor at index "axis".
     """
@@ -784,9 +768,7 @@ def spatial_2d_padding(x, padding=(1, 1), data_format='default'):
     # TODO: `keras_shape` inference.
     if data_format == 'default':
         data_format = image_data_format()
-        data_format = image_data_format()
     if data_format not in {'channels_first', 'channels_last'}:
-        raise ValueError('Unknown data_format ' + str(data_format))
         raise ValueError('Unknown data_format ' + str(data_format))
     input_shape = x.shape
     if data_format == 'channels_first':
@@ -799,25 +781,7 @@ def spatial_2d_padding(x, padding=(1, 1), data_format='default'):
                    slice(None),
                    slice(padding[0], input_shape[2] + padding[0]),
                    slice(padding[1], input_shape[3] + padding[1]))
-        output_shape = (input_shape[0],
-                        input_shape[1],
-                        input_shape[2] + 2 * padding[0],
-                        input_shape[3] + 2 * padding[1])
-        output = T.zeros(output_shape)
-        indices = (slice(None),
-                   slice(None),
-                   slice(padding[0], input_shape[2] + padding[0]),
-                   slice(padding[1], input_shape[3] + padding[1]))
     elif data_format == 'channels_last':
-        output_shape = (input_shape[0],
-                        input_shape[1] + 2 * padding[0],
-                        input_shape[2] + 2 * padding[1],
-                        input_shape[3])
-        output = T.zeros(output_shape)
-        indices = (slice(None),
-                   slice(padding[0], input_shape[1] + padding[0]),
-                   slice(padding[1], input_shape[2] + padding[1]),
-                   slice(None))
         output_shape = (input_shape[0],
                         input_shape[1] + 2 * padding[0],
                         input_shape[2] + 2 * padding[1],
@@ -843,9 +807,7 @@ def asymmetric_spatial_2d_padding(x, top_pad=1, bottom_pad=1,
     """
     if data_format == 'default':
         data_format = image_data_format()
-        data_format = image_data_format()
     if data_format not in {'channels_first', 'channels_last'}:
-        raise ValueError('Unknown data_format ' + str(data_format))
         raise ValueError('Unknown data_format ' + str(data_format))
     input_shape = x.shape
     if data_format == 'channels_first':
@@ -858,26 +820,7 @@ def asymmetric_spatial_2d_padding(x, top_pad=1, bottom_pad=1,
                    slice(None),
                    slice(top_pad, input_shape[2] + top_pad),
                    slice(left_pad, input_shape[3] + left_pad))
-        output_shape = (input_shape[0],
-                        input_shape[1],
-                        input_shape[2] + top_pad + bottom_pad,
-                        input_shape[3] + left_pad + right_pad)
-        output = T.zeros(output_shape)
-        indices = (slice(None),
-                   slice(None),
-                   slice(top_pad, input_shape[2] + top_pad),
-                   slice(left_pad, input_shape[3] + left_pad))
     elif data_format == 'channels_last':
-        output_shape = (input_shape[0],
-                        input_shape[1] + top_pad + bottom_pad,
-                        input_shape[2] + left_pad + right_pad,
-                        input_shape[3])
-        print(output_shape)
-        output = T.zeros(output_shape)
-        indices = (slice(None),
-                   slice(top_pad, input_shape[1] + top_pad),
-                   slice(left_pad, input_shape[2] + left_pad),
-                   slice(None))
         output_shape = (input_shape[0],
                         input_shape[1] + top_pad + bottom_pad,
                         input_shape[2] + left_pad + right_pad,
@@ -901,9 +844,7 @@ def spatial_3d_padding(x, padding=(1, 1, 1), data_format='default'):
     """
     if data_format == 'default':
         data_format = image_data_format()
-        data_format = image_data_format()
     if data_format not in {'channels_first', 'channels_last'}:
-        raise ValueError('Unknown data_format ' + str(data_format))
         raise ValueError('Unknown data_format ' + str(data_format))
     input_shape = x.shape
     if data_format == 'channels_first':
@@ -918,29 +859,7 @@ def spatial_3d_padding(x, padding=(1, 1, 1), data_format='default'):
                    slice(padding[0], input_shape[2] + padding[0]),
                    slice(padding[1], input_shape[3] + padding[1]),
                    slice(padding[2], input_shape[4] + padding[2]))
-        output_shape = (input_shape[0],
-                        input_shape[1],
-                        input_shape[2] + 2 * padding[0],
-                        input_shape[3] + 2 * padding[1],
-                        input_shape[4] + 2 * padding[2])
-        output = T.zeros(output_shape)
-        indices = (slice(None),
-                   slice(None),
-                   slice(padding[0], input_shape[2] + padding[0]),
-                   slice(padding[1], input_shape[3] + padding[1]),
-                   slice(padding[2], input_shape[4] + padding[2]))
     elif data_format == 'channels_last':
-        output_shape = (input_shape[0],
-                        input_shape[1] + 2 * padding[0],
-                        input_shape[2] + 2 * padding[1],
-                        input_shape[3] + 2 * padding[2],
-                        input_shape[4])
-        output = T.zeros(output_shape)
-        indices = (slice(None),
-                   slice(padding[0], input_shape[1] + padding[0]),
-                   slice(padding[1], input_shape[2] + padding[1]),
-                   slice(padding[2], input_shape[3] + padding[2]),
-                   slice(None))
         output_shape = (input_shape[0],
                         input_shape[1] + 2 * padding[0],
                         input_shape[2] + 2 * padding[1],
@@ -1415,18 +1334,27 @@ def in_top_k(predictions, targets, k):
 # CONVOLUTIONS
 
 def _preprocess_conv2d_input(x, dim_ordering):
+    if dim_ordering == 'tf':
+        # TF uses the last dimension as channel dimension,
+        # instead of the 2nd one.
+        # TH input shape: (samples, input_depth, rows, cols)
+        # TF input shape: (samples, rows, cols, input_depth)
+        x = x.dimshuffle((0, 3, 1, 2))
+    return x
 
 
 def _preprocess_conv3d_input(x, dim_ordering):
+    if dim_ordering == 'tf':
+        # TF uses the last dimension as channel dimension,
+        # instead of the 2nd one.
+        # TH input shape: (samples, input_depth, rows, cols, slices)
+        # TF input shape: (samples, rows, cols, slices, input_depth)
+        x = x.dimshuffle((0, 4, 1, 2, 3))
+    return x
 
 
 def _preprocess_conv2d_kernel(kernel, data_format):
     if data_format == 'channels_last':
-        # TF uses the last dimension as channel dimension,
-        # instead of the 2nd one.
-        # TH kernel shape: (depth, input_depth, rows, cols)
-        # TF kernel shape: (rows, cols, input_depth, depth)
-        kernel = kernel.dimshuffle((3, 2, 0, 1))
         # TF uses the last dimension as channel dimension,
         # instead of the 2nd one.
         # TH kernel shape: (depth, input_depth, rows, cols)
@@ -1437,11 +1365,6 @@ def _preprocess_conv2d_kernel(kernel, data_format):
 
 def _preprocess_conv3d_kernel(kernel, data_format):
     if data_format == 'channels_last':
-        # TF uses the last dimension as channel dimension,
-        # instead of the 2nd one.
-        # TH kernel shape: (depth, input_depth, rows, cols, slices)
-        # TF kernel shape: (rows, cols, slices, input_depth, depth)
-        kernel = kernel.dimshuffle((4, 3, 0, 1, 2))
         # TF uses the last dimension as channel dimension,
         # instead of the 2nd one.
         # TH kernel shape: (depth, input_depth, rows, cols, slices)
@@ -1473,9 +1396,6 @@ def _preprocess_conv2d_image_shape(data_format, image_shape):
         if image_shape:
             image_shape = (image_shape[0], image_shape[3],
                            image_shape[1], image_shape[2])
-        if image_shape:
-            image_shape = (image_shape[0], image_shape[3],
-                           image_shape[1], image_shape[2])
     if image_shape is not None:
         image_shape = tuple(int_or_none(v) for v in image_shape)
     return image_shape
@@ -1489,9 +1409,6 @@ def _preprocess_conv3d_volume_shape(data_format, volume_shape):
         except TypeError:
             return None
     if data_format == 'channels_last':
-        if volume_shape:
-            volume_shape = (volume_shape[0], volume_shape[4],
-                            volume_shape[1], volume_shape[2], volume_shape[3])
         if volume_shape:
             volume_shape = (volume_shape[0], volume_shape[4],
                             volume_shape[1], volume_shape[2], volume_shape[3])
@@ -1511,9 +1428,6 @@ def _preprocess_conv2d_filter_shape(data_format, filter_shape):
         if filter_shape:
             filter_shape = (filter_shape[3], filter_shape[2],
                             filter_shape[0], filter_shape[1])
-        if filter_shape:
-            filter_shape = (filter_shape[3], filter_shape[2],
-                            filter_shape[0], filter_shape[1])
     if filter_shape is not None:
         filter_shape = tuple(int_or_none(v) for v in filter_shape)
     return filter_shape
@@ -1527,9 +1441,6 @@ def _preprocess_conv3d_filter_shape(data_format, filter_shape):
         except TypeError:
             return None
     if data_format == 'channels_last':
-        if filter_shape:
-            filter_shape = (filter_shape[4], filter_shape[3],
-                            filter_shape[0], filter_shape[1], filter_shape[2])
         if filter_shape:
             filter_shape = (filter_shape[4], filter_shape[3],
                             filter_shape[0], filter_shape[1], filter_shape[2])
@@ -1558,7 +1469,6 @@ def _postprocess_conv2d_output(conv_out, x, border_mode, np_kernel, strides, dim
             conv_out = conv_out[:, :, :, :(x.shape[3] + strides[1] - 1) // strides[1]]
     if data_format == 'channels_last':
         conv_out = conv_out.dimshuffle((0, 2, 3, 1))
-        conv_out = conv_out.dimshuffle((0, 2, 3, 1))
     return conv_out
 
 =======
@@ -1570,7 +1480,6 @@ def _postprocess_conv2d_output(conv_out, x, border_mode, np_kernel, strides, dat
             conv_out = conv_out[:, :, :, :(x.shape[3] + strides[1] - 1) // strides[1]]
     if data_format == 'channels_last':
         conv_out = conv_out.dimshuffle((0, 2, 3, 1))
-        conv_out = conv_out.dimshuffle((0, 2, 3, 1))
     return conv_out
 
 >>>>>>> LOCAL
@@ -1580,7 +1489,6 @@ def _postprocess_conv2d_output(conv_out, x, border_mode, np_kernel, strides, dat
         if kernel_shape[3] % 2 == 0:
             conv_out = conv_out[:, :, :, :(x.shape[3] + strides[1] - 1) // strides[1]]
     if data_format == 'channels_last':
-        conv_out = conv_out.dimshuffle((0, 2, 3, 1))
         conv_out = conv_out.dimshuffle((0, 2, 3, 1))
     return conv_out
 
@@ -1609,7 +1517,6 @@ def _postprocess_conv3d_output(conv_out, x, border_mode, np_kernel, strides, dim
             conv_out = conv_out[:, :, :, :, :(x.shape[4] + strides[2] - 1) // strides[2]]
     if data_format == 'channels_last':
         conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
-        conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
     return conv_out
 
 =======
@@ -1623,7 +1530,6 @@ def _postprocess_conv3d_output(conv_out, x, border_mode, np_kernel, strides, dat
             conv_out = conv_out[:, :, :, :, :(x.shape[4] + strides[2] - 1) // strides[2]]
     if data_format == 'channels_last':
         conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
-        conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
     return conv_out
 
 >>>>>>> LOCAL
@@ -1635,7 +1541,6 @@ def _postprocess_conv3d_output(conv_out, x, border_mode, np_kernel, strides, dat
         if kernel_shape[4] % 2 == 0:
             conv_out = conv_out[:, :, :, :, :(x.shape[4] + strides[2] - 1) // strides[2]]
     if data_format == 'channels_last':
-        conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
         conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
     return conv_out
 
@@ -1667,9 +1572,7 @@ def conv2d(x, kernel, strides=(1, 1), border_mode='valid',
     """
     if data_format == 'default':
         data_format = image_data_format()
-        data_format = image_data_format()
     if data_format not in {'channels_first', 'channels_last'}:
-        raise ValueError('Unknown data_format ', data_format)
         raise ValueError('Unknown data_format ', data_format)
     x = _preprocess_conv2d_input(x, data_format)
     kernel = _preprocess_conv2d_kernel(kernel, data_format)
@@ -1721,22 +1624,15 @@ def deconv2d(x, kernel, output_shape, strides=(1, 1),
     flip_filters = False
     if data_format == 'default':
         data_format = image_data_format()
-        data_format = image_data_format()
     if data_format not in {'channels_first', 'channels_last'}:
-        raise ValueError('Unknown data_format ' + data_format)
         raise ValueError('Unknown data_format ' + data_format)
     if data_format == 'channels_first':
         output_shape = (output_shape[0],
                         output_shape[3],
                         output_shape[1],
                         output_shape[2])
-        output_shape = (output_shape[0],
-                        output_shape[3],
-                        output_shape[1],
-                        output_shape[2])
     x = _preprocess_conv2d_input(x, data_format)
     if hasattr(kernel, '_keras_shape'):
-        kernel_shape = kernel._keras_shape
         kernel_shape = kernel._keras_shape
     else:
         # Will only work if `kernel` is a shared variable.
@@ -1797,9 +1693,7 @@ def conv3d(x, kernel, strides=(1, 1, 1),
     """
     if data_format == 'default':
         data_format = image_data_format()
-        data_format = image_data_format()
     if data_format not in {'channels_first', 'channels_last'}:
-        raise ValueError('Unknown data_format:', data_format)
         raise ValueError('Unknown data_format:', data_format)
     x = _preprocess_conv3d_input(x, data_format)
     # TODO: remove this if statement when Theano without AbstractConv3d is deprecated
@@ -1810,7 +1704,6 @@ def conv3d(x, kernel, strides=(1, 1, 1),
         return _old_theano_conv3d(x, kernel, strides, border_mode,
                                   data_format, volume_shape, filter_shape)
     if hasattr(kernel, '_keras_shape'):
-        kernel_shape = kernel._keras_shape
         kernel_shape = kernel._keras_shape
     else:
         # Will only work if `kernel` is a shared variable.
@@ -1853,27 +1746,11 @@ def _old_theano_conv3d(x, kernel, strides=(1, 1, 1),
     """
     if data_format == 'default':
         data_format = image_data_format()
-        data_format = image_data_format()
     if data_format not in {'channels_first', 'channels_last'}:
-        raise ValueError('Unknown data_format:', data_format)
         raise ValueError('Unknown data_format:', data_format)
     if border_mode not in {'same', 'valid'}:
         raise ValueError('Invalid border mode:', border_mode)
     if data_format == 'channels_last':
-        # TF uses the last dimension as channel dimension,
-        # instead of the 2nd one.
-        # TH input shape: (samples, input_depth, conv_dim1, conv_dim2, conv_dim3)
-        # TF input shape: (samples, conv_dim1, conv_dim2, conv_dim3, input_depth)
-        # TH kernel shape: (out_depth, input_depth, kernel_dim1, kernel_dim2, kernel_dim3)
-        # TF kernel shape: (kernel_dim1, kernel_dim2, kernel_dim3, input_depth, out_depth)
-        x = x.dimshuffle((0, 4, 1, 2, 3))
-        kernel = kernel.dimshuffle((4, 3, 0, 1, 2))
-        if volume_shape:
-            volume_shape = (volume_shape[0], volume_shape[4],
-                            volume_shape[1], volume_shape[2], volume_shape[3])
-        if filter_shape:
-            filter_shape = (filter_shape[4], filter_shape[3],
-                            filter_shape[0], filter_shape[1], filter_shape[2])
         # TF uses the last dimension as channel dimension,
         # instead of the 2nd one.
         # TH input shape: (samples, input_depth, conv_dim1, conv_dim2, conv_dim3)
@@ -1914,7 +1791,6 @@ def _old_theano_conv3d(x, kernel, strides=(1, 1, 1),
         conv_out = conv_out[:, :, ::strides[0], ::strides[1], ::strides[2]]
     if data_format == 'channels_last':
         conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
-        conv_out = conv_out.dimshuffle((0, 2, 3, 4, 1))
     return conv_out
 
 
@@ -1928,18 +1804,14 @@ def pool2d(x, pool_size, strides=(1, 1), border_mode='valid',
            data_format='default', pool_mode='max'):
     if data_format == 'default':
         data_format = image_data_format()
-        data_format = image_data_format()
     if data_format not in {'channels_first', 'channels_last'}:
-        raise ValueError('Unknown data_format:', data_format)
         raise ValueError('Unknown data_format:', data_format)
     assert pool_size[0] >= 1 and pool_size[1] >= 1
     else:
         raise ValueError('Invalid border mode:', border_mode)
     if data_format not in {'channels_first', 'channels_last'}:
         raise ValueError('Unknown data_format:', data_format)
-        raise ValueError('Unknown data_format:', data_format)
     if data_format == 'channels_last':
-        x = x.dimshuffle((0, 3, 1, 2))
         x = x.dimshuffle((0, 3, 1, 2))
     if border_mode == 'same':
         w_pad = pool_size[0] - 2 if pool_size[0] > 2 and pool_size[0] % 2 == 1 else pool_size[0] - 1
@@ -1950,7 +1822,6 @@ def pool2d(x, pool_size, strides=(1, 1), border_mode='valid',
     else:
         raise ValueError('Invalid pooling mode:', pool_mode)
     if data_format == 'channels_last':
-        pool_out = pool_out.dimshuffle((0, 2, 3, 1))
         pool_out = pool_out.dimshuffle((0, 2, 3, 1))
     if pool_mode == 'max':
         # TODO remove the old call once Theano older than 0.9.0dev4 is deprecated
@@ -2001,9 +1872,7 @@ def pool3d(x, pool_size, strides=(1, 1, 1), border_mode='valid',
            data_format='default', pool_mode='max'):
     if data_format == 'default':
         data_format = image_data_format()
-        data_format = image_data_format()
     if data_format not in {'channels_first', 'channels_last'}:
-        raise ValueError('Unknown data_format:', data_format)
         raise ValueError('Unknown data_format:', data_format)
     # TODO: remove this if statement when Theano without pool_3d is deprecated
     #       (pool_3d was introduced after 0.9.0dev3)
@@ -2014,9 +1883,7 @@ def pool3d(x, pool_size, strides=(1, 1, 1), border_mode='valid',
         raise ValueError('Invalid border mode:', border_mode)
     if data_format not in {'channels_first', 'channels_last'}:
         raise ValueError('Unknown data_format:', data_format)
-        raise ValueError('Unknown data_format:', data_format)
     if data_format == 'channels_last':
-        x = x.dimshuffle((0, 4, 1, 2, 3))
         x = x.dimshuffle((0, 4, 1, 2, 3))
     if border_mode == 'same':
         w_pad = pool_size[0] - 2 if pool_size[0] % 2 == 1 else pool_size[0] - 1
@@ -2027,9 +1894,7 @@ def pool3d(x, pool_size, strides=(1, 1, 1), border_mode='valid',
         padding = (0, 0, 0)
     else:
         raise ValueError('Invalid pooling mode:', pool_mode)
-        raise ValueError('Invalid pooling mode:', pool_mode)
     if data_format == 'channels_last':
-        pool_out = pool_out.dimshuffle((0, 2, 3, 4, 1))
         pool_out = pool_out.dimshuffle((0, 2, 3, 4, 1))
     if pool_mode == 'max':
         # TODO remove the old call once Theano older than 0.9.0dev4 is deprecated
@@ -2083,18 +1948,13 @@ def _old_theano_pool3d(x, pool_size, strides=(1, 1, 1), border_mode='valid',
                        data_format='default', pool_mode='max'):
     if data_format == 'default':
         data_format = image_data_format()
-        data_format = image_data_format()
     if data_format not in {'channels_first', 'channels_last'}:
-        raise ValueError('Unknown data_format:', data_format)
         raise ValueError('Unknown data_format:', data_format)
     else:
         raise ValueError('Invalid border mode:', border_mode)
-        raise ValueError('Invalid border mode:', border_mode)
     if data_format not in {'channels_first', 'channels_last'}:
         raise ValueError('Unknown data_format:', data_format)
-        raise ValueError('Unknown data_format:', data_format)
     if data_format == 'channels_last':
-        x = x.dimshuffle((0, 4, 1, 2, 3))
         x = x.dimshuffle((0, 4, 1, 2, 3))
     if border_mode == 'same':
         # TODO: add implementation for border_mode="same"
@@ -2104,9 +1964,7 @@ def _old_theano_pool3d(x, pool_size, strides=(1, 1, 1), border_mode='valid',
         padding = (0, 0)
     else:
         raise ValueError('Invalid pooling mode:', pool_mode)
-        raise ValueError('Invalid pooling mode:', pool_mode)
     if data_format == 'channels_last':
-        pool_out = pool_out.dimshuffle((0, 2, 3, 4, 1))
         pool_out = pool_out.dimshuffle((0, 2, 3, 4, 1))
     if pool_mode == 'max':
         # pooling over conv_dim2, conv_dim1 (last two channels)
@@ -2164,7 +2022,6 @@ def random_normal(shape, mean=0.0, stddev=1.0, dtype=None, seed=None):
 def random_uniform(shape, minval=0.0, maxval=1.0, dtype=None, seed=None):
     if dtype is None:
         dtype = floatx()
-        dtype = floatx()
     if seed is None:
         seed = np.random.randint(1, 10e6)
     rng = RandomStreams(seed=seed)
@@ -2173,7 +2030,6 @@ def random_uniform(shape, minval=0.0, maxval=1.0, dtype=None, seed=None):
 
 def random_binomial(shape, p=0.0, dtype=None, seed=None):
     if dtype is None:
-        dtype = floatx()
         dtype = floatx()
     if seed is None:
         seed = np.random.randint(1, 10e6)
@@ -2305,6 +2161,10 @@ def map_fn(fn, elems, name=None):
     return theano.map(fn, elems, name=name)[0]
 
 
+
+
+
+
 def foldl(fn, elems, initializer=None, name=None):
     """Reduce elems using fn to combine them from left to right.
 
@@ -2325,10 +2185,6 @@ def foldl(fn, elems, initializer=None, name=None):
     # first parameter and accumulator as second
     fn2 = lambda x, acc: fn(acc, x)
     return theano.foldl(fn2, elems, initializer, name=name)[0]
-
-
-
-
 def foldr(fn, elems, initializer=None, name=None):
     """Reduce elems using fn to combine them from right to left.
 

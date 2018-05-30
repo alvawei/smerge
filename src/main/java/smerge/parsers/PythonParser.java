@@ -39,6 +39,8 @@ public class PythonParser extends Parser {
 		// initialize tree
 		ASTNode root = new ASTNode();
 		parentStack.push(root);
+		
+		ASTNode prev = null;
 	    
 		// convert all tokens into ASTNodes
 		String token;
@@ -52,8 +54,14 @@ public class PythonParser extends Parser {
 			ASTNode node = new ASTNode(type, content, indentation);
 			node.setID(id--);
 			
+			// if this is a whitespace node, give it the same parent
+			// as the most recently added node
 			if (type == ASTNode.Type.WHITESPACE) {
-				root.addChild(node);
+				if (prev != null) {
+					prev.getParent().addChild(node);
+				} else {
+					root.addChild(node);
+				}
 				continue;
 			}
 			// find parent of this node and add it as a child
@@ -67,7 +75,8 @@ public class PythonParser extends Parser {
 			// next lines "should" be children
 			if (content.endsWith(":")) {
 				parentStack.push(node);
-			}			
+			}
+			prev = node;
 		}
 		return new AST(root, this);
 	}
