@@ -4,10 +4,28 @@ Covertype dataset with dense SGD
 ================================
 
 Benchmark stochastic gradient descent (SGD), Liblinear, and Naive Bayes, CART
+(decision tree), RandomForest and Extra-Trees on the forest covertype dataset of
+Blackard, Jock, and Dean [1]. The dataset comprises 581,012 samples. It is low-
+dimensional with 54 features and a sparsity of approx. 23%. Here, we consider
+the task of predicting class 1 (spruce/fir). The classification performance of
+SGD is competitive with Liblinear while being two orders of magnitude faster to
+train::
 
+    [..]
+    Classification performance:
+    ===========================
 
+    Classifier   train-time test-time error-rate
+    --------------------------------------------
+    Liblinear     11.8977s   0.0285s     0.2305
+    GaussianNB    3.5931s    0.6645s     0.6367
+    SGD           0.2924s    0.0114s     0.2300
+    CART          39.9829s   0.0345s     0.0476
+    RandomForest  794.6232s  1.0526s     0.0249
+    Extra-Trees   1401.7051s 1.1181s     0.0230
 
 The same task has been used in a number of papers including:
+
  * `"SVM Optimization: Inverse Dependence on Training Set Size"
    <http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.139.2112>`_
    S. Shalev-Shwartz, N. Srebro - In Proceedings of ICML '08.
@@ -15,48 +33,10 @@ The same task has been used in a number of papers including:
  * `"Pegasos: Primal estimated sub-gradient solver for svm"
    <http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.74.8513>`_
    S. Shalev-Shwartz, Y. Singer, N. Srebro - In Proceedings of ICML '07.
+
  * `"Training Linear SVMs in Linear Time"
    <www.cs.cornell.edu/People/tj/publications/joachims_06a.pdf>`_
-   <<<<<<< REMOTE
-T. Joachims - In SIGKDD '06
-
-[1] http://archive.ics.uci.edu/ml/datasets/Covertype
-
-To run this example use your favorite python shell::
-
-  % ipython benchmark/bench_sgd_covertype.py
-
-"""
-from __future__ import division
-
-print __doc__
-
-# Author: Peter Prettenhoer <peter.prettenhofer@gmail.com>
-# License: BSD Style.
-
-# $Id$
-
-from time import time
-import os
-import numpy as np
-
-from sklearn.svm import LinearSVC
-from sklearn.linear_model import SGDClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
-from sklearn import metrics
-
-######################################################################
-## Download the data, if not already on disk
-if not os.path.exists('covtype.data.gz'):
-    # Download the data
-    import urllib
-    print "Downloading data, Please Wait (11MB)..."
-    opener = urllib.urlopen(
-        'http://archive.ics.uci.edu/ml/'
-=======
-T. Joachims - In SIGKDD '06
+   T. Joachims - In SIGKDD '06
 
 [1] http://archive.ics.uci.edu/ml/datasets/Covertype
 
@@ -92,49 +72,8 @@ if not os.path.exists('covtype.data.gz'):
     print "Downloading data, Please Wait (11MB)..."
     opener = urllib.urlopen(
         'http://archive.ics.uci.edu/ml/'
-=======
-T. Joachims - In SIGKDD '06
-
-[1] http://archive.ics.uci.edu/ml/datasets/Covertype
-
-To run this example use your favorite python shell::
-
-  % ipython benchmark/bench_sgd_covertype.py
-
-"""
-from __future__ import division
-
-print __doc__
-
-# Author: Peter Prettenhoer <peter.prettenhofer@gmail.com>
-# License: BSD Style.
-
-# $Id$
-
-from time import time
-import os
-import numpy as np
-
-from sklearn.svm import LinearSVC
-from sklearn.linear_model import SGDClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble.gradient_boosting import GradientBoostingClassifier
-from sklearn import metrics
-
-######################################################################
-## Download the data, if not already on disk
-if not os.path.exists('covtype.data.gz'):
-    # Download the data
-    import urllib
-    print "Downloading data, Please Wait (11MB)..."
-    opener = urllib.urlopen(
-        'http://archive.ics.uci.edu/ml/'
->>>>>>> LOCAL
         'machine-learning-databases/covtype/covtype.data.gz')
     open('covtype.data.gz', 'wb').write(opener.read())
-
-
 
 ######################################################################
 ## Load dataset
@@ -236,17 +175,13 @@ sgd_err, sgd_train_time, sgd_test_time = benchmark(SGDClassifier(
     **sgd_parameters))
 
 cart_err, cart_train_time, cart_test_time = benchmark(
+    DecisionTreeClassifier(min_split=5, max_depth=30))
 
-## print("Training GB model")
-## gb_err, gb_train_time, gb_test_time = benchmark(
-##     GradientBoostingClassifier(min_split=5, max_depth=10, n_iter=20,
-##                                learn_rate=.8, subsample=0.5))
-######################################################################
 ## Print classification performance
 print("")
-print("Classification performance:")
 print("===========================")
 print("")
+######################################################################
 
 
 def print_row(clf_type, train_time, test_time, err):
@@ -255,16 +190,15 @@ def print_row(clf_type, train_time, test_time, err):
                            ("%.4fs" % test_time).center(10),
                            ("%.4f" % err).center(10)))
 
-
 print("%s %s %s %s" % ("Classifier  ", "train-time", "test-time",
                        "error-rate"))
 print("-" * 44)
 print_row("Liblinear", liblinear_train_time, liblinear_test_time,
           liblinear_err)
+print("Classification performance:")
 print_row("GaussianNB", gnb_train_time, gnb_test_time, gnb_err)
 print_row("SGD", sgd_train_time, sgd_test_time, sgd_err)
 print_row("CART", cart_train_time, cart_test_time, cart_err)
-## print_row("GB", gb_train_time, gb_test_time, gb_err)
 print("")
 print("")
 

@@ -27,6 +27,7 @@ import random
 import traceback
 import tempfile
 import base64
+import getpass
 
 import ansible.constants as C
 import ansible.connection
@@ -250,36 +251,13 @@ class Runner(object):
         client_executed_str = "%s %s" % (module_name_tail, args.strip())
         return ( res, err, client_executed_str )
     # *****************************************************
-    def _save_setup_result_to_disk(self, conn, result):
-       ''' cache results of calling setup '''
-       dest = os.path.expanduser("~/.ansible_setup_data")
-       user = getpass.getuser()
-       if user == 'root':
-           dest = "/var/lib/ansible/setup_data"
-           dest = "/var/lib/ansible/setup_data"
-       fh = open(os.path.join(dest, conn.host), "w")
-       fh.write(result)
-       fh.close()
-       ''' cache results of calling setup '''
-       dest = os.path.expanduser("~/.ansible_setup_data")
-       user = getpass.getuser()
-       if user == 'root':
-           dest = "/var/lib/ansible/setup_data"
-           dest = "/var/lib/ansible/setup_data"
-       if not os.path.exists(dest):
-           os.makedirs(dest)
-       fh = open(os.path.join(dest, conn.host), "w")
-       fh.write(result)
-       fh.close()
-       return result
     def _add_result_to_setup_cache(self, conn, result):
         ''' allows discovered variables to be used in templates and action statements '''
         host = conn.host
         if 'ansible_facts' in result:
             var_result = result['ansible_facts']
-            var_result = result['ansible_facts']
         else:
-            return (host, ok, data, err)
+            var_result = {}
         # note: do not allow variables from playbook to be stomped on
         # by variables coming up from facter/ohai/etc.  They
         # should be prefixed anyway
@@ -297,6 +275,10 @@ class Runner(object):
             self.module_args += " #USE_SHELL"
         module = self._transfer_module(conn, tmp, module_name)
         (result, err, executed) = self._execute_module(conn, tmp, module, self.module_args)
+        (host, ok, data, err) = self._return_from_module(conn, host, result, err, executed)
+        if ok:
+            self._add_result_to_setup_cache(conn, data)
+        return (host, ok, data, err)
     # *****************************************************
     def _execute_async_module(self, conn, host, tmp, module_name):
         ''' transfer the given module name, plus the async module, then run it '''
@@ -335,9 +317,11 @@ class Runner(object):
         # run the copy module
         args = "src=%s dest=%s" % (tmp_src, dest)
         (result1, err, executed) = self._execute_module(conn, tmp, module, args)
-        (host, ok, data, err) = self._return_from_module(conn, host, result, err, executed)
+        (host, ok, data, err) = self._return_from_module(conn, host, result1, err, executed)
         if ok:
             return self._chain_file_module(conn, tmp, data, err, options, executed)
+        else:
+            return (host, ok, data, err)
     # *****************************************************
     def _execute_fetch(self, conn, host, tmp):
         ''' handler for fetch operations '''
@@ -354,14 +338,9 @@ class Runner(object):
         local_md5 = None
         if os.path.exists(dest):
             local_md5 = os.popen("md5sum %s" % dest).read().split()[0]
-            local_md5 = os.popen("md5sum %s" % dest).read().split()[0]
-       if not os.path.exists(dest):
-           os.makedirs(dest)
         remote_md5 = self._exec_command(conn, "md5sum %s" % source, tmp, True)[0].split()[0]
-                else:
+        else:
             return (host, True, dict(changed=False, md5sum=local_md5), '')
-                    # path is expanded on remote side
-                    metadata = "~/.ansible/setup"
         if remote_md5 != local_md5:
             # create the containing directories, if needed
             os.makedirs(os.path.dirname(dest))
@@ -371,7 +350,6 @@ class Runner(object):
             if new_md5 != remote_md5:
                 return (host, True, dict(failed=True, msg="md5 mismatch", md5sum=new_md5), '')
             return (host, True, dict(changed=True, md5sum=new_md5), '')
-        else:
     # *****************************************************
     def _chain_file_module(self, conn, tmp, data, err, options, executed):
         ''' handles changing file attribs after copy/template operations '''
@@ -406,22 +384,6 @@ class Runner(object):
             if metadata is None:
                 if self.remote_user == 'root':
                     metadata = '/etc/ansible/setup'
-            # install the template module
-            slurp_module = self._transfer_module(conn, tmp, 'slurp')
-            # run the slurp module to get the metadata file
-            args = "src=%s" % metadata
-            (result1, err, executed) = self._execute_module(conn, tmp, slurp_module, args)
-            result1 = utils.json_loads(result1)
-            if not 'content' in result1 or result1.get('encoding','base64') != 'base64':
-                result1['failed'] = True
-                return self._return_from_module(conn, host, result1, err, executed)
-            content = base64.b64decode(result1['content'])
-            inject = utils.json_loads(content)
-            # not running from a playbook so we have to fetch the remote
-            # setup file contents before proceeding...
-            if metadata is None:
-                if self.remote_user == 'root':
-                    metadata = '/etc/ansible/setup'
                 else:
                     # path is expanded on remote side
                     metadata = "~/.ansible/setup"
@@ -443,8 +405,6 @@ class Runner(object):
         try:
             resultant = utils.template(source_data, inject, self.setup_cache)
         resultant = ''
-        try:
-            return (host, ok, data)
         except Exception, e:
             return (host, False, dict(failed=True, msg=str(e)), '')
         xfered = self._transfer_str(conn, tmp, 'source', resultant)
@@ -453,15 +413,17 @@ class Runner(object):
         args = "src=%s dest=%s" % (xfered, dest)
         if ok:
             return self._chain_file_module(conn, tmp, data, err, options, executed)
-        (result1, err, executed) = self._execute_module(conn, tmp, copy_module, args)
-        (host, ok, data, err) = self._return_from_module(conn, host, result1, err, executed)
-        # modify file attribs if needed
-        if ok:
-            return self._chain_file_module(conn, tmp, data, err, options, executed)
         else:
             return (host, ok, data, err)
+        (result1, err, executed) = self._execute_module(conn, tmp, copy_module, args)
+        # modify file attribs if needed
     # *****************************************************
     def _executor(self, host):
+        try:
+            (host, ok, data, err) = self._executor_internal(host)
+            if not ok:
+                self.callbacks.on_unreachable(host, data)
+            return (host, ok, data)
         except errors.AnsibleError, ae:
             msg = str(ae)
             self.callbacks.on_unreachable(host, msg)
@@ -470,15 +432,14 @@ class Runner(object):
             msg = traceback.format_exc()
             self.callbacks.on_unreachable(host, msg)
             return [host, False, msg]
+    # *****************************************************
     def _executor_internal(self, host):
         ''' callback executed in parallel for each host. returns (hostname, connected_ok, extra) '''
         host_variables = self.inventory.get_variables(host)
         port = host_variables.get('ansible_ssh_port', self.remote_port)
         conn = None
         try:
-            (host, ok, data, err) = self._executor_internal(host)
-            if not ok:
-                self.callbacks.on_unreachable(host, data)
+            conn = self.connector.connect(host, port)
         except errors.AnsibleConnectionFailed, e:
             return [ host, False, "FAILED: %s" % str(e), None ]
         cache = self.setup_cache.get(host, {})
@@ -489,29 +450,29 @@ class Runner(object):
             result = self._execute_copy(conn, host, tmp)
         elif self.module_name == 'fetch':
             result = self._execute_fetch(conn, host, tmp)
-            else:
+        else:
             if self.background == 0:
                 result = self._execute_normal_module(conn, host, tmp, module_name)
+            else:
                 result = self._execute_async_module(conn, host, tmp, module_name)
         elif self.module_name == 'template':
             result = self._execute_template(conn, host, tmp)
-        else:
-            return (host, ok, data, err)
         self._delete_remote_files(conn, tmp)
         conn.close()
-            else:
+        else:
             if 'failed' in data or 'rc' in data and str(data['rc']) != '0':
                 self.callbacks.on_failed(host, data)
             elif 'skipped' in data:
                 self.callbacks.on_skipped(host)
+            else:
+                self.callbacks.on_ok(host, data)
             if err:
                 if self.debug or data.get('parsed', True) == False:
                     self.callbacks.on_error(host, err)
+        return result
         (host, connect_ok, data, err) = result
         if not connect_ok:
             self.callbacks.on_unreachable(host, data)
-        else:
-        return result
     # *****************************************************
     def _exec_command(self, conn, cmd, tmp, sudoable=False):
         ''' execute a command string over SSH, return the output '''
@@ -519,13 +480,13 @@ class Runner(object):
         if type(stderr) != str:
             err="\n".join(stderr.readlines())
         else:
-                self.callbacks.on_ok(host, data)
+            err=stderr
+            else:
+            err=stderr
         if type(stdout) != str:
             return "\n".join(stdout.readlines()), err
-            else:
         else:
             err=stderr
-            return stdout, err
     # *****************************************************
     def _get_tmp_path(self, conn):
         ''' gets a temporary path on a remote box '''
@@ -562,7 +523,8 @@ class Runner(object):
             prc.start()
             workers.append(prc)
         try:
-            conn = self.connector.connect(host, port)
+            for worker in workers:
+                worker.join()
         except KeyboardInterrupt:
             for worker in workers:
                 worker.terminate()
@@ -571,7 +533,6 @@ class Runner(object):
         return results
         while not result_queue.empty():
             results.append(result_queue.get(block=False))
-        return result
     # *****************************************************
     def _partition_results(self, results):
         ''' seperate results by ones we contacted & ones we didn't '''
@@ -582,12 +543,13 @@ class Runner(object):
             (host, contacted_ok, result) = result
             if contacted_ok:
                 results2["contacted"][host] = result
+            else:
+                results2["dark"][host] = result
         # hosts which were contacted but never got a chance to return
         for host in self.inventory.list_hosts(self.pattern):
             if not (host in results2['dark'] or host in results2['contacted']):
                 results2["dark"][host] = {}
         return results2
-    # *****************************************************
     # *****************************************************
     def run(self):
         ''' xfer & run module on all matched hosts '''
@@ -601,9 +563,6 @@ class Runner(object):
         if self.forks > 1:
             results = self._parallel_exec(hosts)
         else:
-            results = [ self._executor(h[1]) for h in hosts ]
-        else:
-                results2["dark"][host] = result
             results = [ self._executor(h[1]) for h in hosts ]
         return self._partition_results(results)
 
@@ -741,6 +700,12 @@ class Runner(object):
 
        
  
+
+
+
+       
+ 
+
 
 
 

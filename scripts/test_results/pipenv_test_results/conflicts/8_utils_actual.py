@@ -48,21 +48,9 @@ def resolve_deps(deps, sources=None, verbose=False, hashes=False):
         logging.log.verbose = True
     resolver = Resolver(constraints=constraints, repository=pypi)
     results = []
-<<<<<<< REMOTE
-# pre-resolve instead of iterating to avoid asking pypi for hashes of editable packages
-=======
-# pre-resolve instead of iterating to avoid asking pypi for hashes of editable packages
->>>>>>> LOCAL
-<<<<<<< REMOTE
-resolved_tree = resolver.resolve()
-=======
-resolved_tree = resolver.resolve()
->>>>>>> LOCAL
-<<<<<<< REMOTE
-for result in resolved_tree:
-=======
-for result in resolved_tree:
->>>>>>> LOCAL
+    # pre-resolve instead of iterating to avoid asking pypi for hashes of editable packages
+    resolved_tree = resolver.resolve()
+    for result in resolved_tree:
     return results
 
 
@@ -91,12 +79,12 @@ def format_toml(data):
 
 
 
+
 def multi_split(s, split):
     """Splits on multiple given separators."""
     for r in split:
         s = s.replace(r, '|')
     return [i for i in s.split('|') if len(i) > 0]
-
 
 
 def convert_deps_from_pip(dep):

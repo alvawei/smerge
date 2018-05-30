@@ -3,6 +3,7 @@
 # Author: Fabian Pedregosa <fabian.pedregosa@inria.fr>
 #         Alexandre Gramfort <alexandre.gramfort@inria.fr>
 #
+# License: BSD, (C) INRIA
 
 import numpy as np
 
@@ -120,15 +121,12 @@ class NeighborsClassifier(BaseEstimator, ClassifierMixin):
         self._y = np.asanyarray(y)
         self._set_params(**params)
         if issparse(X):
-            self._fit_X = X.tocsr()
             self.ball_tree = None
             self._fit_X = X.tocsr()
         elif self.algorithm == 'ball_tree' or \
            (self.algorithm == 'auto' and X.shape[1] < 20):
             self.ball_tree = BallTree(X, self.leaf_size)
-            self.ball_tree = BallTree(X, self.window_size)
         else:
-            self.ball_tree = None
             self.ball_tree = None
             self._fit_X = X
         return self
@@ -450,6 +448,9 @@ def kneighbors_graph(X, n_neighbors, mode='connectivity', reg=1e-3):
             '"distance" or "barycenter" but got %s instead' % mode)
     return csr_matrix((A_data.ravel(), A_ind.ravel(), A_indptr),
                       shape=(n_samples, n_samples))
+
+
+
 
 
 

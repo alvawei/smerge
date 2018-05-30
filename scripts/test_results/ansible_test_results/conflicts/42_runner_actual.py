@@ -18,6 +18,7 @@
 
 ################################################
 
+import fnmatch
 import multiprocessing
 import signal
 import os
@@ -26,6 +27,8 @@ import Queue
 import random
 import traceback
 import tempfile
+import subprocess
+import getpass
 
 import ansible.constants as C
 import ansible.connection
@@ -64,8 +67,9 @@ def _executor_hook(job_queue, result_queue):
 ################################################
 
 class Runner(object):
+    _external_variable_script = None
     <<<<<<< REMOTE
-def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_PATH,
+    def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_PATH,
         module_name=C.DEFAULT_MODULE_NAME, module_args=C.DEFAULT_MODULE_ARGS, 
         forks=C.DEFAULT_FORKS, timeout=C.DEFAULT_TIMEOUT, pattern=C.DEFAULT_PATTERN,
         remote_user=C.DEFAULT_REMOTE_USER, remote_pass=C.DEFAULT_REMOTE_PASS,
@@ -73,25 +77,6 @@ def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_P
         basedir=None, setup_cache=None, transport=C.DEFAULT_TRANSPORT, 
         conditional='True', groups={}, callbacks=None, verbose=False,
         debug=False, sudo=False, extra_vars=None, module_vars=None, inventory=None):
-=======
-def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_PATH,
-        module_name=C.DEFAULT_MODULE_NAME, module_args=C.DEFAULT_MODULE_ARGS, 
-        forks=C.DEFAULT_FORKS, timeout=C.DEFAULT_TIMEOUT, pattern=C.DEFAULT_PATTERN,
-        remote_user=C.DEFAULT_REMOTE_USER, remote_pass=C.DEFAULT_REMOTE_PASS,
-        sudo_pass=C.DEFAULT_SUDO_PASS, remote_port=C.DEFAULT_REMOTE_PORT, background=0, 
-        basedir=None, setup_cache=None, transport=C.DEFAULT_TRANSPORT, 
-        conditional='True', groups={}, callbacks=None, verbose=False,
-        debug=False, sudo=False, extra_vars=None, module_vars=None):
-=======
-def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_PATH,
-        module_name=C.DEFAULT_MODULE_NAME, module_args=C.DEFAULT_MODULE_ARGS, 
-        forks=C.DEFAULT_FORKS, timeout=C.DEFAULT_TIMEOUT, pattern=C.DEFAULT_PATTERN,
-        remote_user=C.DEFAULT_REMOTE_USER, remote_pass=C.DEFAULT_REMOTE_PASS,
-        sudo_pass=C.DEFAULT_SUDO_PASS, remote_port=C.DEFAULT_REMOTE_PORT, background=0, 
-        basedir=None, setup_cache=None, transport=C.DEFAULT_TRANSPORT, 
-        conditional='True', groups={}, callbacks=None, verbose=False,
-        debug=False, sudo=False, extra_vars=None, module_vars=None, is_playbook=False):
->>>>>>> LOCAL
         if setup_cache is None:
             setup_cache = {}
         if basedir is None:
@@ -104,6 +89,150 @@ def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_P
         self.connector = ansible.connection.Connection(self, self.transport)
         if inventory is None:
             self.inventory = ansible.inventory.Inventory(host_list, extra_vars)
+        else:
+            self.inventory = inventory
+        self.setup_cache = setup_cache
+        self.conditional = conditional
+        self.module_path = module_path
+        self.module_name = module_name
+        self.forks       = int(forks)
+        self.pattern     = pattern
+        self.module_args = module_args
+        self.module_vars = module_vars
+        self.extra_vars  = extra_vars
+        self.timeout     = timeout
+        self.debug       = debug
+        self.verbose     = verbose
+        self.remote_user = remote_user
+        self.remote_pass = remote_pass
+        self.remote_port = remote_port
+        self.background  = background
+        self.basedir     = basedir
+        self.sudo        = sudo
+        self.sudo_pass   = sudo_pass
+        euid = pwd.getpwuid(os.geteuid())[0]
+        if self.transport == 'local' and self.remote_user != euid:
+            raise Exception("User mismatch: expected %s, but is %s" % (self.remote_user, euid))
+        if type(self.module_args) not in [str, unicode, dict]:
+            raise Exception("module_args must be a string or dict: %s" % self.module_args)
+        self._tmp_paths  = {}
+        random.seed()
+
+=======
+    def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_PATH,
+        module_name=C.DEFAULT_MODULE_NAME, module_args=C.DEFAULT_MODULE_ARGS, 
+        forks=C.DEFAULT_FORKS, timeout=C.DEFAULT_TIMEOUT, pattern=C.DEFAULT_PATTERN,
+        remote_user=C.DEFAULT_REMOTE_USER, remote_pass=C.DEFAULT_REMOTE_PASS,
+        sudo_pass=C.DEFAULT_SUDO_PASS, remote_port=C.DEFAULT_REMOTE_PORT, background=0, 
+        basedir=None, setup_cache=None, transport=C.DEFAULT_TRANSPORT, 
+        conditional='True', groups={}, callbacks=None, verbose=False,
+        debug=False, sudo=False, extra_vars=None, module_vars=None):
+        if setup_cache is None:
+            setup_cache = {}
+        if basedir is None:
+            basedir = os.getcwd()
+        if callbacks is None:
+            callbacks = ans_callbacks.DefaultRunnerCallbacks()
+        self.callbacks = callbacks
+        self.generated_jid = str(random.randint(0, 999999999999))
+        self.transport = transport
+        self.connector = ansible.connection.Connection(self, self.transport)
+        if inventory is None:
+            self.inventory = ansible.inventory.Inventory(host_list, extra_vars)
+        else:
+            self.inventory = inventory
+        self.setup_cache = setup_cache
+        self.conditional = conditional
+        self.module_path = module_path
+        self.module_name = module_name
+        self.forks       = int(forks)
+        self.pattern     = pattern
+        self.module_args = module_args
+        self.module_vars = module_vars
+        self.extra_vars  = extra_vars
+        self.timeout     = timeout
+        self.debug       = debug
+        self.verbose     = verbose
+        self.remote_user = remote_user
+        self.remote_pass = remote_pass
+        self.remote_port = remote_port
+        self.background  = background
+        self.basedir     = basedir
+        self.sudo        = sudo
+        self.is_playbook = is_playbook
+        self.sudo_pass   = sudo_pass
+        euid = pwd.getpwuid(os.geteuid())[0]
+        if self.transport == 'local' and self.remote_user != euid:
+            raise Exception("User mismatch: expected %s, but is %s" % (self.remote_user, euid))
+        if type(self.module_args) not in [str, unicode, dict]:
+            raise Exception("module_args must be a string or dict: %s" % self.module_args)
+        self._tmp_paths  = {}
+        random.seed()
+
+=======
+    def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_PATH,
+        module_name=C.DEFAULT_MODULE_NAME, module_args=C.DEFAULT_MODULE_ARGS, 
+        forks=C.DEFAULT_FORKS, timeout=C.DEFAULT_TIMEOUT, pattern=C.DEFAULT_PATTERN,
+        remote_user=C.DEFAULT_REMOTE_USER, remote_pass=C.DEFAULT_REMOTE_PASS,
+        sudo_pass=C.DEFAULT_SUDO_PASS, remote_port=C.DEFAULT_REMOTE_PORT, background=0, 
+        basedir=None, setup_cache=None, transport=C.DEFAULT_TRANSPORT, 
+        conditional='True', groups={}, callbacks=None, verbose=False,
+        debug=False, sudo=False, extra_vars=None, module_vars=None, is_playbook=False):
+        if setup_cache is None:
+            setup_cache = {}
+        if basedir is None:
+            basedir = os.getcwd()
+        if callbacks is None:
+            callbacks = ans_callbacks.DefaultRunnerCallbacks()
+        self.callbacks = callbacks
+        self.generated_jid = str(random.randint(0, 999999999999))
+        self.transport = transport
+        self.connector = ansible.connection.Connection(self, self.transport)
+        if type(host_list) == str:
+            self.host_list, self.groups = self.parse_hosts(host_list)
+        else:
+            self.host_list = host_list
+            self.groups    = groups
+        self.setup_cache = setup_cache
+        self.conditional = conditional
+        self.module_path = module_path
+        self.module_name = module_name
+        self.forks       = int(forks)
+        self.pattern     = pattern
+        self.module_args = module_args
+        self.module_vars = module_vars
+        self.extra_vars  = extra_vars
+        self.timeout     = timeout
+        self.debug       = debug
+        self.verbose     = verbose
+        self.remote_user = remote_user
+        self.remote_pass = remote_pass
+        self.remote_port = remote_port
+        self.background  = background
+        self.basedir     = basedir
+        self.sudo        = sudo
+        self.sudo_pass   = sudo_pass
+        self.is_playbook = is_playbook
+        euid = pwd.getpwuid(os.geteuid())[0]
+        if self.transport == 'local' and self.remote_user != euid:
+            raise Exception("User mismatch: expected %s, but is %s" % (self.remote_user, euid))
+        if type(self.module_args) not in [str, unicode, dict]:
+            raise Exception("module_args must be a string or dict: %s" % self.module_args)
+        self._tmp_paths  = {}
+        random.seed()
+
+>>>>>>> LOCAL
+        if setup_cache is None:
+            setup_cache = {}
+        if basedir is None:
+            basedir = os.getcwd()
+        if callbacks is None:
+            callbacks = ans_callbacks.DefaultRunnerCallbacks()
+        self.callbacks = callbacks
+        self.generated_jid = str(random.randint(0, 999999999999))
+        self.transport = transport
+        self.connector = ansible.connection.Connection(self, self.transport)
+        if inventory is None:
             self.inventory = ansible.inventory.Inventory(host_list, extra_vars)
         else:
             self.inventory = inventory
@@ -136,29 +265,99 @@ def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_P
         random.seed()
     # *****************************************************
     @classmethod
+    def parse_hosts_from_regular_file(cls, host_list):
+        ''' parse a textual host file '''
+        results = []
+        groups = dict(ungrouped=[])
+        lines = file(host_list).read().split("\n")
+        group_name = 'ungrouped'
+        for item in lines:
+            item = item.lstrip().rstrip()
+            if item.startswith("#"):
+                # ignore commented out lines
+                pass
+            elif item.startswith("["):
+                # looks like a group
+                group_name = item.replace("[","").replace("]","").lstrip().rstrip()
+                groups[group_name] = []
+            elif item != "":
+                # looks like a regular host
+                groups[group_name].append(item)
+                if not item in results:
+                    results.append(item)
+        return (results, groups)
     # *****************************************************
+    @classmethod
+    def parse_hosts_from_script(cls, host_list, extra_vars):
+        ''' evaluate a script that returns list of hosts by groups '''
+        results = []
+        groups = dict(ungrouped=[])
+        host_list = os.path.abspath(host_list)
+        cls._external_variable_script = host_list
+        cmd = [host_list, '--list']
+        if extra_vars:
+            cmd.extend(['--extra-vars', extra_vars])
+        cmd = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+        out, err = cmd.communicate()
+        rc = cmd.returncode
+        if rc:
+            raise errors.AnsibleError("%s: %s" % (host_list, err))
+        try:
+            groups = utils.json_loads(out)
+        except:
+            raise errors.AnsibleError("invalid JSON response from script: %s" % host_list)
+        for (groupname, hostlist) in groups.iteritems():
+            for host in hostlist:
+                if host not in results:
+                    results.append(host)
+        return (results, groups)
     # *****************************************************
+    @classmethod
     def parse_hosts(cls, host_list, override_hosts=None, extra_vars=None):
         ''' parse the host inventory file, returns (hosts, groups) '''
         if override_hosts is None:
             inventory = ansible.inventory.Inventory(host_list, extra_vars)
         else:
             inventory = ansible.inventory.Inventory(override_hosts)
-        return inventory.host_list, inventory.groups
+        if type(host_list) == list:
+            raise Exception("function can only be called on inventory files")
+        host_list = os.path.expanduser(host_list)
+        if not os.path.exists(host_list):
+            raise errors.AnsibleFileNotFound("inventory file not found: %s" % host_list)
+        if not os.access(host_list, os.X_OK):
+            return Runner.parse_hosts_from_regular_file(host_list)
+        else:
+            inventory = ansible.inventory.Inventory(override_hosts)
     # *****************************************************
+    def _matches(self, host_name, pattern):
+        ''' returns if a hostname is matched by the pattern '''
+        # a pattern is in fnmatch format but more than one pattern
+        # can be strung together with semicolons. ex:
+        #   atlanta-web*.example.com;dc-web*.example.com
+        if host_name == '':
+            return False
+        pattern = pattern.replace(";",":")
+        subpatterns = pattern.split(":")
+        for subpattern in subpatterns:
+            if subpattern == 'all':
+                return True
+            if fnmatch.fnmatch(host_name, subpattern):
+                return True
+            elif subpattern in self.groups:
+                if host_name in self.groups[subpattern]:
+                    return True
+        return False
     # *****************************************************
     def _connect(self, host):
         ''' connects to a host, returns (is_successful, connection_object OR traceback_string) '''
         try:
+            return [ True, self.connector.connect(host) ]
         except errors.AnsibleConnectionFailed, e:
             return [ False, "FAILED: %s" % str(e) ]
     # *****************************************************
     def _return_from_module(self, conn, host, result, err, executed=None):
         ''' helper function to handle JSON parsing of results '''
         try:
-            return [ True, self.connector.connect(host) ]
-        try:
-            var_result = utils.parse_json(result)
             result = utils.parse_json(result)
             if executed is not None:
                 result['invocation'] = executed
@@ -197,6 +396,28 @@ def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_P
         os.unlink(args_file)
         return args_remote
     # *****************************************************
+    def _add_variables_from_script(self, conn, inject):
+        ''' support per system variabes from external variable scripts, see web docs '''
+        host = conn.host
+        cmd = [Runner._external_variable_script, '--host', host]
+        if self.extra_vars:
+            cmd.extend(['--extra-vars', self.extra_vars])
+        cmd = subprocess.Popen(cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False
+        )
+        out, err = cmd.communicate()
+        inject2 = {}
+        try:
+            inject2 = utils.json_loads(out)
+        except:
+            raise errors.AnsibleError("%s returned invalid result when called with hostname %s" % (
+                Runner._external_variable_script,
+                host
+            ))
+        # store injected variables in the templates
+        inject.update(inject2)
     # *****************************************************
     def _add_setup_vars(self, inject, args):
         ''' setup module variables need special handling '''
@@ -259,35 +480,13 @@ def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_P
         client_executed_str = "%s %s" % (module_name_tail, args.strip())
         return ( res, err, client_executed_str )
     # *****************************************************
-    def _save_setup_result_to_disk(self, conn, result):
-       ''' cache results of calling setup '''
-       dest = os.path.expanduser("~/.ansible_setup_data")
-       user = getpass.getuser()
-       if user == 'root':
-           dest = "/var/lib/ansible/setup_data"
-           dest = "/var/lib/ansible/setup_data"
-       if not os.path.exists(dest):
-           os.makedirs(dest)
-            local_md5 = os.popen("md5sum %s" % dest).read().split()[0]
-       fh = open(os.path.join(dest, conn.host), "w")
-       fh.write(result)
-       fh.close()
-        return result
-       ''' cache results of calling setup '''
-       dest = os.path.expanduser("~/.ansible_setup_data")
-       user = getpass.getuser()
-       if user == 'root':
-           dest = "/var/lib/ansible/setup_data"
-           dest = "/var/lib/ansible/setup_data"
-       if not os.path.exists(dest):
-           os.makedirs(dest)
-       fh = open(os.path.join(dest, conn.host), "w")
-       fh.write(result)
-       fh.close()
-       return result
     def _add_result_to_setup_cache(self, conn, result):
         ''' allows discovered variables to be used in templates and action statements '''
+        host = conn.host
+        try:
+            var_result = utils.parse_json(result)
         except:
+            var_result = {}
         # note: do not allow variables from playbook to be stomped on
         # by variables coming up from facter/ohai/etc.  They
         # should be prefixed anyway
@@ -308,7 +507,6 @@ def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_P
         if module_name == 'setup':
             self._add_result_to_setup_cache(conn, result)
             if self.is_playbook:
-                self._save_setup_result_to_disk(conn, result)
                 self._save_setup_result_to_disk(conn, result)
         return self._return_from_module(conn, host, result, err, executed)
     # *****************************************************
@@ -431,6 +629,11 @@ def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_P
             return (host, ok, data, err)
     # *****************************************************
     def _executor(self, host):
+        try:
+            (host, ok, data, err) = self._executor_internal(host)
+            if not ok:
+                self.callbacks.on_unreachable(host, data)
+            return (host, ok, data)
         except errors.AnsibleError, ae:
             msg = str(ae)
             self.callbacks.on_unreachable(host, msg)
@@ -474,6 +677,7 @@ def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_P
             if err:
                 if self.debug or data.get('parsed', True) == False:
                     self.callbacks.on_error(host, err)
+        return result
     # *****************************************************
     def _exec_command(self, conn, cmd, tmp, sudoable=False):
         ''' execute a command string over SSH, return the output '''
@@ -492,6 +696,7 @@ def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_P
         result, err = self._exec_command(conn, "mktemp -d /tmp/ansible.XXXXXX", None, sudoable=False)
         cleaned = result.split("\n")[0].strip() + '/'
         return cleaned
+    # *****************************************************
     def _copy_module(self, conn, tmp, module):
         ''' transfer a module over SFTP, does not run it '''
         if module.startswith("/"):
@@ -502,6 +707,11 @@ def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_P
         out_path = tmp + module
         conn.put_file(in_path, out_path)
         return out_path
+    # *****************************************************
+    def _match_hosts(self, pattern):
+        ''' return all matched hosts fitting a pattern '''
+        return [ h for h in self.host_list if self._matches(h, pattern) ]
+    # *****************************************************
     def _parallel_exec(self, hosts):
         ''' handles mulitprocessing when more than 1 fork is required '''
         job_queue = multiprocessing.Manager().Queue()
@@ -521,9 +731,10 @@ def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_P
             for worker in workers:
                 worker.terminate()
                 worker.join()
+        return results
         while not result_queue.empty():
             results.append(result_queue.get(block=False))
-        return result
+    # *****************************************************
     def _partition_results(self, results):
         ''' seperate results by ones we contacted & ones we didn't '''
         results2 = dict(contacted={}, dark={})
@@ -540,7 +751,6 @@ def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_P
             if not (host in results2['dark'] or host in results2['contacted']):
                 results2["dark"][host] = {}
         return results2
-        return results
     # *****************************************************
     def run(self):
         ''' xfer & run module on all matched hosts '''
@@ -685,6 +895,33 @@ def __init__(self, host_list=C.DEFAULT_HOST_LIST, module_path=C.DEFAULT_MODULE_P
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       
+ 
+
+
+       
+ 
 
 
 

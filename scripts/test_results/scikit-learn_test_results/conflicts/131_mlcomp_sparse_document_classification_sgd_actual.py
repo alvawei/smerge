@@ -9,14 +9,14 @@ a scipy.sparse matrix to store the features instead of standard numpy arrays.
 
 The dataset used in this example is the 20 newsgroups dataset and should be
 downloaded from the http://mlcomp.org (free registration required):
+
   http://mlcomp.org/datasets/379
 
-
 Once downloaded unzip the arhive somewhere on your filesystem. For instance in::
+
   % mkdir -p ~/data/mlcomp
   % cd  ~/data/mlcomp
   % unzip /path/to/dataset-379-20news-18828_XXXXX.zip
-
 
 You should get a folder ``~/data/mlcomp/379`` with a file named ``metadata`` and
 subfolders ``raw``, ``train`` and ``test`` holding the text documents organized by
@@ -24,12 +24,12 @@ newsgroups.
 
 Then set the ``MLCOMP_DATASETS_HOME`` environment variable pointing to
 the root folder holding the uncompressed archive::
+
   % export MLCOMP_DATASETS_HOME="~/data/mlcomp"
 
-
 Then you are ready to run this example using your favorite python shell::
-  % ipython examples/mlcomp_sparse_document_classification.py
 
+  % ipython examples/mlcomp_sparse_document_classification.py
 
 """
 # Author: Peter Prettenhofer <peter.prettenhofer@gmail.com>
@@ -73,12 +73,13 @@ np.random.shuffle(idx)
 data = news_train.data[idx]
 target = news_train.target[idx]
 
-print "Training a linear SVM (hinge loss and L2 regularizer) using SGD:"
 print "num train docs: ", data.shape[0]
 print ""
-print clf
+print "Training a linear SVM (hinge loss and L2 regularizer) using SGD:"
+      "SGD(n_iter=50, alpha=0.00001, fit_intercept=True)"
 t0 = time()
 clf = SGD(n_iter=50, alpha=0.00001, fit_intercept=True)
+#clf = LinearSVC(**parameters)
 clf.fit(data, target)
 print "done in %fs" % (time() - t0)
 print "Percentage of non zeros coef: %f" % (np.mean(clf.coef_ != 0) * 100)
@@ -98,10 +99,8 @@ target = news_test.target[idx]
 print "Predicting the labels of the test set..."
 t0 = time()
 pred = clf.predict(data)
-
 print "done in %fs" % (time() - t0)
 print "Classification accuracy: %f" % (np.mean(pred == target) * 100)
-
 
 cm = confusion_matrix(target, pred)
 print "Confusion matrix:"

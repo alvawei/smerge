@@ -1,8 +1,8 @@
 Repo,Conflicts,Modified,Unresolved,%Modified,%Unresolved
-pipenv,45,2,43,4,95
-models,4,1,3,25,75
-keras,135,13,122,9,90
-flask,70,10,60,14,85
-XX-Net,8,2,6,25,75
-ansible,196,4,192,2,97
-scikit-learn,421,113,308,26,73
+pipenv,18,9,9,50,50
+models,0,0,0,0,0
+keras,0,0,0,0,0
+flask,0,0,0,0,0
+XX-Net,9,6,3,66,33
+ansible,334,205,129,61,38
+scikit-learn,598,363,235,60,39

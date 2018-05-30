@@ -19,10 +19,10 @@ with open(os.path.join(here, "pipenv", "__version__.py")) as f:
 if sys.argv[-1] == "publish":
     os.system("python setup.py sdist bdist_wheel upload")
     sys.exit()
-
 required = [
     'virtualenv',
     'pew>=0.1.26',
+    'pip',
     'requests',
     'click',
     'jinja2',
@@ -35,22 +35,15 @@ required = [
     'six',
     'toml',
     'pathlib',
-<<<<<<< REMOTE
-packages=find_packages(exclude=('tests',)),
-=======
-'parse',
->>>>>>> LOCAL
+    'parse',
     'click_completion',
     'blindspin',
     'backports.shutil_get_terminal_size',
     'ptyprocess'
-    'pip',
 ]
 
-if sys.version_info < (2, 7):
-    required.append('requests[security]')
-    required.append('ordereddict')
 
+<<<<<<< REMOTE
 setup(
     name='pipenv',
     version=about['__version__'],
@@ -59,6 +52,38 @@ setup(
     author='Kenneth Reitz',
     author_email='me@kennethreitz.org',
     url='https://github.com/kennethreitz/pipenv',
+    packages=find_packages(exclude=('tests',)),
+    entry_points={
+        'console_scripts': ['pipenv=pipenv:cli'],
+    },
+    install_requires=required,
+    include_package_data=True,
+    license='MIT',
+    classifiers=[
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2.6',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: Implementation :: CPython',
+        'Programming Language :: Python :: Implementation :: PyPy'
+    ],
+)
+=======
+setup(
+    name='pipenv',
+    version=about['__version__'],
+    description='Sacred Marriage of Pipfile, Pip, & Virtualenv.',
+    long_description=long_description,
+    author='Kenneth Reitz',
+    author_email='me@kennethreitz.org',
+    url='https://github.com/kennethreitz/pipenv',
+    packages=[
+        'pipenv', 'pipenv.vendor',
         'pipenv.vendor.pipfile'],
     entry_points={
         'console_scripts': ['pipenv=pipenv:cli'],
@@ -80,4 +105,9 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy'
     ],
 )
+>>>>>>> LOCAL
+if sys.version_info < (2, 7):
+    required.append('requests[security]')
+    required.append('ordereddict')
+
 

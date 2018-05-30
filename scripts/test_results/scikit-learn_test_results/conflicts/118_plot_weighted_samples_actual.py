@@ -24,7 +24,7 @@ sample_weight[:10] *= 10
 clf = svm.SVC()
 clf.fit(X, Y, sample_weight=sample_weight)
 
-# plot the decision function
+# get the separating hyperplane
 xx, yy = np.meshgrid(np.linspace(-4, 5, 500), np.linspace(-4, 5, 500))
 
 
@@ -32,9 +32,12 @@ xx, yy = np.meshgrid(np.linspace(-4, 5, 500), np.linspace(-4, 5, 500))
 Z = clf.decision_function(np.c_[xx.ravel(), yy.ravel()])
 Z = Z.reshape(xx.shape)
 
-pl.axis('off')
+# plot the line, the points, and the nearest vectors to the plane
 pl.set_cmap(pl.cm.bone)
 pl.contourf(xx, yy, Z, alpha=0.75)
 pl.scatter(X[:, 0], X[:, 1], c=Y, s=sample_weight, alpha=0.9)
+
+pl.axis('tight')
 pl.show()
+
 

@@ -13,11 +13,17 @@ Maximum likelihood covariance estimator.
 from __future__ import division
 import warnings
 import numpy as np
+from scipy.linalg.lapack import get_lapack_funcs
 from scipy import linalg
 
 from ..base import BaseEstimator
 from ..utils import array2d
+from ..utils.extmath import fast_logdet
 
+# import useful Lapack function to speedup matrices inversions
+getri, getrf = get_lapack_funcs(('getri', 'getrf'),
+                                (np.empty((), dtype=np.float64),
+                                 np.empty((), dtype=np.float64)))
 
 
 def log_likelihood(emp_cov, precision):
@@ -258,6 +264,7 @@ precision = symmetric_pinv(self.covariance_)
         mahalanobis_dist = np.sum(
             np.dot(centered_obs, precision) * centered_obs, 1)
         return mahalanobis_dist
+
 
 
 

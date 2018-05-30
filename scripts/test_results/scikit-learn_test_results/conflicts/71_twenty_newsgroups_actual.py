@@ -39,10 +39,16 @@ import os
 import urllib
 import logging
 import tarfile
+import pickle
+import warnings
+import shutil
 
+import numpy as np
 
 from .base import get_data_home
 from .base import load_filenames
+from ..utils import check_random_state, deprecated
+from ..utils.fixes import in1d
 
 
 logger = logging.getLogger(__name__)
@@ -51,9 +57,34 @@ logger = logging.getLogger(__name__)
 URL = ("http://people.csail.mit.edu/jrennie/"
             "20Newsgroups/20news-bydate.tar.gz")
 ARCHIVE_NAME = "20news-bydate.tar.gz"
+CACHE_NAME = "20news-bydate.pkz"
 TRAIN_FOLDER = "20news-bydate-train"
 TEST_FOLDER = "20news-bydate-test"
 
+def download_20newsgroups(target_dir, cache_path):
+    """ Download the 20Newsgroups data and convert is in a zipped pickle
+        storage.
+    """
+    archive_path = os.path.join(target_dir, ARCHIVE_NAME)
+    train_path = os.path.join(target_dir, TRAIN_FOLDER)
+    test_path = os.path.join(target_dir, TEST_FOLDER)
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+        if not os.path.exists(archive_path):
+                logger.warn("Downloading dataset from %s (14 MB)", URL)
+                opener = urllib.urlopen(URL)
+                open(archive_path, 'wb').write(opener.read())
+        logger.info("Decompressing %s", archive_path)
+    tarfile.open(archive_path, "r:gz").extractall(path=target_dir)
+        os.remove(archive_path)
+    # Store a zipped pickle
+    cache = dict(
+            train=load_files(train_path),
+            test=load_files(test_path)
+        )
+    open(cache_path, 'wb').write(pickle.dumps(cache).encode('zip'))
+    shutil.rmtree(target_dir)
+    return cache
 
 
 
@@ -94,57 +125,157 @@ def fetch_20newsgroups(data_home=None, subset='train', categories=None,
         instead of trying to download the data from the source site.
     """
     data_home = get_data_home(data_home=data_home)
-    archive_path = os.path.join(twenty_home, ARCHIVE_NAME)
-<<<<<<< REMOTE
-train_path = os.path.join(twenty_home, TRAIN_FOLDER)
-=======
-cache = None
->>>>>>> LOCAL
-<<<<<<< REMOTE
-test_path = os.path.join(twenty_home, TEST_FOLDER)
-=======
-if os.path.exists(cache_path):
->>>>>>> LOCAL
-<<<<<<< REMOTE
-if not os.path.exists(twenty_home):
-=======
-if cache is None:
->>>>>>> LOCAL
-<<<<<<< REMOTE
-if not os.path.exists(train_path) or not os.path.exists(test_path):
-=======
-if subset in ('train', 'test'):
->>>>>>> LOCAL
-<<<<<<< REMOTE
-if subset == 'train':
-=======
-elif subset == 'all':
->>>>>>> LOCAL
-<<<<<<< REMOTE
-elif subset == 'test':
-=======
-else:
->>>>>>> LOCAL
-<<<<<<< REMOTE
-else:
-=======
-if categories is not None:
->>>>>>> LOCAL
-<<<<<<< REMOTE
-description = subset + ' subset of the 20 newsgroups by date dataset'
-=======
-if shuffle:
->>>>>>> LOCAL
-<<<<<<< REMOTE
-return load_filenames(folder_path, description=description,
-                          categories=categories, shuffle=shuffle, random_state=random_state)
-=======
-return data
->>>>>>> LOCAL
+    cache_path = os.path.join(data_home, CACHE_NAME)
+    cache = None
+    if os.path.exists(cache_path):
+        try:
+            cache = pickle.loads(open(cache_path, 'rb').read().decode('zip'))
+        except Exception, e:
+            print 80*'_'
+            print 'Cache loading failed'
+            print 80*'_'
+            print e
+    if cache is None:
+        if download_if_missing:
+            cache = download_20newsgroups(target_dir=twenty_home,
+                                          cache_path=cache_path)
+        else:
+            raise IOError('20Newsgroups dataset not found')
+    if subset in ('train', 'test'):
+        data = cache[subset]
+    elif subset == 'all':
+        data_lst = list()
+        target = list()
+        for subset in ('train', 'test'):
+            data = cache[subset]
+            data_lst.extend(data.data)
+            target.extend(data.target)
+        data.data = data_lst
+        data.target = np.array(target)
+        data.description = 'the 20 newsgroups by date dataset'
+    else:
+        raise ValueError(
+            "subset can only be 'train', 'test' or 'all', got '%s'" % subset)
+    if categories is not None:
+        labels = [(data.target_names.index(cat), cat) for cat in categories]
+        # Sort the categories to have the ordering of the labels
+        labels.sort()
+        labels, categories = zip(*labels)
+        mask = in1d(data.target, labels)
+        data.target = data.target[mask]
+        # searchsorted to have continuous labels
+        data.target = np.searchsorted(labels, data.target)
+        data.target_names = list(categories)
+        # Use an object array to shuffle: avoids memory copy
+        data_lst = np.array(data.data, dtype=object)
+        data_lst = data_lst[mask]
+        data.data = data_lst.tolist()
+    if shuffle:
+        random_state = check_random_state(random_state)
+        indices = np.arange(data.target.shape[0])
+        random_state.shuffle(indices)
+        data.target = data.target[indices]
+        # Use an object array to shuffle: avoids memory copy
+        data_lst = np.array(data.data, dtype=object)
+        data_lst = data_lst[indices]
+        data.data = data_lst.tolist()
+    return data
     twenty_home = os.path.join(data_home, "20news_home")
 
+<<<<<<<<< Temporary merge branch 1
+    archive_path = os.path.join(twenty_home, ARCHIVE_NAME)
+    train_path = os.path.join(twenty_home, TRAIN_FOLDER)
+    test_path = os.path.join(twenty_home, TEST_FOLDER)
+
+    if not os.path.exists(twenty_home):
+        if download_if_missing:
+            os.makedirs(twenty_home)
+        else:
+            raise IOError("%s is missing, and will not be created" % twenty_home)
+
+    if not os.path.exists(train_path) or not os.path.exists(test_path):
+        if not os.path.exists(archive_path):
+            if download_if_missing:
+                logger.warn("Downloading dataset from %s (14 MB)", URL)
+                opener = urllib.urlopen(URL)
+                open(archive_path, 'wb').write(opener.read())
+            else:
+                raise IOError("%s is missing" % archive_path)
+        logger.info("Decompressing %s", archive_path)
+        tarfile.open(archive_path, "r:gz").extractall(path=twenty_home)
+        os.remove(archive_path)
 
 
+
+    if subset == 'train':
+        folder_path = train_path
+    elif subset == 'test':
+        folder_path = test_path
+=========
+    cache = None
+    if os.path.exists(cache_path):
+        try:
+            cache = pickle.loads(open(cache_path, 'rb').read().decode('zip'))
+        except Exception, e:
+            print 80*'_'
+            print 'Cache loading failed'
+            print 80*'_'
+            print e
+
+    if cache is None:
+        if download_if_missing:
+            cache = download_20newsgroups(target_dir=twenty_home,
+                                          cache_path=cache_path)
+    else:
+            raise IOError('20Newsgroups dataset not found')
+        
+    if subset in ('train', 'test'):
+        data = cache[subset]
+    elif subset == 'all':
+        data_lst = list()
+        target = list()
+        for subset in ('train', 'test'):
+            data = cache[subset]
+            data_lst.extend(data.data)
+            target.extend(data.target)
+        data.data = data_lst
+        data.target = np.array(target)
+        data.description = 'the 20 newsgroups by date dataset'
+
+>>>>>>>>> Temporary merge branch 2
+    else:
+        raise ValueError(
+            "subset can only be 'train' or 'test', got '%s'" % subset)
+
+    if categories is not None:
+        labels = [(data.target_names.index(cat), cat) for cat in categories]
+        # Sort the categories to have the ordering of the labels
+        labels.sort()
+        labels, categories = zip(*labels)
+        mask = in1d(data.target, labels)
+        data.target = data.target[mask]
+        # searchsorted to have continuous labels
+        data.target = np.searchsorted(labels, data.target)
+        data.target_names = list(categories)
+        # Use an object array to shuffle: avoids memory copy
+        data_lst = np.array(data.data, dtype=object)
+        data_lst = data_lst[mask]
+        data.data = data_lst.tolist()
+
+    if shuffle:
+        random_state = check_random_state(random_state)
+        indices = np.arange(data.target.shape[0])
+        random_state.shuffle(indices)
+        data.target = data.target[indices]
+        # Use an object array to shuffle: avoids memory copy
+        data_lst = np.array(data.data, dtype=object)
+        data_lst = data_lst[indices]
+        data.data = data_lst.tolist()
+
+    return data
+
+
+@deprecated("Use fetch_20newsgroups instead with download_if_missing=False")
 def load_20newsgroups(download_if_missing=False, **kwargs):
     """Alias for fetch_20newsgroups(download_if_missing=False)
 

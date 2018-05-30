@@ -377,6 +377,7 @@ class SVR(DenseBaseLibSVM, RegressorMixin):
     def fit(self, X, y, sample_weight=None, **params):
         """
         Fit the SVM model according to the given training data and parameters.
+
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
@@ -386,6 +387,8 @@ class SVR(DenseBaseLibSVM, RegressorMixin):
             Target values. Array of floating-point numbers.
         cache_size: float, optional
             Specify the size of the cache (in MB)
+
+
         Returns
         -------
         self : object
@@ -394,9 +397,6 @@ class SVR(DenseBaseLibSVM, RegressorMixin):
         # we copy this method because SVR does not accept class_weight
         return DenseBaseLibSVM.fit(self, X, y, sample_weight=sample_weight,
                                   **params)
-
-
-
 
 
 
@@ -484,18 +484,30 @@ class NuSVR(DenseBaseLibSVM, RegressorMixin):
     NuSVC, SVR
     """
     <<<<<<< REMOTE
-def __init__(self, nu=0.5, kernel='rbf', degree=3,
+    def __init__(self, nu=0.5, kernel='rbf', degree=3,
                  gamma=0.0, coef0=0.0, shrinking=True,
                  probability=False, tol=1e-3, cache_size=200):
+        DenseBaseLibSVM.__init__(self, 'nu_svr', kernel, degree, gamma, coef0,
+                                 tol, 0, nu, None, shrinking, probability,
+                                 cache_size)
+
 =======
-def __init__(self, nu=0.5, C=1.0, kernel='rbf', degree=3,
+    def __init__(self, nu=0.5, C=1.0, kernel='rbf', degree=3,
                  gamma=0.0, coef0=0.0, shrinking=True,
                  probability=False, tol=1e-3, cache_size=200):
+        DenseBaseLibSVM.__init__(self, 'nu_svr', kernel, degree, gamma, coef0,
+                                 tol, C, nu, None, shrinking, probability,
+                                 cache_size, C_scale_n_samples)
+
 =======
-def __init__(self, nu=0.5, C=1.0, kernel='rbf', degree=3,
+    def __init__(self, nu=0.5, C=1.0, kernel='rbf', degree=3,
                  gamma=0.0, coef0=0.0, shrinking=True,
                  probability=False, tol=1e-3, cache_size=200,
                  C_scale_n_samples=False):
+        DenseBaseLibSVM.__init__(self, 'nu_svr', kernel, degree, gamma, coef0,
+                                 tol, C, nu, None, shrinking, probability,
+                                 cache_size, C_scale_n_samples)
+
 >>>>>>> LOCAL
         DenseBaseLibSVM.__init__(self, 'nu_svr', kernel, degree, gamma, coef0,
                                  tol, C, nu, None, shrinking, probability,
@@ -503,6 +515,7 @@ def __init__(self, nu=0.5, C=1.0, kernel='rbf', degree=3,
     def fit(self, X, y, sample_weight=None, **params):
         """
         Fit the SVM model according to the given training data and parameters.
+
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
@@ -510,6 +523,7 @@ def __init__(self, nu=0.5, C=1.0, kernel='rbf', degree=3,
             n_features is the number of features.
         y : array, shape = [n_samples]
             Target values. Array of floating-point numbers.
+
         Returns
         -------
         self : object
@@ -517,8 +531,6 @@ def __init__(self, nu=0.5, C=1.0, kernel='rbf', degree=3,
         """
         # we copy this method because SVR does not accept class_weight
         return DenseBaseLibSVM.fit(self, X, y, sample_weight=[], **params)
-
-
 
 
 
@@ -594,25 +606,25 @@ class OneClassSVM(DenseBaseLibSVM):
     def fit(self, X, class_weight={}, sample_weight=None, **params):
         """
         Detects the soft boundary of the set of samples X.
+
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
             Set of samples, where n_samples is the number of samples and
             n_features is the number of features.
+
         Returns
         -------
         self : object
             Returns self.
+
         Notes
         ------
         If X is not a C-ordered contiguous array, it is copied.
+
         """
         super(OneClassSVM, self).fit(
             X, [], class_weight=class_weight, sample_weight=sample_weight,
             **params)
-
-
-
-
 
 

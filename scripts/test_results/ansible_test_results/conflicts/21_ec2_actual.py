@@ -10,11 +10,8 @@ AWS_REGIONS = ['ap-northeast-1',
 
 def ec2_argument_keys_spec():
     return dict(
-        region=dict(aliases=['aws_region', 'ec2_region'], choices=AWS_REGIONS),
-        ec2_url=dict(),
         aws_secret_key=dict(aliases=['ec2_secret_key', 'secret_key'], no_log=True),
         aws_access_key=dict(aliases=['ec2_access_key', 'access_key']),
-        validate_certs=dict(default=True, type='bool'),
     )
 
 
@@ -61,9 +58,13 @@ def get_ec2_creds(module):
 def ec2_connect(module):
     """ Return an ec2 connection"""
     ec2_url, aws_access_key, aws_secret_key, region = get_ec2_creds(module)
-    validate_certs = module.params.get('validate_certs', True)
     # If we have a region specified, connect to its endpoint.
     if region:
+        try:
+            if HAS_LOOSE_VERSION and LooseVersion(boto.Version) >= LooseVersion("2.6.0"):
+                ec2 = boto.ec2.connect_to_region(region, aws_access_key_id=aws_access_key, aws_secret_access_key=aws_secret_key, validate_certs=validate_certs)
+            else:
+                ec2 = boto.ec2.connect_to_region(region, aws_access_key_id=aws_access_key, aws_secret_access_key=aws_secret_key)
         except boto.exception.NoAuthHandlerFound, e:
             module.fail_json(msg = str(e))
     # Otherwise, no region so we fallback to the old connection method
@@ -71,29 +72,24 @@ def ec2_connect(module):
         try:
             if HAS_LOOSE_VERSION and LooseVersion(boto.Version) >= LooseVersion("2.6.0"):
                 ec2 = boto.connect_ec2_endpoint(ec2_url, aws_access_key, aws_secret_key, validate_certs=validate_certs)
-                ec2 = boto.connect_ec2_endpoint(ec2_url, aws_access_key, aws_secret_key, validate_certs=validate_certs)
             else:
-            ec2 = boto.connect_ec2_endpoint(ec2_url, aws_access_key, aws_secret_key)
                 ec2 = boto.connect_ec2_endpoint(ec2_url, aws_access_key, aws_secret_key)
-            if HAS_LOOSE_VERSION and LooseVersion(boto.Version) >= LooseVersion("2.6.0"):
-                ec2 = boto.connect_ec2_endpoint(ec2_url, aws_access_key, aws_secret_key, validate_certs=validate_certs)
-                ec2 = boto.connect_ec2_endpoint(ec2_url, aws_access_key, aws_secret_key, validate_certs=validate_certs)
-            else:
-            ec2 = boto.connect_ec2_endpoint(ec2_url, aws_access_key, aws_secret_key)
-                ec2 = boto.connect_ec2_endpoint(ec2_url, aws_access_key, aws_secret_key)
-        try:
-            if HAS_LOOSE_VERSION and LooseVersion(boto.Version) >= LooseVersion("2.6.0"):
-                ec2 = boto.ec2.connect_to_region(region, aws_access_key_id=aws_access_key, aws_secret_access_key=aws_secret_key, validate_certs=validate_certs)
-                ec2 = boto.ec2.connect_to_region(region, aws_access_key_id=aws_access_key, aws_secret_access_key=aws_secret_key, validate_certs=validate_certs)
         except boto.exception.NoAuthHandlerFound, e:
             module.fail_json(msg = str(e))
-    else:
+    elif ec2_url:
+        try:
+            if HAS_LOOSE_VERSION and LooseVersion(boto.Version) >= LooseVersion("2.6.0"):
+                ec2 = boto.connect_ec2_endpoint(ec2_url, aws_access_key, aws_secret_key, validate_certs=validate_certs)
+            else:
+                ec2 = boto.connect_ec2_endpoint(ec2_url, aws_access_key, aws_secret_key)
+        except boto.exception.NoAuthHandlerFound, e:
+            module.fail_json(msg = str(e))
+            else:
         module.fail_json(msg="Either region or ec2_url must be specified")
-        module.fail_json(msg="Either region or ec2_url must be specified")
-    else:
     return ec2
 
 
+def ec2_connect(module):
 
 
 

@@ -9,9 +9,14 @@ request:
   POST /_gh/ HTTP/1.1
   HOST: appid.appspot.com
   content-length: xxx
+
   http content:
+  此为ｂｏｄｙ
   {
+    pack_req_head_len: 2 bytes,＃ＰＯＳＴ　时使用
+    
     pack_req_head : deflate{
+    此为负载
       original request line,
       original request headers,
       X-URLFETCH-kwargs HEADS, {
@@ -23,15 +28,17 @@ request:
     body
   }
 
-
 response:
   200 OK
   http-Heads:
     Content-type: image/gif
+
+
     headers from real_server
     # real_server 为ｇａｅ让客户端以为的服务器
     #可能被gae改变，但对客户端不可见
     #未分片ｂｏｄｙ也直接发给客户端
+
     # body 分为下面两部分
   http-content:{
       response_head{
@@ -42,10 +49,9 @@ response:
          content = error_message, if GAE server fail
         }
       }
+
       body
   }
-
-
 """
 
 
@@ -193,7 +199,7 @@ def request_gae_server(headers, body, url):
     server_type = response.headers.get("server", "")
     content_type = response.headers.get("content-type", "")
     if ("gws" not in server_type and "Google Frontend" not in server_type and "GFE" not in server_type) or \
-            response.status == 403 or response.status == 405:
+        response.status == 403 or response.status == 405:
         # some ip can connect, and server type can be gws
         # but can't use as GAE server
         # so we need remove it immediately
@@ -250,23 +256,19 @@ def pack_request(method, url, headers, body):
     if 'Host' in headers:
         del headers['Host']
     kwargs = {}
-    # gae 用的参数
     if config.GAE_PASSWORD:
         kwargs['password'] = config.GAE_PASSWORD
-    kwargs['validate'] = config.GAE_VALIDATE
     # kwargs['options'] =
+    kwargs['validate'] = config.GAE_VALIDATE
     kwargs['maxsize'] = config.AUTORANGE_MAXSIZE
-    # gae 用的参数　ｅｎｄ
     kwargs['timeout'] = '19'
+    payload = '%s %s HTTP/1.1\r\n' % (method, url)
     payload += ''.join('%s: %s\r\n' % (k, v)
                        for k, v in headers.items() if k not in skip_headers)
-    payload = '%s %s HTTP/1.1\r\n' % (method, url)
-    payload += ''.join('X-URLFETCH-%s: %s\r\n' % (k, v)
-                       for k, v in kwargs.items() if v)
     # for k, v in headers.items():
     #    xlog.debug("Send %s: %s", k, v)
+    payload += ''.join('X-URLFETCH-%s: %s\r\n' % (k, v) for k, v in kwargs.items() if v)
     request_headers = {}
-    # request_headers 只有上面一项
     payload = deflate(payload)
     body = '%s%s%s' % (struct.pack('!h', len(payload)), payload, body)
     request_headers['Content-Length'] = str(len(body))
@@ -331,7 +333,7 @@ def request_gae_proxy(method, url, headers, body):
                 xlog.warn("server app return fail, status:%d",
                           response.app_status)
                 # if len(response.app_msg) < 2048:
-                    #xlog.warn('app_msg:%s', cgi.escape(response.app_msg))
+                #xlog.warn('app_msg:%s', cgi.escape(response.app_msg))
                 if response.app_status == 510:
                     # reach 80% of traffic today
                     # disable for get big file.
@@ -485,7 +487,6 @@ def handler(method, url, headers, body, wfile):
         except Exception as e_b:
             if e_b[0] in (errno.ECONNABORTED, errno.EPIPE,
                           errno.ECONNRESET) or 'bad write retry' in repr(e_b):
-                xlog.info('gae_handler send to browser return %r %r', e_b, url)
                 xlog.info('gae_handler send to browser return %r %r', e_b, url)
             else:
                 xlog.info('gae_handler send to browser return %r %r', e_b, url)
@@ -681,7 +682,7 @@ class RangeFetch2(object):
                 xlog.warning('RangeFetch "%s %s" return headers=%r, retry %s-%s',
                              self.method, self.url, response.headers, begin, end)
                 # if len(response.body) < 2048:
-                    #xlog.warn('body:%s', cgi.escape(response.body))
+                #xlog.warn('body:%s', cgi.escape(response.body))
                 # response.worker.close("no range")
                 continue
             content_length = int(response.headers.get('Content-Length', 0))

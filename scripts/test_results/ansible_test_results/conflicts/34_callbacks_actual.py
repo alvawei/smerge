@@ -25,21 +25,21 @@ import fnmatch
 from ansible.color import stringc
 
 cowsay = None
-if os.getenv("ANSIBLE_NOCOWS") is not None:
+    if os.getenv("ANSIBLE_NOCOWS") is not None:
     cowsay = None
-elif os.path.exists("/usr/bin/cowsay"):
+    elif os.path.exists("/usr/bin/cowsay"):
     cowsay = "/usr/bin/cowsay"
-elif os.path.exists("/usr/games/cowsay"):
+    elif os.path.exists("/usr/games/cowsay"):
     cowsay = "/usr/games/cowsay"
-elif os.path.exists("/usr/local/bin/cowsay"):
+    elif os.path.exists("/usr/local/bin/cowsay"):
     # BSD path for cowsay
     cowsay = "/usr/local/bin/cowsay"
-elif os.path.exists("/opt/local/bin/cowsay"):
+    elif os.path.exists("/opt/local/bin/cowsay"):
     # MacPorts path for cowsay
     cowsay = "/opt/local/bin/cowsay"
 
-noncow = os.getenv("ANSIBLE_COW_SELECTION",None)
-if cowsay and noncow == 'random':
+    noncow = os.getenv("ANSIBLE_COW_SELECTION",None)
+    if cowsay and noncow == 'random':
     cmd = subprocess.Popen([cowsay, "-l"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (out, err) = cmd.communicate()
     cows = out.split()
@@ -82,10 +82,8 @@ def verbose(msg, host=None, caplevel=2):
     if utils.VERBOSITY > caplevel:
         if host is None:
             display(msg, color='blue')
-    else:
-            display("<%s> %s" % (host, msg), color='blue')
         else:
-            print >>sys.stderr, msg2
+            display("<%s> %s" % (host, msg), color='blue')
 
 class AggregateStats(object):
     ''' holds stats about per-host activity during playbook runs '''
@@ -113,9 +111,7 @@ class AggregateStats(object):
                 if not setup and not poll:
                     self._increment('changed', host)
                 self._increment('ok', host)
-    else:
             else:
-                logging.info(msg)
                 if not poll or ('finished' in value and bool(value['finished'])):
                     self._increment('ok', host)
         for (host, value) in runner_results.get('dark', {}).iteritems():
@@ -146,6 +142,8 @@ def regular_generic_msg(hostname, result, oneline, caption):
     ''' output on the result of a module run that is not command '''
     if not oneline:
         return "%s | %s >> %s\n" % (hostname, caption, utils.jsonify(result,format=True))
+    else:
+        return "%s | %s >> %s\n" % (hostname, caption, utils.jsonify(result))
 
 
 
@@ -159,6 +157,12 @@ def banner(msg):
         cmd = subprocess.Popen(runcmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (out, err) = cmd.communicate()
         return "%s\n" % out
+    else:
+        width = 78 - len(msg)
+        if width < 3:
+            width = 3
+        filler = "*" * width
+        return "\n%s %s " % (msg, filler)
 
 
 def command_generic_msg(hostname, result, oneline, caption):
@@ -179,13 +183,10 @@ def command_generic_msg(hostname, result, oneline, caption):
             buf += msg
         return buf + "\n"
     else:
-        return "%s | %s >> %s\n" % (hostname, caption, utils.jsonify(result))
+        if stderr:
+            return "%s | %s | rc=%s | (stdout) %s (stderr) %s" % (hostname, caption, rc, stdout, stderr)
         else:
-        width = 78 - len(msg)
-        if width < 3:
-            width = 3
-        filler = "*" * width
-        return "\n%s %s " % (msg, filler)
+            return "%s | %s | rc=%s | (stdout) %s" % (hostname, caption, rc, stdout)
 
 
 
@@ -198,12 +199,12 @@ def host_report_msg(hostname, module_name, result, oneline):
         if not failed:
             msg = (command_generic_msg(hostname, result, oneline, 'success'), 'green')
         else:
-        if stderr:
-            return "%s | %s | rc=%s | (stdout) %s (stderr) %s" % (hostname, caption, rc, stdout, stderr)
-    else:
-            return "%s | %s | rc=%s | (stdout) %s" % (hostname, caption, rc, stdout)
-        else:
             msg = (command_generic_msg(hostname, result, oneline, 'FAILED'), 'red')
+    else:
+        if not failed:
+            msg = (regular_generic_msg(hostname, result, oneline, 'success'), 'green')
+        else:
+            msg = (regular_generic_msg(hostname, result, oneline, 'FAILED'), 'red')
     return msg
 
 
@@ -328,10 +329,9 @@ class PlaybookRunnerCallbacks(DefaultRunnerCallbacks):
             item = results.get('item', None)
         if item:
             msg = "fatal: [%s] => (item=%s) => %s" % (host, item, results)
-        display(msg, color='red')
         else:
-        if not failed:
-            msg = (regular_generic_msg(hostname, result, oneline, 'success'), 'green')
+            msg = "fatal: [%s] => %s" % (host, results)
+        display(msg, color='red')
         super(PlaybookRunnerCallbacks, self).on_unreachable(host, results)
     def on_failed(self, host, results, ignore_errors=False):
         results2 = results.copy()
@@ -346,9 +346,9 @@ class PlaybookRunnerCallbacks(DefaultRunnerCallbacks):
         returned_msg = results2.pop('msg', None)
         if item:
             msg = "failed: [%s] => (item=%s) => %s" % (host, item, utils.jsonify(results2))
-        display(msg, color='red')
         else:
-            msg = (regular_generic_msg(hostname, result, oneline, 'FAILED'), 'red')
+            msg = "failed: [%s] => %s" % (host, utils.jsonify(results2))
+        display(msg, color='red')
         if stderr:
             display("stderr: %s" % stderr, color='red')
         if stdout:
@@ -369,42 +369,42 @@ class PlaybookRunnerCallbacks(DefaultRunnerCallbacks):
         if changed:
             ok_or_changed = 'changed'
         # show verbose output for non-setup module results if --verbose is used
-    msg = ''
         msg = ''
-            else:
         if not self.verbose or host_result2.get("verbose_override",None) is not None:
             if item:
                 msg = "%s: [%s] => (item=%s)" % (ok_or_changed, host, item)
             else:
-            msg = "fatal: [%s] => %s" % (host, results)
+                if 'ansible_job_id' not in host_result or 'finished' in host_result:
+                    msg = "%s: [%s]" % (ok_or_changed, host)
         else:
-            msg = "failed: [%s] => %s" % (host, utils.jsonify(results2))
             # verbose ...
             if item:
                 msg = "%s: [%s] => (item=%s) => %s" % (ok_or_changed, host, item, utils.jsonify(host_result2))
             else:
-                if 'ansible_job_id' not in host_result or 'finished' in host_result:
-                    msg = "%s: [%s]" % (ok_or_changed, host)
                 if 'ansible_job_id' not in host_result or 'finished' in host_result2:
                     msg = "%s: [%s] => %s" % (ok_or_changed, host, utils.jsonify(host_result2))
         if msg != '':
             if not changed:
                 display(msg, color='green')
+            else:
+                display(msg, color='yellow')
         super(PlaybookRunnerCallbacks, self).on_ok(host, host_result)
     def on_error(self, host, err):
         item = err.get('item', None)
+        msg = ''
         if item:
             msg = "err: [%s] => (item=%s) => %s" % (host, item, err)
-        display(msg, color='red', stderr=True)
         else:
+            msg = "err: [%s] => %s" % (host, err)
+        display(msg, color='red', stderr=True)
         super(PlaybookRunnerCallbacks, self).on_error(host, err)
     def on_skipped(self, host, item=None):
         msg = ''
         if item:
             msg = "skipping: [%s] => (item=%s)" % (host, item)
-        display(msg, color='cyan')
         else:
-                display(msg, color='yellow')
+            msg = "skipping: [%s]" % host
+        display(msg, color='cyan')
         super(PlaybookRunnerCallbacks, self).on_skipped(host, item)
     def on_no_hosts(self):
         display("FATAL: no hosts matched or all hosts have already failed -- aborting\n", color='red')
@@ -485,24 +485,19 @@ class PlaybookCallbacks(object):
                 self.step = False
                 display(banner(msg))
             else:
-            msg = "err: [%s] => %s" % (host, err)
+                self.skip_task = True
         else:
-            msg = "skipping: [%s]" % host
+            display(banner(msg))
         call_callback_module('playbook_on_task_start', name, is_conditional)
     def on_vars_prompt(self, varname, private=True, prompt=None, encrypt=None, confirm=False, salt_size=None, salt=None, default=None):
         if prompt:
             msg = "%s: " % prompt
         else:
             msg = 'input for %s: ' % varname
-            msg = 'input for %s: ' % varname
-        else:
-                self.skip_task = True
         def prompt(prompt, private):
             if private:
                 return getpass.getpass(prompt)
             return raw_input(prompt)
-        else:
-            result = prompt(msg, private)
         if confirm:
             while True:
                 result = prompt(msg, private)
@@ -511,7 +506,6 @@ class PlaybookCallbacks(object):
                     break
                 display("***** VALUES ENTERED DO NOT MATCH ****")
         else:
-            display(banner(msg))
             result = prompt(msg, private)
         # if result is false and default is not None
         if not result and default:

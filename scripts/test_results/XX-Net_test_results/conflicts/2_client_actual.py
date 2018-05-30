@@ -14,7 +14,6 @@ data_xtunnel_path = os.path.join(data_path, 'x_tunnel')
 lib_path = os.path.abspath(os.path.join(current_path, os.pardir, 'common'))
 sys.path.append(root_path)
 
-sys.path.append(lib_path)
 ready = False
 # don't remove, launcher web_control need it.
 
@@ -35,6 +34,7 @@ xlog = getLogger("x_tunnel")
 
 import xconfig
 from proxy_handler import Socks5Server
+import xconfig
 import global_var as g
 import proxy_session
 import simple_http_server
@@ -132,6 +132,20 @@ def load_config():
 
 
 
+def start():
+    g.running = True
+    if not g.server_host or not g.server_port:
+        if g.config.server_host and g.config.server_port == 443:
+            xlog.info("Session Server:%s:%d", g.config.server_host, g.config.server_port)
+            g.server_host = g.config.server_host
+            g.server_port = g.config.server_port
+            g.balance = 99999999
+        elif g.config.api_server:
+            pass
+        else:
+            xlog.debug("please check x-tunnel server in config")
+    g.http_client = front_dispatcher
+    g.session = proxy_session.ProxySession()
 
 
 
@@ -157,9 +171,10 @@ def terminate():
 def main(args):
     global ready
     load_config()
-    front_dispatcher.init()
     g.data_path = data_path
     xlog.info("xxnet_version:%s", xxnet_version())
+    xlog.info("xxnet_version:%s", xxnet_version())
+    start()
     allow_remote = args.get("allow_remote", 0)
     if allow_remote:
         listen_ip = "0.0.0.0"
@@ -183,6 +198,5 @@ if __name__ == '__main__':
         terminate()
         import sys
         sys.exit()
-
 
 

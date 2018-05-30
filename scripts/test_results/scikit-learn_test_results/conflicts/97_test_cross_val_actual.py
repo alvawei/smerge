@@ -2,7 +2,6 @@
 """
 
 import numpy as np
-from scipy.sparse import coo_matrix
 
 import nose
 from nose.tools import assert_true
@@ -36,7 +35,6 @@ class MockClassifier(BaseEstimator):
 
 
 X = np.ones((10, 2))
-X_sparse = coo_matrix(X)
 y = np.arange(10) / 2
 
 ##############################################################################

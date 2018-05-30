@@ -227,24 +227,28 @@ class GaussianHMMParams(object):
     <<<<<<< REMOTE
 covars = {'spherical': (1.0 + 2 * np.random.rand(n_states)) ** 2,
               'tied': (generate_random_spd_matrix(n_features, prng=prng)
-=======
-covars = {'spherical': (1.0 + 2 * np.random.rand(n_states)) ** 2,
-              'tied': (_generate_random_spd_matrix(n_features)
-=======
-covars = {'spherical': (1.0 + 2 * np.random.rand(n_states)) ** 2,
-              'tied': (generate_random_spd_matrix(n_features)
->>>>>>> LOCAL
                        + np.eye(n_features)),
               'diag': (1.0 + 2 * np.random.rand(n_states, n_features)) ** 2,
               'full': np.array(
-                  <<<<<<< REMOTE
-[generate_random_spd_matrix(n_features, prng=prng) + np.eye(n_features)
-=======
-[_generate_random_spd_matrix(n_features) + np.eye(n_features)
-=======
-[generate_random_spd_matrix(n_features) + np.eye(n_features)
->>>>>>> LOCAL
+                  [generate_random_spd_matrix(n_features, prng=prng) + np.eye(n_features)
                    for x in xrange(n_states)])}
+=======
+covars = {'spherical': (1.0 + 2 * np.random.rand(n_states)) ** 2,
+              'tied': (_generate_random_spd_matrix(n_features)
+                       + np.eye(n_features)),
+              'diag': (1.0 + 2 * np.random.rand(n_states, n_features)) ** 2,
+              'full': np.array(
+                  [_generate_random_spd_matrix(n_features) + np.eye(n_features)
+                   for x in xrange(n_states)])}
+=======
+covars = {'spherical': (1.0 + 2 * np.random.rand(n_states)) ** 2,
+              'tied': (generate_random_spd_matrix(n_features)
+                       + np.eye(n_features)),
+              'diag': (1.0 + 2 * np.random.rand(n_states, n_features)) ** 2,
+              'full': np.array(
+                  [generate_random_spd_matrix(n_features) + np.eye(n_features)
+                   for x in xrange(n_states)])}
+>>>>>>> LOCAL
     expanded_covars = {'spherical': [np.eye(n_features) * cov
                                      for cov in covars['spherical']],
                        'diag': [np.diag(cov) for cov in covars['diag']],
@@ -536,27 +540,33 @@ def create_random_gmm(n_mix, n_features, cvtype):
 g.covars = {'spherical': (mincv
                               + mincv * np.random.rand(n_mix)) ** 2,
                 'tied': generate_random_spd_matrix(n_features, prng=prng)
+                       + mincv * np.eye(n_features),
+                'diag': (mincv
+                         + mincv * np.random.rand(n_mix, n_features)) ** 2,
+                'full': np.array([generate_random_spd_matrix(n_features, prng=prng)
+                                  + mincv * np.eye(n_features)
+                                  for x in xrange(n_mix)])}[cvtype]
 =======
 g.covars = {'spherical': (mincv
                               + mincv * np.random.rand(n_mix)) ** 2,
                 'tied': _generate_random_spd_matrix(n_features)
+                       + mincv * np.eye(n_features),
+                'diag': (mincv
+                         + mincv * np.random.rand(n_mix, n_features)) ** 2,
+                'full': np.array([_generate_random_spd_matrix(n_features)
+                                  + mincv * np.eye(n_features)
+                                  for x in xrange(n_mix)])}[cvtype]
 =======
 g.covars = {'spherical': (mincv
                               + mincv * np.random.rand(n_mix)) ** 2,
                 'tied': generate_random_spd_matrix(n_features)
->>>>>>> LOCAL
                        + mincv * np.eye(n_features),
                 'diag': (mincv
                          + mincv * np.random.rand(n_mix, n_features)) ** 2,
-                <<<<<<< REMOTE
-'full': np.array([generate_random_spd_matrix(n_features, prng=prng)
-=======
-'full': np.array([_generate_random_spd_matrix(n_features)
-=======
-'full': np.array([generate_random_spd_matrix(n_features)
->>>>>>> LOCAL
+                'full': np.array([generate_random_spd_matrix(n_features)
                                   + mincv * np.eye(n_features)
                                   for x in xrange(n_mix)])}[cvtype]
+>>>>>>> LOCAL
     g.weights = hmm.normalize(np.random.rand(n_mix))
     return g
 

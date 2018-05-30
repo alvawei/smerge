@@ -59,6 +59,7 @@ def get_data_home(data_home=None):
     return data_home
 
 
+
 def clear_data_home(data_home=None):
     """Delete all the content of the data home cache"""
     data_home = get_data_home(data_home)
@@ -177,6 +178,7 @@ def load_files(container_path, description=None, categories=None,
 
 
 
+###############################################################################
 
 def load_iris():
     """Load and return the iris dataset (classification).
@@ -352,5 +354,4 @@ def load_boston():
                  feature_names=feature_names,
                  DESCR=fdescr.read())
       
-
 

@@ -3,12 +3,10 @@
 Explicit feature map approximation for RBF kernels
 ==================================================
 
-An example illustrating the approximation of the feature map
-of an RBF kernel.
 .. currentmodule:: sklearn.kernel_approximation
 
-It shows how to use :class:`RBFSampler` and :class:`Nystrom` to
-approximate the feature map of an RBF kernel for classification with an SVM on
+An example shows how to use :class:`RBFSampler` and :class:`Nystrom` to
+appoximate the feature map of an RBF kernel for classification with an SVM on
 the digits dataset. Results using a linear SVM in the original space, a linear
 SVM using the approximate mappings and using a kernelized SVM are compared.
 Timings and accuracy for varying amounts of Monte Carlo samplings (in the case
@@ -202,7 +200,6 @@ for i, clf in enumerate((kernel_svm, nystroem_approx_svm,
     # Plot also the training points
     pl.scatter(X[:, 0], X[:, 1], c=targets_train, cmap=pl.cm.Paired)
     pl.title(titles[i])
-
 
 
 

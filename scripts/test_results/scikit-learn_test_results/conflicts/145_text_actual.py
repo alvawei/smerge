@@ -58,6 +58,28 @@ def strip_accents(s):
                     if unicodedata.category(c) != 'Mn'))
 
 
+class SimpleAnalyzer(object):
+    """Simple analyzer: transform a text document into a sequence of word tokens
+
+    This simple implementation does:
+        - lower case conversion
+        - unicode accents removal
+        - token extraction using unicode regexp word bounderies for token of
+          minimum size of 2 symbols
+    """
+    token_pattern = re.compile(r"\b\w\w+\b", re.U)
+    def __init__(self, default_charset='utf-8', stop_words=None):
+        self.charset = default_charset
+        self.stop_words = stop_words
+    def analyze(self, text_document):
+        if isinstance(text_document, str):
+            text_document = text_document.decode(self.charset, 'ignore')
+        text_document = strip_accents(text_document.lower())
+        tokens = self.token_pattern.findall(text_document)
+        if self.stop_words is not None:
+            return [w for w in tokens if w not in self.stop_words]
+        else:
+            return tokens
 
 
 
@@ -191,7 +213,6 @@ class SparseHashingVectorizer(object):
             if v == 0.0:
                 # can happen if equally frequent conflicting features
                 continue
-                continue
             tf_vectors[idx, k] = v / (len(tokens) * self.probes)
             if update_estimates and self.use_idf:
                 # update the running DF estimate
@@ -231,6 +252,7 @@ class SparseHashingVectorizer(object):
             return self.get_tfidf()
         else:
             return self.tf_vectors
+
 
 
 

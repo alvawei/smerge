@@ -17,6 +17,8 @@ import numpy as np
 from .utils import check_random_state
 from .utils.extmath import logsumexp
 from .base import BaseEstimator
+from .mixture import (GMM, lmvnpdf, normalize, sample_gaussian,
+                 _distribute_covar_matrix_to_match_cvtype, _validate_covars)
 from . import cluster
 import warnings
 warnings.warn('sklearn.hmm is orphaned, undocumented and has known numerical'
@@ -602,7 +604,6 @@ class GaussianHMM(_BaseHMM):
     # Read-only properties.
     @property
     def covariance_type(self):
-        return self._covariance_type
         """Covariance type of the model.
 
         Must be one of 'spherical', 'tied', 'diag', 'full'.
@@ -717,9 +718,8 @@ class GaussianHMM(_BaseHMM):
                           - 2 * self._means * stats['obs']
                           + self._means ** 2 * denom)
                 cv_den = max(covars_weight - 1, 0) + denom
+                self._covars = (covars_prior + cv_num) / cv_den
                 if self._covariance_type == 'spherical':
-                    self._covars = np.tile(self._covars.mean(1)[:, np.newaxis], 
-                                           (1, self._covars.shape[1]))
                     self._covars = np.tile(self._covars.mean(1)[:, np.newaxis], 
                                            (1, self._covars.shape[1]))
             elif self._covariance_type in ('tied', 'full'):
@@ -864,6 +864,95 @@ class MultinomialHMM(_BaseHMM):
                                  / stats['obs'].sum(1)[:, np.newaxis])
 
 
+class MultinomialHMM(_BaseHMM):
+    """Hidden Markov Model with multinomial (discrete) emissions
+
+    Attributes
+    ----------
+    n_components : int (read-only)
+        Number of states in the model.
+    n_symbols : int
+        Number of possible symbols emitted by the model (in the observations).
+    transmat : array, shape (`n_components`, `n_components`)
+        Matrix of transition probabilities between states.
+    startprob : array, shape ('n_components`,)
+        Initial state occupation distribution.
+    emissionprob: array, shape ('n_components`, 'n_symbols`)
+        Probability of emitting a given symbol when in each state.
+
+    Examples
+    --------
+    >>> from sklearn.hmm import MultinomialHMM
+    >>> MultinomialHMM(n_components=2)
+    ...                             #doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    MultinomialHMM(n_components=2, startprob=array([ 0.5,  0.5]),
+            startprob_prior=1.0,
+            transmat=array([[ 0.5,  0.5],
+           [ 0.5,  0.5]]),
+            transmat_prior=1.0)
+
+    See Also
+    --------
+    GaussianHMM : HMM with Gaussian emissions
+    """
+    def __init__(self, n_components=1, startprob=None, transmat=None,
+                 startprob_prior=None, transmat_prior=None):
+        """Create a hidden Markov model with multinomial emissions.
+
+        Parameters
+        ----------
+        n_components : int
+            Number of states.
+        """
+        super(MultinomialHMM, self).__init__(n_components, startprob, transmat,
+                                             startprob_prior=startprob_prior,
+                                             transmat_prior=transmat_prior)
+    def _get_emissionprob(self):
+        """Emission probability distribution for each state."""
+        return np.exp(self._log_emissionprob)
+    def _set_emissionprob(self, emissionprob):
+        emissionprob = np.asarray(emissionprob)
+        if hasattr(self, 'n_symbols') and \
+               emissionprob.shape != (self.n_components, self.n_symbols):
+            raise ValueError('emissionprob must have shape '
+                             '(n_components, n_symbols)')
+        self._log_emissionprob = np.log(emissionprob)
+        underflow_idx = np.isnan(self._log_emissionprob)
+        self._log_emissionprob[underflow_idx] = -np.Inf
+        self.n_symbols = self._log_emissionprob.shape[1]
+    emissionprob = property(_get_emissionprob, _set_emissionprob)
+    def _compute_log_likelihood(self, obs):
+        return self._log_emissionprob[:, obs].T
+    def _generate_sample_from_state(self, state, random_state=None):
+        cdf = np.cumsum(self.emissionprob[state, :])
+        random_state = check_random_state(random_state)
+        rand = random_state.rand()
+        symbol = (cdf > rand).argmax()
+        return symbol
+    def _init(self, obs, params='ste'):
+        super(MultinomialHMM, self)._init(obs, params=params)
+        if 'e' in params:
+            emissionprob = normalize(np.random.rand(self.n_components,
+                                                    self.n_symbols), 1)
+            self.emissionprob = emissionprob
+    def _initialize_sufficient_statistics(self):
+        stats = super(MultinomialHMM, self)._initialize_sufficient_statistics()
+        stats['obs'] = np.zeros((self.n_components, self.n_symbols))
+        return stats
+    def _accumulate_sufficient_statistics(self, stats, obs, framelogprob,
+                                          posteriors, fwdlattice, bwdlattice,
+                                          params):
+        super(MultinomialHMM, self)._accumulate_sufficient_statistics(
+            stats, obs, framelogprob, posteriors, fwdlattice, bwdlattice,
+            params)
+        if 'e' in params:
+            for t, symbol in enumerate(obs):
+                stats['obs'][:, symbol] += posteriors[t, :]
+    def _do_mstep(self, stats, params, **kwargs):
+        super(MultinomialHMM, self)._do_mstep(stats, params)
+        if 'e' in params:
+            self.emissionprob = (stats['obs']
+                                 / stats['obs'].sum(1)[:, np.newaxis])
 
 
 
@@ -960,7 +1049,7 @@ class GMMHMM(_BaseHMM):
             tmp_gmm = GMM(g.n_components, covariance_type=g.covariance_type)
             n_features = g.means.shape[1]
             tmp_gmm.covars = _distribute_covar_matrix_to_match_covariance_type(
-                                np.eye(n_features), g.covariance_type,
+                                np.eye(n_features), g.covariance_type, 
                                 g.n_components)
             norm = tmp_gmm._do_mstep(obs, gmm_posteriors, params)
             if np.any(np.isnan(tmp_gmm.covars)):

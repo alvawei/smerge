@@ -48,6 +48,137 @@ __all__ = ["RandomForestClassifier",
            "ExtraTreesRegressor"]
 
 
+class Forest(BaseEnsemble):
+    """Base class for forests of trees.
+
+    Warning: This class should not be used directly. Use derived classes
+    instead.
+    """
+    <<<<<<< REMOTE
+    def __init__(self, base_estimator,
+                       n_estimators=10,
+                       estimator_params=[],
+                       bootstrap=False,
+                       compute_importances=False,
+                       random_state=None):
+        super(BaseForest, self).__init__(
+            base_estimator=base_estimator,
+            n_estimators=n_estimators,
+            estimator_params=estimator_params)
+        self.bootstrap = bootstrap
+        self.compute_importances = compute_importances
+        self.random_state = check_random_state(random_state)
+        self.feature_importances_ = None
+
+=======
+    def __init__(self, base_estimator,
+                       n_estimators=10,
+                       estimator_params=[],
+                       bootstrap=False,
+                       random_state=None):
+        super(BaseForest, self).__init__(
+            base_estimator=base_estimator,
+            n_estimators=n_estimators,
+            estimator_params=estimator_params)
+        self.bootstrap = bootstrap
+        self.n_jobs = n_jobs
+        self.random_state = check_random_state(random_state)
+
+=======
+    def __init__(self, base_estimator,
+                       n_estimators=10,
+                       estimator_params=[],
+                       bootstrap=False,
+                       n_jobs=1,
+                       random_state=None):
+        super(Forest, self).__init__(
+            base_estimator=base_estimator,
+            n_estimators=n_estimators,
+            estimator_params=estimator_params)
+        self.bootstrap = bootstrap
+        self.n_jobs = n_jobs
+        self.random_state = check_random_state(random_state)
+
+>>>>>>> LOCAL
+        super(BaseForest, self).__init__(
+            base_estimator=base_estimator,
+            n_estimators=n_estimators,
+            estimator_params=estimator_params)
+        self.bootstrap = bootstrap
+        self.n_jobs = n_jobs
+        self.random_state = check_random_state(random_state)
+    def fit(self, X, y):
+        """Build a forest of trees from the training set (X, y).
+
+        Parameters
+        ----------
+        X : array-like of shape = [n_samples, n_features]
+            The training input samples.
+
+        y : array-like, shape = [n_samples]
+            The target values (integers that correspond to classes in
+            classification, real numbers in regression).
+
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
+        # Precompute some data
+        X = np.atleast_2d(X)
+        if self.bootstrap:
+            sample_mask = None
+            X_argsorted = None
+        else:
+            sample_mask = np.ones((X.shape[0],), dtype=np.bool)
+            X_argsorted = np.asfortranarray(
+                np.argsort(X.T, axis=1).astype(np.int32).T)
+        y = np.atleast_1d(y)
+        # Assign chunk of trees to jobs
+        n_jobs = min(self.n_jobs, self.n_estimators)
+        n_trees = [self.n_estimators / n_jobs] * n_jobs
+        n_trees[-1] += self.n_estimators % n_jobs
+        # Parallel loop
+        all_trees = Parallel(n_jobs=n_jobs)(
+            delayed(_parallel_build_trees)(
+                n_trees[i],
+                self,
+                X,
+                y,
+                sample_mask,
+                X_argsorted,
+                self.random_state.randint(MAX_INT))
+            for i in xrange(n_jobs))
+        # Reduce
+        self.estimators_ = [tree for tree in itertools.chain(*all_trees)]
+        if isinstance(self.base_estimator, ClassifierMixin):
+            self.classes_ = np.unique(y)
+            self.n_classes_ = len(self.classes_)
+            y = np.searchsorted(self.classes_, y)
+        return self
+    def feature_importances(self):
+        """Compute the mean feature importances over the trees in the forest.
+
+        Returns
+        -------
+        importances : array of shape = [n_features]
+            The feature importances.
+        """
+        # Assign chunk of trees to jobs
+        n_jobs = min(self.n_jobs, self.n_estimators)
+        n_trees = [self.n_estimators / n_jobs] * n_jobs
+        n_trees[-1] += self.n_estimators % n_jobs
+        starts = [0] * n_jobs
+        for i in xrange(1, n_jobs):
+            starts[i] = starts[i - 1] + n_trees[i]
+        # Parallel loop
+        all_importances = Parallel(n_jobs=n_jobs)(
+            delayed(_parallel_compute_importances)(
+                self.estimators_[starts[i]:starts[i] + n_trees[i]])
+            for i in xrange(n_jobs))
+        # Reduce
+        importances = sum(all_importances) / self.n_estimators
+        return importances
 
 
 
@@ -69,37 +200,73 @@ class ForestClassifier(BaseForest, ClassifierMixin):
     instead.
     """
     <<<<<<< REMOTE
-def __init__(self, base_estimator,
+    def __init__(self, base_estimator,
                        n_estimators=10,
                        estimator_params=[],
                        bootstrap=False,
                        compute_importances=False,
                        random_state=None):
-=======
-def __init__(self, base_estimator,
-                       n_estimators=10,
-                       estimator_params=[],
-                       bootstrap=False,
-                       random_state=None):
-=======
-def __init__(self, base_estimator,
-                       n_estimators=10,
-                       estimator_params=[],
-                       bootstrap=False,
-                       n_jobs=1,
-                       random_state=None):
->>>>>>> LOCAL
         super(ForestClassifier, self).__init__(
             base_estimator,
             n_estimators=n_estimators,
             estimator_params=estimator_params,
             bootstrap=bootstrap,
-<<<<<<< REMOTE
-compute_importances=compute_importances,
-=======
-n_jobs=n_jobs,
->>>>>>> LOCAL
+            compute_importances=compute_importances,
             random_state=random_state)
+
+=======
+    def __init__(self, base_estimator,
+                       n_estimators=10,
+                       estimator_params=[],
+                       bootstrap=False,
+                       random_state=None):
+        super(ForestClassifier, self).__init__(
+            base_estimator,
+            n_estimators=n_estimators,
+            estimator_params=estimator_params,
+            bootstrap=bootstrap,
+            random_state=random_state)
+
+=======
+    def __init__(self, base_estimator,
+                       n_estimators=10,
+                       estimator_params=[],
+                       bootstrap=False,
+                       n_jobs=1,
+                       random_state=None):
+        super(ForestClassifier, self).__init__(
+            base_estimator,
+            n_estimators=n_estimators,
+            estimator_params=estimator_params,
+            bootstrap=bootstrap,
+            n_jobs=n_jobs,
+            random_state=random_state)
+
+>>>>>>> LOCAL
+        <<<<<<< REMOTE
+super(ForestClassifier, self).__init__(
+            base_estimator,
+            n_estimators=n_estimators,
+            estimator_params=estimator_params,
+            bootstrap=bootstrap,
+            compute_importances=compute_importances,
+            random_state=random_state)
+=======
+super(ForestClassifier, self).__init__(
+            base_estimator,
+            n_estimators=n_estimators,
+            estimator_params=estimator_params,
+            bootstrap=bootstrap,
+            random_state=random_state)
+=======
+super(ForestClassifier, self).__init__(
+            base_estimator,
+            n_estimators=n_estimators,
+            estimator_params=estimator_params,
+            bootstrap=bootstrap,
+            n_jobs=n_jobs,
+            random_state=random_state)
+>>>>>>> LOCAL
     def predict(self, X):
         """Predict class for X.
 
@@ -136,6 +303,17 @@ n_jobs=n_jobs,
             ordered by arithmetical order.
         """
         X = np.atleast_2d(X)
+        X = np.atleast_2d(X)
+    p = np.zeros((X.shape[0], n_classes))
+        for tree in self.estimators_:
+        if n_classes == tree.n_classes_:
+                p += tree.predict_proba(X)
+        else:
+                proba = tree.predict_proba(X)
+                for j, c in enumerate(tree.classes_):
+                    p[:, c] += proba[:, j]
+        p /= self.n_estimators
+    return p
     def predict_log_proba(self, X):
         """Predict class log-probabilities for X.
 
@@ -171,37 +349,73 @@ class ForestRegressor(BaseForest, RegressorMixin):
     instead.
     """
     <<<<<<< REMOTE
-def __init__(self, base_estimator,
+    def __init__(self, base_estimator,
                        n_estimators=10,
                        estimator_params=[],
                        bootstrap=False,
                        compute_importances=False,
                        random_state=None):
-=======
-def __init__(self, base_estimator,
-                       n_estimators=10,
-                       estimator_params=[],
-                       bootstrap=False,
-                       random_state=None):
-=======
-def __init__(self, base_estimator,
-                       n_estimators=10,
-                       estimator_params=[],
-                       bootstrap=False,
-                       n_jobs=1,
-                       random_state=None):
->>>>>>> LOCAL
         super(ForestRegressor, self).__init__(
             base_estimator,
             n_estimators=n_estimators,
             estimator_params=estimator_params,
             bootstrap=bootstrap,
-<<<<<<< REMOTE
-compute_importances=compute_importances,
-=======
-n_jobs=n_jobs,
->>>>>>> LOCAL
+            compute_importances=compute_importances,
             random_state=random_state)
+
+=======
+    def __init__(self, base_estimator,
+                       n_estimators=10,
+                       estimator_params=[],
+                       bootstrap=False,
+                       random_state=None):
+        super(ForestRegressor, self).__init__(
+            base_estimator,
+            n_estimators=n_estimators,
+            estimator_params=estimator_params,
+            bootstrap=bootstrap,
+            random_state=random_state)
+
+=======
+    def __init__(self, base_estimator,
+                       n_estimators=10,
+                       estimator_params=[],
+                       bootstrap=False,
+                       n_jobs=1,
+                       random_state=None):
+        super(ForestRegressor, self).__init__(
+            base_estimator,
+            n_estimators=n_estimators,
+            estimator_params=estimator_params,
+            bootstrap=bootstrap,
+            n_jobs=n_jobs,
+            random_state=random_state)
+
+>>>>>>> LOCAL
+        <<<<<<< REMOTE
+super(ForestRegressor, self).__init__(
+            base_estimator,
+            n_estimators=n_estimators,
+            estimator_params=estimator_params,
+            bootstrap=bootstrap,
+            compute_importances=compute_importances,
+            random_state=random_state)
+=======
+super(ForestRegressor, self).__init__(
+            base_estimator,
+            n_estimators=n_estimators,
+            estimator_params=estimator_params,
+            bootstrap=bootstrap,
+            random_state=random_state)
+=======
+super(ForestRegressor, self).__init__(
+            base_estimator,
+            n_estimators=n_estimators,
+            estimator_params=estimator_params,
+            bootstrap=bootstrap,
+            n_jobs=n_jobs,
+            random_state=random_state)
+>>>>>>> LOCAL
     def predict(self, X):
         """Predict regression target for X.
 
@@ -218,24 +432,12 @@ n_jobs=n_jobs,
         y: array of shape = [n_samples]
             The predicted values.
         """
-        # Check data
         X = np.atleast_2d(X)
-        # Assign chunk of trees to jobs
-        n_jobs = min(self.n_jobs, self.n_estimators)
-        n_trees = [self.n_estimators / n_jobs] * n_jobs
-        n_trees[-1] += self.n_estimators % n_jobs
-        starts = [0] * n_jobs
-        for i in xrange(1, n_jobs):
-            starts[i] = starts[i - 1] + n_trees[i]
-            starts[i] = starts[i - 1] + n_trees[i]
-        # Parallel loop
-        all_y_hat = Parallel(n_jobs=self.n_jobs)(
-            delayed(_parallel_predict_regr)(
-                self.estimators_[starts[i]:starts[i] + n_trees[i]],
-                X)
-            for i in xrange(n_jobs))
-        # Reduce
-        y_hat = sum(all_y_hat) / self.n_estimators
+        X = np.atleast_2d(X)
+        y_hat = np.zeros(X.shape[0])
+        for tree in self.estimators_:
+            y_hat += tree.predict(X)
+        y_hat /= self.n_estimators
         return y_hat
 
 
@@ -297,6 +499,28 @@ class RandomForestClassifier(ForestClassifier):
     ----------
     .. [1] L. Breiman, "Random Forests", Machine Learning, 45(1), 5-32, 2001.
     """
+    def __init__(self, n_estimators=10,
+                       criterion="gini",
+                       max_depth=10,
+                       min_split=1,
+                       min_density=0.1,
+                       max_features=None,
+                       bootstrap=True,
+                       compute_importances=False,
+                       random_state=None):
+        super(RandomForestClassifier, self).__init__(
+            base_estimator=DecisionTreeClassifier(),
+            n_estimators=n_estimators,
+            estimator_params=("criterion", "max_depth", "min_split",
+                              "min_density", "max_features", "random_state"),
+            bootstrap=bootstrap,
+            compute_importances=compute_importances,
+            random_state=random_state)
+        self.criterion = criterion
+        self.max_depth = max_depth
+        self.min_split = min_split
+        self.min_density = min_density
+        self.max_features = max_features
 
 
 
@@ -354,6 +578,28 @@ class RandomForestRegressor(ForestRegressor):
     ----------
     .. [1] L. Breiman, "Random Forests", Machine Learning, 45(1), 5-32, 2001.
     """
+    def __init__(self, n_estimators=10,
+                       criterion="mse",
+                       max_depth=10,
+                       min_split=1,
+                       min_density=0.1,
+                       max_features=None,
+                       bootstrap=True,
+                       compute_importances=False,
+                       random_state=None):
+        super(RandomForestRegressor, self).__init__(
+            base_estimator=DecisionTreeRegressor(),
+            n_estimators=n_estimators,
+            estimator_params=("criterion", "max_depth", "min_split",
+                              "min_density", "max_features", "random_state"),
+            bootstrap=bootstrap,
+            compute_importances=compute_importances,
+            random_state=random_state)
+        self.criterion = criterion
+        self.max_depth = max_depth
+        self.min_split = min_split
+        self.min_density = min_density
+        self.max_features = max_features
 
 
 
@@ -413,8 +659,7 @@ class ExtraTreesClassifier(ForestClassifier):
     .. [1] P. Geurts, D. Ernst., and L. Wehenkel, "Extremely randomized trees",
            Machine Learning, 63(1), 3-42, 2006.
     """
-    <<<<<<< REMOTE
-def __init__(self, n_estimators=10,
+    def __init__(self, n_estimators=10,
                        criterion="gini",
                        max_depth=10,
                        min_split=1,
@@ -423,84 +668,13 @@ def __init__(self, n_estimators=10,
                        bootstrap=False,
                        compute_importances=False,
                        random_state=None):
-=======
-def __init__(self, n_estimators=10,
-                       criterion="gini",
-                       max_depth=10,
-                       min_split=1,
-                       min_density=0.1,
-                       max_features=None,
-                       bootstrap=True,
-                       random_state=None):
-=======
-def __init__(self, n_estimators=10,
-                       criterion="gini",
-                       max_depth=10,
-                       min_split=1,
-                       min_density=0.1,
-                       max_features=None,
-                       bootstrap=True,
-                       n_jobs=1,
-                       random_state=None):
->>>>>>> LOCAL
-<<<<<<< REMOTE
-compute_importances=compute_importances,
-=======
-n_jobs=n_jobs,
->>>>>>> LOCAL
-    <<<<<<< REMOTE
-def __init__(self, n_estimators=10,
-                       criterion="gini",
-                       max_depth=10,
-                       min_split=1,
-                       min_density=0.1,
-                       max_features=None,
-                       bootstrap=True,
-                       compute_importances=False,
-                       random_state=None):
-=======
-def __init__(self, n_estimators=10,
-                       criterion="gini",
-                       max_depth=10,
-                       min_split=1,
-                       min_density=0.1,
-                       max_features=None,
-                       bootstrap=False,
-                       random_state=None):
-=======
-def __init__(self, n_estimators=10,
-                       criterion="gini",
-                       max_depth=10,
-                       min_split=1,
-                       min_density=0.1,
-                       max_features=None,
-                       bootstrap=False,
-                       n_jobs=1,
-                       random_state=None):
->>>>>>> LOCAL
-        super(RandomForestClassifier, self).__init__(
-            base_estimator=DecisionTreeClassifier(),
-            n_estimators=n_estimators,
-            estimator_params=("criterion", "max_depth", "min_split",
-                              "min_density", "max_features", "random_state"),
-            bootstrap=bootstrap,
-<<<<<<< REMOTE
-compute_importances=compute_importances,
-=======
-n_jobs=n_jobs,
->>>>>>> LOCAL
-            random_state=random_state)
-        self.criterion = criterion
-        self.max_depth = max_depth
-        self.min_split = min_split
-        self.min_density = min_density
-        self.max_features = max_features
         super(ExtraTreesClassifier, self).__init__(
             base_estimator=ExtraTreeClassifier(),
             n_estimators=n_estimators,
             estimator_params=("criterion", "max_depth", "min_split",
                               "min_density", "max_features", "random_state"),
             bootstrap=bootstrap,
+            compute_importances=compute_importances,
             random_state=random_state)
         self.criterion = criterion
         self.max_depth = max_depth
@@ -566,8 +740,7 @@ class ExtraTreesRegressor(ForestRegressor):
     .. [1] P. Geurts, D. Ernst., and L. Wehenkel, "Extremely randomized trees",
            Machine Learning, 63(1), 3-42, 2006.
     """
-    <<<<<<< REMOTE
-def __init__(self, n_estimators=10,
+    def __init__(self, n_estimators=10,
                        criterion="mse",
                        max_depth=10,
                        min_split=1,
@@ -576,84 +749,13 @@ def __init__(self, n_estimators=10,
                        bootstrap=False,
                        compute_importances=False,
                        random_state=None):
-=======
-def __init__(self, n_estimators=10,
-                       criterion="mse",
-                       max_depth=10,
-                       min_split=1,
-                       min_density=0.1,
-                       max_features=None,
-                       bootstrap=True,
-                       random_state=None):
-=======
-def __init__(self, n_estimators=10,
-                       criterion="mse",
-                       max_depth=10,
-                       min_split=1,
-                       min_density=0.1,
-                       max_features=None,
-                       bootstrap=True,
-                       n_jobs=1,
-                       random_state=None):
->>>>>>> LOCAL
-<<<<<<< REMOTE
-compute_importances=compute_importances,
-=======
-n_jobs=n_jobs,
->>>>>>> LOCAL
-    <<<<<<< REMOTE
-def __init__(self, n_estimators=10,
-                       criterion="mse",
-                       max_depth=10,
-                       min_split=1,
-                       min_density=0.1,
-                       max_features=None,
-                       bootstrap=True,
-                       compute_importances=False,
-                       random_state=None):
-=======
-def __init__(self, n_estimators=10,
-                       criterion="mse",
-                       max_depth=10,
-                       min_split=1,
-                       min_density=0.1,
-                       max_features=None,
-                       bootstrap=False,
-                       random_state=None):
-=======
-def __init__(self, n_estimators=10,
-                       criterion="mse",
-                       max_depth=10,
-                       min_split=1,
-                       min_density=0.1,
-                       max_features=None,
-                       bootstrap=False,
-                       n_jobs=1,
-                       random_state=None):
->>>>>>> LOCAL
-        super(RandomForestRegressor, self).__init__(
-            base_estimator=DecisionTreeRegressor(),
-            n_estimators=n_estimators,
-            estimator_params=("criterion", "max_depth", "min_split",
-                              "min_density", "max_features", "random_state"),
-            bootstrap=bootstrap,
-<<<<<<< REMOTE
-compute_importances=compute_importances,
-=======
-n_jobs=n_jobs,
->>>>>>> LOCAL
-            random_state=random_state)
-        self.criterion = criterion
-        self.max_depth = max_depth
-        self.min_split = min_split
-        self.min_density = min_density
-        self.max_features = max_features
         super(ExtraTreesRegressor, self).__init__(
             base_estimator=ExtraTreeRegressor(),
             n_estimators=n_estimators,
             estimator_params=("criterion", "max_depth", "min_split",
                               "min_density", "max_features", "random_state"),
             bootstrap=bootstrap,
+            compute_importances=compute_importances,
             random_state=random_state)
         self.criterion = criterion
         self.max_depth = max_depth

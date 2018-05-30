@@ -8,12 +8,11 @@ from nose.tools import assert_raises
 from nose.tools import assert_true
 
 from ..k_means_ import KMeans, MiniBatchKMeans
-from ...datasets.samples_generator import make_blobs
+from .common import generate_clustered_data
+from ...utils import shuffle
 
-centers = np.array([[1, 1], [-1, -1], [1, -1]]) + 10
-X, _ = make_blobs(n_samples=60, n_features=2, centers=centers,
-                  cluster_std=0.1, shuffle=False, random_state=0)
 n_clusters = 3
+X = generate_clustered_data(n_clusters=n_clusters, std=.1)
 S = sp.csr_matrix(X)
 
 
@@ -192,7 +191,6 @@ def test_k_means_fixed_array_init_fit():
 
 
 
-
 def test_mbkm_fixed_array_init_fit():
     np.random.seed(1)
     init_array = np.vstack([X[5], X[25], X[45]])
@@ -202,5 +200,28 @@ def test_mbkm_fixed_array_init_fit():
     other_k_means.fit(X, init=another_init_array, k=n_clusters)
     assert_true(not np.allclose(k_means.init, other_k_means.init),
                 "init attributes must be different")
+
+
+def test_mbk_means():
+    n_samples = X.shape[0]
+    true_labels = np.zeros((n_samples,), dtype=np.int32)
+    true_labels[20:40] = 1
+    true_labels[40:] = 2
+    chunk_size = n_samples * 2
+    # make sure init clusters are in different clusters
+    init_array = np.vstack([X[5], X[25], X[45]])
+    # shuffle original data
+    X_shuffled, S_shuffled, true_labels = shuffle(X, S, true_labels, random_state=1)
+    mbk_means = MiniBatchKMeans(init=init_array, chunk_size=chunk_size,
+                                k=n_clusters, random_state=1)
+    mbk_means.fit(X_shuffled)
+    assert_equal(true_labels, mbk_means.labels_)
+    mbk_means = MiniBatchKMeans(init=init_array, chunk_size=chunk_size,
+                                k=n_clusters, random_state=1)
+    mbk_means.fit(S_shuffled)
+    assert_equal(true_labels, mbk_means.labels_)
+
+    
+
 
 

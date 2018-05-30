@@ -10,7 +10,6 @@ from numpy.testing import assert_array_equal
 from numpy.testing import assert_array_almost_equal
 from numpy.testing import assert_equal
 from numpy.testing import assert_almost_equal
-from nose.tools import assert_true
 
 from sklearn.grid_search import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
@@ -293,12 +292,6 @@ def test_pickle():
 
 
 
-
-<<<<<<< REMOTE
-
-=======
-
->>>>>>> LOCAL
 
 if __name__ == "__main__":
     import nose

@@ -37,9 +37,11 @@ class LinearModel(BaseEstimator, RegressorMixin):
     def predict(self, X):
         """
         Predict using the linear model
+
         Parameters
         ----------
         X : numpy array of shape [n_samples,n_features]
+
         Returns
         -------
         C : array, shape = [nsample]
@@ -63,27 +65,30 @@ class LinearModel(BaseEstimator, RegressorMixin):
 
 
 
-
-
 class LinearRegression(LinearModel):
     """
     Ordinary least squares Linear Regression.
+
     Attributes
     ----------
     `coef_` : array
         Estimated coefficients for the linear regression problem.
+
     `intercept_` : array
         Independent term in the linear model.
+
     Notes
     -----
     From the implementation point of view, this is just plain Ordinary
     Least Squares (numpy.linalg.lstsq) wrapped as a predictor object.
+
     """
     def __init__(self, fit_intercept=True):
         self.fit_intercept = fit_intercept
     def fit(self, X, Y, **params):
         """
         Fit linear model.
+
         Parameters
         ----------
         X : numpy array of shape [n_samples,n_features]
@@ -94,6 +99,7 @@ class LinearRegression(LinearModel):
             wether to calculate the intercept for this model. If set
             to false, no intercept will be used in calculations
             (e.g. data is expected to be already centered).
+
         Returns
         -------
         self : returns an instance of self.
@@ -118,15 +124,10 @@ class LinearRegression(LinearModel):
 
 
 
-
-
-
-
-
-
 class Ridge(LinearModel):
     """
     Ridge regression.
+
     Parameters
     ----------
     alpha : float
@@ -136,6 +137,7 @@ class Ridge(LinearModel):
         wether to calculate the intercept for this model. If set
         to false, no intercept will be used in calculations
         (e.g. data is expected to be already centered).
+
     Examples
     --------
     >>> import numpy as np
@@ -154,12 +156,14 @@ class Ridge(LinearModel):
     def fit(self, X, Y, **params):
         """
         Fit Ridge regression model
+
         Parameters
         ----------
         X : numpy array of shape [n_samples,n_features]
             Training data
         Y : numpy array of shape [n_samples]
             Target values
+
         Returns
         -------
         self : returns an instance of self.
@@ -193,10 +197,6 @@ class Ridge(LinearModel):
 
 
 
-
-
-
-
 class BayesianRidge(LinearModel):
     """
     Encapsulate various bayesian regression algorithms
@@ -215,6 +215,7 @@ class BayesianRidge(LinearModel):
             Training data
         Y : numpy array of shape [n_samples]
             Target values
+
         Returns
         -------
         self : returns an instance of self.
@@ -237,7 +238,6 @@ class BayesianRidge(LinearModel):
         # Store explained variance for __str__
         self.explained_variance_ = self._explained_variance(X, Y)
         return self
-
 
 
 
@@ -286,6 +286,7 @@ def bayesian_ridge_regression(X , Y, step_th=300, th_w = 1.e-12, ll_bool=False):
     Bayesian ridge regression. Optimize the regularization parameters alpha
     (precision of the weights) and beta (precision of the noise) within a simple
     bayesian framework (MAP).
+
     Parameters
     ----------
     X : numpy array of shape (length,features)
@@ -298,6 +299,7 @@ def bayesian_ridge_regression(X , Y, step_th=300, th_w = 1.e-12, ll_bool=False):
        Stop the algorithm if w has converged.
     ll_bool  : boolean (default is False).
            If True, compute the log-likelihood at each step of the model.
+
     Returns
     -------
     w : numpy array of shape (nb_features)
@@ -310,11 +312,13 @@ def bayesian_ridge_regression(X , Y, step_th=300, th_w = 1.e-12, ll_bool=False):
         variance-covariance matrix of the weights
     log_likelihood : list of float of size steps.
              Compute (if asked) the log-likelihood of the model.
+
     Examples
     --------
     >>> X = np.array([[1], [2]])
     >>> Y = np.array([1, 2])
     >>> w = bayesian_ridge_regression(X,Y)
+
     Notes
     -----
     See Bishop p 167-169 for more details.
@@ -365,15 +369,13 @@ def bayesian_ridge_regression(X , Y, step_th=300, th_w = 1.e-12, ll_bool=False):
 
 
 
-
-
-
-
 def bayesian_regression_ard(X, Y, step_th=300, th_w=1.e-12, \
                 alpha_th=1.e+16, ll_bool=False):
     """
     Bayesian ard-based regression. Optimize the regularization parameters alpha
     (vector of precisions of the weights) and beta (precision of the noise).
+
+
     Parameters
     ----------
     X : numpy array of shape (length,features)
@@ -390,6 +392,7 @@ def bayesian_regression_ard(X, Y, step_th=300, th_w=1.e-12, \
         1.e+16).
     ll_bool  : boolean (default is False).
            If True, compute the log-likelihood at each step of the model.
+
     Returns
     -------
     w : numpy array of shape (nb_features)
@@ -402,8 +405,10 @@ def bayesian_regression_ard(X, Y, step_th=300, th_w=1.e-12, \
         variance-covariance matrix of the weights
     log_likelihood : list of float of size steps.
              Compute (if asked) the log-likelihood of the model.
+
     Examples
     --------
+
     Notes
     -----
     See Bishop chapter 7.2. for more details.
@@ -413,8 +418,6 @@ def bayesian_regression_ard(X, Y, step_th=300, th_w=1.e-12, \
     gram = np.dot(X.T, X)
     beta = 1./np.var(Y)
     alpha = np.ones(gram.shape[1])
-
-
     log_likelihood = None
     if ll_bool :
         log_likelihood = []
@@ -425,31 +428,24 @@ def bayesian_regression_ard(X, Y, step_th=300, th_w=1.e-12, \
     old_w = np.copy(w)
     keep_a  = np.ones(X.shape[1],dtype=bool)
     while not has_converged and step_th:
-
         # alpha
         gamma_ = 1 - alpha[keep_a]*np.diag(sigma)
         alpha[keep_a] = gamma_/w[keep_a]**2
-
         # beta
         residual_ = (Y - np.dot(X[:,keep_a], w[keep_a]))**2
         beta = (X.shape[0]-gamma_.sum()) / residual_.sum()
-
         ### Avoid divergence of the values by setting a maximum values of the
         ### alpha
         keep_a = alpha<alpha_th
         gram = np.dot(X.T[keep_a,:], X[:,keep_a])
-
         ### Compute mu and sigma
         ones = np.eye(gram.shape[1])
         sigma = scipy.linalg.pinv(alpha[keep_a]*ones+ beta*gram)
         w[keep_a] = np.dot(beta*sigma,np.dot(X.T[keep_a,:],Y))
         step_th -= 1
-
         # convergence : compare w
         has_converged =  (np.sum(np.abs(w-old_w))<th_w)
         old_w = w
-
-
     ### Compute the log likelihood
     if ll_bool :
         A_ = np.eye(X.shape[1])/alpha
@@ -457,8 +453,17 @@ def bayesian_regression_ard(X, Y, step_th=300, th_w=1.e-12, \
         ll = X.shape[0]*np.log(2*np.pi)+fast_logdet(C_)
         ll += np.dot(Y.T,np.dot(scipy.linalg.pinv(C_),Y))
         log_likelihood.append(-0.5*ll)
-
     return w, alpha, beta, sigma, log_likelihood
+
+
+
+
+
+
+
+
+
+
 
 
 class Lasso(LinearModel):
@@ -501,13 +506,10 @@ class Lasso(LinearModel):
     -----
     The algorithm used to fit the model is coordinate descent.
     """
-
     def __init__(self, alpha=1.0, fit_intercept=True, coef_=None):
         self.alpha = alpha
         self.fit_intercept = fit_intercept
         self.coef_ = coef_
-
-
     def fit(self, X, Y, maxit=1000, tol=1e-4, **params):
         """
         Fit Lasso model.
@@ -531,10 +533,8 @@ class Lasso(LinearModel):
         self : returns an instance of self.
         """
         self._set_params(**params)
-
         X = np.asanyarray(X, dtype=np.float64)
         Y = np.asanyarray(Y, dtype=np.float64)
-
         if self.fit_intercept:
             self._xmean = X.mean(axis=0)
             self._ymean = Y.mean(axis=0)
@@ -543,20 +543,15 @@ class Lasso(LinearModel):
         else:
             self._xmean = np.zeros(X.shape[1])
             self._ymean = np.zeros(X.shape[0])
-
         n_samples = X.shape[0]
         alpha = self.alpha * n_samples
-
         if self.coef_ is None:
             self.coef_ = np.zeros(X.shape[1], dtype=np.float64)
-
         X = np.asfortranarray(X) # make data contiguous in memory
         self.coef_, self.dual_gap_, self.eps_ = \
                     cd_fast.lasso_coordinate_descent(self.coef_,
                     alpha, X, Y, maxit, tol)
-
         self.intercept_ = self._ymean - np.dot(self._xmean, self.coef_)
-
         if self.dual_gap_ > self.eps_:
             warnings.warn('Objective did not converge, you might want '
                                 'to increase the number of interations')
@@ -564,6 +559,11 @@ class Lasso(LinearModel):
         self.explained_variance_ = self._explained_variance(X, Y)
         # return self for chaining fit and predict calls
         return self
+
+
+
+
+
 
 
 
@@ -613,7 +613,6 @@ class ElasticNet(Lasso):
         if self.coef_ is None:
             self.coef_ = np.zeros(X.shape[1], dtype=np.float64)
         n_samples = X.shape[0]
-    n_samples = X.shape[0]
         alpha = self.alpha * self.rho * n_samples
         beta = self.alpha * (1.0 - self.rho) * n_samples
         X = np.asfortranarray(X) # make data contiguous in memory
@@ -650,29 +649,38 @@ def lasso_path(X, y, eps=1e-3, n_alphas=100, alphas=None,
                verbose=False, fit_params=dict()):
     """
     Compute Lasso path with coordinate descent
+
     Parameters
     ----------
     X : numpy array of shape [n_samples,n_features]
         Training data
+
     Y : numpy array of shape [n_samples]
         Target values
+
     eps : float, optional
         Length of the path. eps=1e-3 means that
         alpha_min / alpha_max = 1e-3
+
     n_alphas : int, optional
         Number of alphas along the regularization path
+
     alphas : numpy array, optional
         List of alphas where to compute the models.
         If None alphas are set automatically
+
     fit_params : dict, optional
         keyword arguments passed to the Lasso fit method
+
     Returns
     -------
     models : a list of models along the regularization path
+
     Notes
     -----
     See examples/plot_lasso_coordinate_descent_path.py for an example.
     """
+    n_samples = X.shape[0]
     if alphas is None:
         # XXX: Should use numpy.logspace
         alphas = np.logspace(log10(alpha_max*eps), log10(alpha_max),
@@ -689,14 +697,6 @@ def lasso_path(X, y, eps=1e-3, n_alphas=100, alphas=None,
         coef_ = model.coef_.copy()
         models.append(model)
     return models
-
-
-
-
-
-
-
-
 
 def enet_path(X, y, rho=0.5, eps=1e-3, n_alphas=100, alphas=None,
               verbose=False, fit_params=dict()):
@@ -733,7 +733,6 @@ def enet_path(X, y, rho=0.5, eps=1e-3, n_alphas=100, alphas=None,
     See examples/plot_lasso_coordinate_descent_path.py for an example.
     """
     n_samples = X.shape[0]
-        n_samples = X.shape[0]
     if alphas is None:
         alpha_max = np.abs(np.dot(X.T, y)).max() / (n_samples*rho)
         alphas = np.logspace(log10(alpha_max*eps), log10(alpha_max),
@@ -780,6 +779,7 @@ class LinearModelCV(LinearModel):
         """
         X = np.asanyarray(X, dtype=np.float64)
         y = np.asanyarray(y, dtype=np.float64)
+        n_samples = X.shape[0]
         # Start to compute path on full data
         models = self.path(X, y, fit_params=fit_params, **self._get_params())
         alphas = [model.alpha for model in models]
@@ -882,21 +882,27 @@ class ElasticNetCV(LinearModelCV):
 class LeastAngleRegression(LinearModel):
     """
     Least Angle Regression using the LARS algorithm.
+
     Attributes
     ----------
     `coef_` : array, shape = [n_features]
         parameter vector (w in the fomulation formula)
+
     `intercept_` : float
         independent term in decision function.
+
     `coef_path_` : array, shape = [max_features + 1, n_features]
          Full coeffients path.
+
     Notes
     -----
     predict does only work correctly in the case of normalized
     predictors.
+
     See also
     --------
     scikits.learn.glm.Lasso
+
     """
     def __init__(self):
         self.alphas_ = np.empty(0, dtype=np.float64)
@@ -905,21 +911,26 @@ class LeastAngleRegression(LinearModel):
     def fit (self, X, Y, fit_intercept=True, max_features=None, normalize=True):
         """
         Fit the model according to data X, Y.
+
         Parameters
         ----------
         X : numpy array of shape [n_samples,n_features]
             Training data
+
         Y : numpy array of shape [n_samples]
             Target values
+
         fit_intercept : boolean, optional
             wether to calculate the intercept for this model. If set
             to false, no intercept will be used in calculations
             (e.g. data is expected to be already centered).
+
         max_features : int, optional
             number of features to get into the model. The iterative
             will stop just before the `max_features` variable enters
             in the active set. If not specified, min(N, p) - 1
             will be used.
+
         normalize : boolean
             whether to normalize (make all non-zero columns have mean
             0 and norm 1).
@@ -964,9 +975,11 @@ class LeastAngleRegression(LinearModel):
     def predict(self, X, normalize=True):
         """
         Predict using the linear model.
+
         Parameters
         ----------
         X : numpy array of shape [n_samples,n_features]
+
         Returns
         -------
         C : array, shape = [nsample]
@@ -977,19 +990,6 @@ class LeastAngleRegression(LinearModel):
             X -= self._xmean
             X /= self._norms
         return  np.dot(X, self.coef_) + self.intercept_
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

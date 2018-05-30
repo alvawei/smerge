@@ -7,27 +7,27 @@ This dataset represents the geographic distribution of species.
 The dataset is provided by Phillips et. al. (2006).
 
 The two species are:
+
  - `"Bradypus variegatus"
    <http://www.iucnredlist.org/apps/redlist/details/3038/0>`_ ,
    the Brown-throated Sloth.
+
  - `"Microryzomys minutus"
    <http://www.iucnredlist.org/apps/redlist/details/13408/0>`_ ,
    also known as the Forest Small Rice Rat, a rodent that lives in Peru,
    Colombia, Ecuador, Peru, and Venezuela.
 
-
-
 References:
+
  * `"Maximum entropy modeling of species geographic distributions"
    <http://www.cs.princeton.edu/~schapire/papers/ecolmod.pdf>`_
    S. J. Phillips, R. P. Anderson, R. E. Schapire - Ecological Modelling,
    190:231-259, 2006.
 
-
 Notes:
+
  * See examples/applications/plot_species_distribution_modeling.py
    for an example of using this dataset
-
 """
 
 # Authors: Peter Prettenhofer <peter.prettenhofer@gmail.com>
@@ -37,13 +37,13 @@ Notes:
 
 from cStringIO import StringIO
 
-from os.path import join
-from os.path import join, exists
-from os.path import exists
+import os
 from os import makedirs
+from os.path import join, normpath, split, exists
 
 import urllib2
 
+import pylab as pl
 import numpy as np
 
 from sklearn.datasets.base import get_data_home, Bunch

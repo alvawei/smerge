@@ -21,6 +21,8 @@ import ansible.runner
 import ansible.constants as C
 from ansible import utils
 from ansible import errors
+from ansible import errors
+import shlex
 import os
 import time
 
@@ -35,6 +37,7 @@ class PlayBook(object):
     or YAML filename.  a playbook is a deployment, config
     management, or automation based set of commands to
     run in series.
+
     multiple plays/tasks do not execute simultaneously,
     but tasks in each pattern do execute in parallel
     (according to the number of forks requested) among
@@ -58,27 +61,9 @@ class PlayBook(object):
         runner_callbacks = None,
         stats            = None,
         sudo             = False):
-        """
-        playbook:         path to a playbook file
-        host_list:        path to a file like /etc/ansible/hosts
-        module_path:      path to ansible modules, like /usr/share/ansible/
-        forks:            desired level of paralellism
-        timeout:          connection timeout
-        remote_user:      run as this user if not specified in a particular play
-        remote_pass:      use this remote password (for all plays) vs using SSH keys
-        sudo_pass:        if sudo==True, and a password is required, this is the sudo password
-        remote_port:      default remote port to use if not specified with the host or play
-        transport:        how to connect to hosts that don't specify a transport (local, paramiko, etc)
-        override_hosts:   skip the inventory file, just talk to these hosts
-        callbacks         output callbacks for the playbook
-        runner_callbacks: more callbacks, this time for the runner API
-        stats:            holds aggregrate data about events occuring to each host
-        sudo:             if not specified per play, requests all plays use sudo mode
-        """
-
         if playbook is None or callbacks is None or runner_callbacks is None or stats is None:
             raise Exception('missing required arguments')
-
+        self.host_list        = host_list
         self.module_path      = module_path
         self.forks            = forks
         self.timeout          = timeout
@@ -87,25 +72,19 @@ class PlayBook(object):
         self.remote_port      = remote_port
         self.transport        = transport
         self.debug            = debug
+        self.verbose          = verbose
         self.callbacks        = callbacks
         self.runner_callbacks = runner_callbacks
         self.override_hosts   = override_hosts
+        self.extra_vars       = extra_vars
         self.stats            = stats
-        self.sudo             = sudo
+        self.basedir          = os.path.dirname(playbook)
         self.sudo_pass        = sudo_pass
-
         self.basedir          = os.path.dirname(playbook)
         self.playbook         = self._parse_playbook(playbook)
-
-        if override_hosts is not None:
-            if type(override_hosts) != list:
-                raise errors.AnsibleError("override hosts must be a list")
-            self.inventory = ansible.inventory.Inventory(override_hosts)
-        else:
-            self.inventory = ansible.inventory.Inventory(host_list)
-
+        self.host_list, self.groups = ansible.runner.Runner.parse_hosts(
+            host_list, override_hosts=self.override_hosts, extra_vars=self.extra_vars)
     # *****************************************************
-
     def _get_vars(self, play, dirname):
         ''' load the vars section from a play '''
         if play.get('vars') is None:
@@ -113,14 +92,11 @@ class PlayBook(object):
         vars = play['vars']
         if type(vars) not in [dict, list]:
             raise errors.AnsibleError("'vars' section must contain only key/value pairs")
-            raise errors.AnsibleError("'vars' section must contain only key/value pairs")
         # translate a list of vars into a dict
         if type(vars) == list:
             varlist = vars
             vars = {}
             for item in varlist:
-                k, v = item.items()[0]
-                vars[k] = v
                 k, v = item.items()[0]
                 vars[k] = v
             play['vars'] = vars
@@ -132,7 +108,6 @@ class PlayBook(object):
             # FIXME - need some way to know that this prompt should be getpass or raw_input
             vars[vname] = self.callbacks.on_vars_prompt(vname)
         return vars
-    # *****************************************************
     # *****************************************************
     def _include_tasks(self, play, task, dirname, new_tasks):
         ''' load tasks included from external files. '''
@@ -259,13 +234,11 @@ class PlayBook(object):
             runner.module_name = 'async_status'
             runner.background  = 0
             runner.pattern     = '*'
-            self.inventory.restrict_to(host_list)
             poll_results       = runner.run()
             self.stats.compute(poll_results, poll=True)
             host_list          = self.hosts_to_poll(poll_results)
-            self.inventory.lift_restriction()
-            if len(host_list) == 0:
-                break
+            host_list          = self.hosts_to_poll(poll_results)
+            if len(runner.host_list) == 0:
                 break
             if poll_results is None:
                 break
@@ -290,28 +263,49 @@ class PlayBook(object):
         async_seconds, async_poll_interval, only_if, sudo, transport, port):
         ''' run a particular module step in a playbook '''
         hosts = [ h for h in self.inventory.list_hosts() if (h not in self.stats.failures) and (h not in self.stats.dark)]
-        self.inventory.restrict_to(hosts)
-        if port is None:
-            port=self.remote_port
-            port=self.remote_port
-        runner = ansible.runner.Runner(
+        <<<<<<< REMOTE
+runner = ansible.runner.Runner(
             pattern=pattern, inventory=self.inventory, module_name=module,
             module_args=args, forks=self.forks,
-            remote_port=port, module_vars=vars,
             remote_pass=self.remote_pass, module_path=self.module_path,
-            transport=transport, sudo_pass=self.sudo_pass, is_playbook=True
+            timeout=self.timeout, remote_user=remote_user, 
+            remote_port=port, module_vars=vars,
+            setup_cache=SETUP_CACHE, basedir=self.basedir,
+            conditional=only_if, callbacks=self.runner_callbacks, 
             debug=self.debug, sudo=sudo,
             transport=transport, sudo_pass=self.sudo_pass, is_playbook=True
-            timeout=self.timeout, remote_user=remote_user,
-            setup_cache=SETUP_CACHE, basedir=self.basedir,
-        self.inventory.lift_restriction()
-        return results
-            conditional=only_if, callbacks=self.runner_callbacks,
         )
+=======
+runner = ansible.runner.Runner(
+            pattern=pattern, groups=self.groups, module_name=module,
+            module_args=args, host_list=hosts, forks=self.forks,
+            remote_pass=self.remote_pass, module_path=self.module_path,
+            timeout=self.timeout, remote_user=remote_user, 
+            remote_port=self.remote_port, module_vars=vars,
+            setup_cache=SETUP_CACHE, basedir=self.basedir,
+            conditional=only_if, callbacks=self.runner_callbacks, 
+            extra_vars=self.extra_vars, debug=self.debug, sudo=sudo,
+            transport=transport, sudo_pass=self.sudo_pass
+        )
+=======
+runner = ansible.runner.Runner(
+            pattern=pattern, groups=self.groups, module_name=module,
+            module_args=args, host_list=hosts, forks=self.forks,
+            remote_pass=self.remote_pass, module_path=self.module_path,
+            timeout=self.timeout, remote_user=remote_user, 
+            remote_port=self.remote_port, module_vars=vars,
+            setup_cache=SETUP_CACHE, basedir=self.basedir,
+            conditional=only_if, callbacks=self.runner_callbacks, 
+            extra_vars=self.extra_vars, debug=self.debug, sudo=sudo,
+            transport=transport, sudo_pass=self.sudo_pass, is_playbook=True
+        )
+>>>>>>> LOCAL
         if async_seconds == 0:
             results = runner.run()
-        else:
-            results = self._async_poll(runner, hosts, async_seconds, async_poll_interval, only_if)
+                else:
+            return self._async_poll(runner, hosts, async_seconds, async_poll_interval, only_if)
+        if async_seconds == 0:
+            results = runner.run()
     # *****************************************************
     def _run_task(self, pattern=None, task=None, 
         remote_user=None, handlers=None, conditional=False, sudo=False, transport=None, port=None):
@@ -331,7 +325,6 @@ class PlayBook(object):
         module_args = ''
         if len(tokens) > 1:
             module_args = tokens[1]
-        module_args = tokens[1]
         # include task specific vars
         module_vars = task.get('vars')
         # tasks can be direct (run on all nodes matching
@@ -422,35 +415,6 @@ class PlayBook(object):
                     data = utils.parse_yaml_from_file(filename2)
                     SETUP_CACHE[host].update(data)
                     self.callbacks.on_import_for_host(host, filename2)
-            cache_vars = SETUP_CACHE.get(host,{})
-            SETUP_CACHE[host] = cache_vars
-            for filename in vars_files:
-                if type(filename) == list:
-                    # loop over all filenames, loading the first one, and failing if # none found
-                    found = False
-                    sequence = []
-                    for real_filename in filename:
-                        filename2 = utils.path_dwim(self.basedir, utils.template(real_filename, cache_vars, SETUP_CACHE))
-                        sequence.append(filename2)
-                        if os.path.exists(filename2):
-                            found = True
-                            data = utils.parse_yaml_from_file(filename2)
-                            SETUP_CACHE[host].update(data)
-                            self.callbacks.on_import_for_host(host, filename2)
-                            break
-                        else:
-                            self.callbacks.on_not_import_for_host(host, filename2)
-                    if not found:
-                        raise errors.AnsibleError(
-                            "%s: FATAL, no files matched for vars_files import sequence: %s" % (host, sequence)
-                        )
-                else:
-                    filename2 = utils.path_dwim(self.basedir, utils.template(filename, cache_vars, SETUP_CACHE))
-                    if not os.path.exists(filename2):
-                        raise errors.AnsibleError("no file matched for vars_file import: %s" % filename2)
-                    data = utils.parse_yaml_from_file(filename2)
-                    SETUP_CACHE[host].update(data)
-                    self.callbacks.on_import_for_host(host, filename2)
     # *****************************************************
     def _do_setup_step(self, pattern, vars, user, port, sudo, transport, vars_files=None):
         ''' push variables down to the systems and get variables+facts back up '''
@@ -460,24 +424,44 @@ class PlayBook(object):
         if vars_files is not None:
             self.callbacks.on_setup_secondary()
             self._do_conditional_imports(vars_files)
-        else:
+                else:
             self.callbacks.on_setup_primary()
-        host_list = [ h for h in self.inventory.list_hosts(pattern) 
-                        if not (h in self.stats.failures or h in self.stats.dark) ]
-        self.inventory.restrict_to(host_list)
+        host_list = [ h for h in self.host_list if not (h in self.stats.failures or h in self.stats.dark) ]
         # push any variables down to the system
+        <<<<<<< REMOTE
+setup_results = ansible.runner.Runner(
             pattern=pattern, module_name='setup',
             module_args=vars, inventory=self.inventory,
-        setup_results = ansible.runner.Runner(
-            remote_pass=self.remote_pass, remote_port=port,
-            transport=transport, sudo_pass=self.sudo_pass, is_playbook=True
-            transport=transport, sudo_pass=self.sudo_pass, is_playbook=True
             forks=self.forks, module_path=self.module_path,
             timeout=self.timeout, remote_user=user,
-        self.inventory.lift_restriction()
+            remote_pass=self.remote_pass, remote_port=port,
             setup_cache=SETUP_CACHE,
             callbacks=self.runner_callbacks, sudo=sudo, debug=self.debug,
+            transport=transport, sudo_pass=self.sudo_pass, is_playbook=True
         ).run()
+=======
+setup_results = ansible.runner.Runner(
+            pattern=pattern, groups=self.groups, module_name='setup',
+            module_args=vars, host_list=host_list,
+            forks=self.forks, module_path=self.module_path,
+            timeout=self.timeout, remote_user=user,
+            remote_pass=self.remote_pass, remote_port=self.remote_port,
+            setup_cache=SETUP_CACHE,
+            callbacks=self.runner_callbacks, sudo=sudo, debug=self.debug,
+            transport=transport, sudo_pass=self.sudo_pass
+        ).run()
+=======
+setup_results = ansible.runner.Runner(
+            pattern=pattern, groups=self.groups, module_name='setup',
+            module_args=vars, host_list=host_list,
+            forks=self.forks, module_path=self.module_path,
+            timeout=self.timeout, remote_user=user,
+            remote_pass=self.remote_pass, remote_port=self.remote_port,
+            setup_cache=SETUP_CACHE,
+            callbacks=self.runner_callbacks, sudo=sudo, debug=self.debug,
+            transport=transport, sudo_pass=self.sudo_pass, is_playbook=True
+        ).run()
+>>>>>>> LOCAL
         self.stats.compute(setup_results, setup=True)
         # now for each result, load into the setup cache so we can
         # let runner template out future commands
@@ -486,6 +470,16 @@ class PlayBook(object):
             # first pass only or we'll erase good work
             for (host, result) in setup_ok.iteritems():
                 SETUP_CACHE[host] = result
+        setup_ok = setup_results.get('contacted', {})
+        if self.extra_vars:
+            extra_vars = utils.parse_kv(self.extra_vars)
+            for h in self.host_list:
+                try:
+                    SETUP_CACHE[h].update(extra_vars)
+                except:
+                    SETUP_CACHE[h] = extra_vars
+        return host_list
+    # *****************************************************
     def _run_play(self, pg):
         ''' run a list of tasks for a given pattern, in order '''
         # get configuration information about the pattern
@@ -512,7 +506,7 @@ class PlayBook(object):
         for task in tasks:
             self._run_task(
                 pattern=pattern,
-                task=task,
+                task=task, 
                 handlers=handlers,
                 remote_user=user,
                 sudo=sudo,
@@ -529,7 +523,7 @@ class PlayBook(object):
             if type(triggered_by) == list:
                 self.inventory.restrict_to(triggered_by)
                 self._run_task(
-                   pattern=pattern,
+                   pattern=pattern, 
                    task=task,
                    handlers=[],
                    conditional=True,
@@ -541,7 +535,6 @@ class PlayBook(object):
                 self.inventory.lift_restriction()
         # end of execution for this particular pattern.  Multiple patterns
         # can be in a single playbook file
-
 
 
 
@@ -635,4 +628,5 @@ class PlayBook(object):
 
 
  
+
 

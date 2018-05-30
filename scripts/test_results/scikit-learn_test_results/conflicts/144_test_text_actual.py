@@ -2,8 +2,8 @@ from scikits.learn.features.text import strip_accents
 from scikits.learn.features.text import WordAnalyzer
 from scikits.learn.features.text import HashingVectorizer
 from scikits.learn.features.text import SparseHashingVectorizer
-from scikits.learn.svm import LinearSVC as DenseLinearSVC
-from scikits.learn.sparse.svm import LinearSVC as SparseLinearSVC
+from scikits.learn.logistic import LogisticRegression
+from scikits.learn.sparse.svm import SVC
 import numpy as np
 from nose.tools import *
 from numpy.testing import assert_array_almost_equal
@@ -46,6 +46,16 @@ def test_strip_accents():
 
 
 
+def test_simple_analyzer():
+    sa = SimpleAnalyzer()
+    text = u"J'ai mang\xe9 du kangourou  ce midi, c'\xe9tait pas tr\xeas bon."
+    expected = [u'ai', u'mange', u'du', u'kangourou', u'ce', u'midi',
+                u'etait', u'pas', u'tres', u'bon']
+    assert_equal(wa.analyze(text), expected)
+    text = "This is a test, really.\n\n I met Harry yesterday."
+    expected = [u'this', u'is', u'test', u'really', u'met', u'harry',
+                u'yesterday']
+    assert_equal(wa.analyze(text), expected)
 
 
 
@@ -102,7 +112,6 @@ def test_dense_sparse_idf_sanity():
     dense_tf_idf = hv.get_tfidf()
     sparse_tfidf = shv.get_tfidf().todense()
     assert_array_almost_equal(dense_tf_idf, sparse_tfidf)
-
 
 
 

@@ -14,6 +14,30 @@ except:
             yield tuple(prod)
 
 
+def grid(**kwargs):
+    """ Generators on the combination of the various parameter lists given.
+
+        Parameters
+        -----------
+        kwargs: keyword arguments, lists
+            Each keyword argument must be a list of values that should
+            be explored.
+
+        Returns
+        --------
+        params: dictionary
+            Dictionnary with the input parameters taking the various
+            values succesively.
+
+        Examples
+        ---------
+        >>> list(iter_grid(a=[1, 2], b=[True, False]))
+        [{'a': 1, 'b': True}, {'a': 1, 'b': False}, {'a': 2, 'b': True}, {'a': 2, 'b': False}]
+    """
+    keys = kwargs.keys()
+    for v in product(*kwargs.values()):
+        params = dict(zip(keys,v))
+        yield params
 
 
 def fit_grid_point(X, y, klass, orignal_params, clf_params, cv,
@@ -42,25 +66,35 @@ def fit_grid_point(X, y, klass, orignal_params, clf_params, cv,
 class GridSearchCV(object):
     """
     Object to run a grid search on the parameters of a classifier.
+
     Important memmbers are fit, predict.
+
     GridSearchCV implements a "fit" method and a "predict" method like
     any classifier except that the parameters of the classifier
     used to predict is optimized by cross-validation
+
     Parameters
     ---------
     estimator: object type that implements the "fit" and "predict" methods
         A object of that type is instanciated for each grid point
+
     param_grid: dict
         a dictionary of parameters that are used the generate the grid
+
     cross_val_factory : a generator to run crossvalidation
+
     loss_func : function that takes 2 arguments and compares them in
         order to evaluate the performance of prediciton (small is good)
+
     n_jobs : int
         number of jobs to run in parallel (default 1)
+
     Optional Parameters
     -------------------
+
     Members
     -------
+
     Examples
     --------
     >>> import numpy as np
@@ -89,15 +123,6 @@ class GridSearchCV(object):
         self.n_jobs = n_jobs
         self.fit_params = fit_params
     def fit(self, X, y, cv=None, **kw):
-        if cv is None:
-            n_samples = y.size
-            from scikits.learn.cross_val import KFold
-            cv = KFold(n_samples, 2)
-            n_samples = y.size
-            from scikits.learn.cross_val import KFold
-            cv = KFold(n_samples, 2)
-            delayed(fit_grid_point)(X, y, klass, orignal_params, clf_params,
-                    cv, self.loss_func, **self.fit_params) for clf_params in g)
         """Run fit with all sets of parameters
         Returns the best classifier
         """
@@ -105,9 +130,7 @@ class GridSearchCV(object):
             n_samples = y.size
             from scikits.learn.cross_val import KFold
             cv = KFold(n_samples, 2)
-            n_samples = y.size
-            from scikits.learn.cross_val import KFold
-            cv = KFold(n_samples, 2)
+        g = grid(**self.param_grid)
         klass = self.estimator.__class__
         orignal_params = self.estimator._get_params()
         out = Parallel(n_jobs=self.n_jobs)(
@@ -119,15 +142,6 @@ class GridSearchCV(object):
         self.best_estimator = best_estimator
         self.predict = best_estimator.predict
         return self
-
-
-
-
-
-
-
-
-
 
 
 
@@ -149,4 +163,5 @@ if __name__ == '__main__':
         return np.mean(y1 != y2)
     clf = GridSearchCV(svc, {'C':[1, 10]}, loss_func, n_jobs=2)
     print clf.fit(X, y).predict([[-0.8, -1]])
+
 

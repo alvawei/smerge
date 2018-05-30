@@ -25,6 +25,7 @@ import json
 import ast
 from jinja2 import Environment, FileSystemLoader
 import re
+import argparse
 import time
 import datetime
 import subprocess
@@ -114,12 +115,6 @@ def man_ify(text):
 
 def js_ify(text):
     return text
-    t = _ITALIC.sub(r'*' + r"\1" + r"*", text)
-    t = _BOLD.sub(r'**' + r"\1" + r"**", t)
-    t = _MODULE.sub(r'``' + r"\1" + r"``", t)
-    t = _URL.sub(r"\1", t)
-    t = _CONST.sub(r'``' + r"\1" + r"``", t)
-    return t
 
 
 
@@ -160,7 +155,6 @@ def get_docstring(filename, verbose=False):
 def main():
     class Object(object):
         pass
-        pass
     type_choices = ['html', 'latex', 'man', 'rst', 'json']
     args = Object()
     args.ansible_version = 'unknown'
@@ -177,54 +171,32 @@ def main():
             [ 'ansible-version=', 'module-dir=', 'template-dir=', 'type=',
               'module=', 'verbose', 'output-dir=', 'includes-file=',
               'generate', 'version', 'help', ])
-        opts, arguments = getopt.getopt(sys.argv[1:], 'A:M:T:t:m:vo:I:GVh',
-            [ 'ansible-version=', 'module-dir=', 'template-dir=', 'type=',
-              'module=', 'verbose', 'output-dir=', 'includes-file=',
-              'generate', 'version', 'help', ])
     except getopt.error, e:
-        print >>sys.stderr, 'ERROR: %s'% str(e)
         print >>sys.stderr, 'ERROR: %s'% str(e)
         sys.exit(1)
     for opt, arg in opts:
         if opt in ('-A', '--ansible-version'):
             args.ansible_version = arg
-            args.ansible_version = arg
         elif opt in ('-M', '--module-dir'):
             args.module_dir = arg
-            args.module_dir = arg
         elif opt in ('-T', '--template-dir'):
-            args.template_dir = arg
             args.template_dir = arg
         elif opt in ('-t', '--type'):
             args.type = arg
             if args.type not in type_choices:
                 print >>sys.stderr, 'ERROR: Type %s not in possible types %s.' % (args.type, type_choices)
-        sys.exit(1)
-                print >>sys.stderr, 'ERROR: Type %s not in possible types %s.' % (args.type, type_choices)
-                sys.exit(1)
-            args.type = arg
-            if args.type not in type_choices:
-                print >>sys.stderr, 'ERROR: Type %s not in possible types %s.' % (args.type, type_choices)
-        sys.exit(1)
-                print >>sys.stderr, 'ERROR: Type %s not in possible types %s.' % (args.type, type_choices)
                 sys.exit(1)
         elif opt in ('-m', '--module'):
             args.module_list.append(arg)
-            args.module_list.append(arg)
         elif opt in ('-v', '--verbose'):
-            args.verbose = True
             args.verbose = True
         elif opt in ('-o', '--output-dir'):
             args.output_dir = arg
-            args.output_dir = arg
         elif opt in ('-I', '--includes-file'):
-            args.includes_file = arg
             args.includes_file = arg
         elif opt in ('-G', '--generate'):
             args.do_boilerplate = True
-            args.do_boilerplate = True
         elif opt in ('-V', '--version'):
-            print >>sys.stderr, '%(prog)s 1.0'
             print >>sys.stderr, '%(prog)s 1.0'
         elif opt in ('-h', '--help'):
             print >>sys.stderr, '''Convert Ansible module DOCUMENTATION strings to other formats
@@ -239,93 +211,18 @@ def main():
  -I, --includes-file=       Create a file containing list of processed modules
  -G, --generate             Generate boilerplate DOCUMENTATION to stdout
 '''
-            print >>sys.stderr, '''Convert Ansible module DOCUMENTATION strings to other formats
-
- -A, --ansible-version=     Ansible version number
- -M, --module-dir=          Ansible modules/ directory
- -T, --template-dir=        Directory containing Jinja2 templates
- -t, --type=                Output type
- -m, --module=              Add modules to process in module_dir
- -v, --verbose              Verbose
- -o, --output-dir=          Output directory for module files
- -I, --includes-file=       Create a file containing list of processed modules
- -G, --generate             Generate boilerplate DOCUMENTATION to stdout
-'''
             sys.exit(0)
-        if opt in ('-A', '--ansible-version'):
-            args.ansible_version = arg
-            args.ansible_version = arg
-        elif opt in ('-M', '--module-dir'):
-            args.module_dir = arg
-            args.module_dir = arg
-        elif opt in ('-T', '--template-dir'):
-            args.template_dir = arg
-            args.template_dir = arg
-        elif opt in ('-t', '--type'):
-            args.type = arg
-            if args.type not in type_choices:
-                print >>sys.stderr, 'ERROR: Type %s not in possible types %s.' % (args.type, type_choices)
-        sys.exit(1)
-                print >>sys.stderr, 'ERROR: Type %s not in possible types %s.' % (args.type, type_choices)
-                sys.exit(1)
-            args.type = arg
-            if args.type not in type_choices:
-                print >>sys.stderr, 'ERROR: Type %s not in possible types %s.' % (args.type, type_choices)
-        sys.exit(1)
-                print >>sys.stderr, 'ERROR: Type %s not in possible types %s.' % (args.type, type_choices)
-                sys.exit(1)
-        elif opt in ('-m', '--module'):
-            args.module_list.append(arg)
-            args.module_list.append(arg)
-        elif opt in ('-v', '--verbose'):
-            args.verbose = True
-            args.verbose = True
-        elif opt in ('-o', '--output-dir'):
-            args.output_dir = arg
-            args.output_dir = arg
-        elif opt in ('-I', '--includes-file'):
-            args.includes_file = arg
-            args.includes_file = arg
-        elif opt in ('-G', '--generate'):
-            args.do_boilerplate = True
-            args.do_boilerplate = True
-        elif opt in ('-V', '--version'):
-            print >>sys.stderr, '%(prog)s 1.0'
-            print >>sys.stderr, '%(prog)s 1.0'
-        elif opt in ('-h', '--help'):
-            print >>sys.stderr, '''Convert Ansible module DOCUMENTATION strings to other formats
-
- -A, --ansible-version=     Ansible version number
- -M, --module-dir=          Ansible modules/ directory
- -T, --template-dir=        Directory containing Jinja2 templates
- -t, --type=                Output type
- -m, --module=              Add modules to process in module_dir
- -v, --verbose              Verbose
- -o, --output-dir=          Output directory for module files
- -I, --includes-file=       Create a file containing list of processed modules
- -G, --generate             Generate boilerplate DOCUMENTATION to stdout
-'''
-            print >>sys.stderr, '''Convert Ansible module DOCUMENTATION strings to other formats
-
- -A, --ansible-version=     Ansible version number
- -M, --module-dir=          Ansible modules/ directory
- -T, --template-dir=        Directory containing Jinja2 templates
- -t, --type=                Output type
- -m, --module=              Add modules to process in module_dir
- -v, --verbose              Verbose
- -o, --output-dir=          Output directory for module files
- -I, --includes-file=       Create a file containing list of processed modules
- -G, --generate             Generate boilerplate DOCUMENTATION to stdout
-'''
-            sys.exit(0)
+        else:
+            print >>sys.stderr, 'ERROR: Option %s unknown to getopt' % opt
+            sys.exit(1)
+    if args.type == 'js':
+        env.filters['jpfunc'] = js_ify
+        template = env.get_template('js.j2')
+        outputname = "%s.js"
     # Temporary variable required to genrate aggregated content in 'js' format.
     js_data = []
     # print "M: %s" % args.module_dir
     if args.type == 'js':
-        docs = {}
-        docs['json'] = json.dumps(js_data, indent=2)
-        text = template.render(docs)
-        return_data(text, args, outputname, 'modules')
         docs = {}
         docs['json'] = json.dumps(js_data, indent=2)
         text = template.render(docs)
@@ -336,10 +233,8 @@ def main():
     if args.do_boilerplate:
         boilerplate()
         sys.exit(0)
-        sys.exit(0)
     if not args.module_dir:
         print "Need module_dir"
-        sys.exit(1)
         sys.exit(1)
     if not args.template_dir:
         print "Need template_dir"
@@ -400,20 +295,6 @@ def main():
                 j = json.load(f)
                 f.close()
                 js_data.append(j)
-                f = open(fname)
-                j = json.load(f)
-                f.close()
-                js_data.append(j)
-            continue
-            if fname.endswith(".json"):
-                f = open(fname)
-                j = json.load(f)
-                f.close()
-                js_data.append(j)
-                f = open(fname)
-                j = json.load(f)
-                f.close()
-                js_data.append(j)
             continue
         doc = get_docstring(fname, verbose=args.verbose)
         if doc is None and module not in BLACKLIST_MODULES:
@@ -433,34 +314,19 @@ def main():
                     f = open(extra)
                     extradata = f.read()
                     f.close()
-                    f.close()
                     doc['extradata'] = extradata
-            if args.type == 'json':
-                text = json.dumps(doc, indent=2)
     if args.type == 'js':
-        env.filters['jpfunc'] = js_ify
-        template = env.get_template('js.j2')
-        outputname = "%s.js"
+                doc = { doc['module'] : doc }
                 text = json.dumps(doc, indent=2)
-            return_data(text, args, outputname, module)
             else:
-            else:
-<<<<<<< REMOTE
-print >>sys.stderr, 'ERROR: Option %s unknown to getopt' % opt
-=======
-print text
->>>>>>> LOCAL
-            sys.exit(1)
-            if args.output_dir is not None:
+        else:
+                text = template.render(doc)
+    if args.output_dir is not None:
                 f = open(os.path.join(args.output_dir, outputname % module), 'w')
                 f.write(text)
+                f.close()
             else:
-<<<<<<< REMOTE
-text = template.render(doc)
-=======
-text = template.render(doc)
->>>>>>> LOCAL
-                print text
+                text = template.render(doc)
 
 
 

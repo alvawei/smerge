@@ -79,6 +79,18 @@ class ElasticNet(LinearModel):
         alpha = a + b and rho = a/(a+b)
 
     """
+    def __init__(self, alpha=1.0, rho=0.5, fit_intercept=True,
+                 normalize=False, precompute='auto', max_iter=1000,
+                 overwrite_X=False, tol=1e-4):
+        self.alpha = alpha
+        self.rho = rho
+        self.coef_ = None
+        self.fit_intercept = fit_intercept
+        self.normalize = normalize
+        self.precompute = precompute
+        self.max_iter = max_iter
+        self.overwrite_X = overwrite_X
+        self.tol = tol
     def fit(self, X, y, Xy=None, coef_init=None):
         """Fit Elastic Net model with coordinate descent
 
@@ -106,9 +118,7 @@ class ElasticNet(LinearModel):
         """
         X = np.asanyarray(X, dtype=np.float64)
         y = np.asanyarray(y, dtype=np.float64)
-        X = as_float_array(X, self.overwrite_X)
-        X, y, X_mean, y_mean, X_std = self._center_data(X, y, self.fit_intercept,
-                self.normalize)
+        X, y, Xmean, ymean = LinearModel._center_data(X, y, self.fit_intercept)
         if coef_init is None:
             self.coef_ = np.zeros(X.shape[1], dtype=np.float64)
         else:
@@ -130,13 +140,13 @@ class ElasticNet(LinearModel):
                     cd_fast.enet_coordinate_descent(self.coef_, alpha, beta,
                                                     X, y, self.max_iter,
                                                     self.tol)
-        self._set_intercept(X_mean, y_mean, X_std)
         else:
             if Xy is None:
                 Xy = np.dot(X.T, y)
             self.coef_, self.dual_gap_, self.eps_ = \
                     cd_fast.enet_coordinate_descent_gram(self.coef_, alpha,
                                 beta, Gram, Xy, y, self.max_iter, self.tol)
+        self._set_intercept(Xmean, ymean)
         if self.dual_gap_ > self.eps_:
             warnings.warn('Objective did not converge, you might want'
                           ' to increase the number of iterations')
@@ -232,17 +242,138 @@ class Lasso(ElasticNet):
         super(Lasso, self).__init__(alpha=alpha, rho=1.0,
                             fit_intercept=fit_intercept, precompute=precompute,
                             max_iter=max_iter, overwrite_X=overwrite_X, tol=tol)
-        super(Lasso, self).__init__(alpha=alpha, rho=1.0,
-                            fit_intercept=fit_intercept, precompute=precompute,
-                            max_iter=max_iter, overwrite_X=overwrite_X, tol=tol)
 
 
 
 ###############################################################################
 # Classes to store linear models along a regularization path
 
+def lasso_path(X, y, eps=1e-3, n_alphas=100, alphas=None, fit_intercept=True,
+               verbose=False, **fit_params):
+    """Compute Lasso path with coordinate descent
+
+    Parameters
+    ----------
+    X : numpy array of shape [n_samples,n_features]
+        Training data. Pass directly as fortran contiguous data to avoid
+        unnecessary memory duplication
+
+    y : numpy array of shape [n_samples]
+        Target values
+
+    eps : float, optional
+        Length of the path. eps=1e-3 means that
+        alpha_min / alpha_max = 1e-3
+
+    n_alphas : int, optional
+        Number of alphas along the regularization path
+
+    alphas : numpy array, optional
+        List of alphas where to compute the models.
+        If None alphas are set automatically
+
+    fit_params : kwargs
+        keyword arguments passed to the Lasso fit method
+
+    normalize : boolean, optional
+        If True, the regressors X are normalized
+
+    overwrite_X : boolean, optionnal
+        If True, X will not be copied
+        Default is False
+
+    Returns
+    -------
+    models : a list of models along the regularization path
+
+    Notes
+    -----
+    See examples/plot_lasso_coordinate_descent_path.py for an example.
+
+    To avoid unnecessary memory duplication the X argument of the fit method
+    should be directly passed as a fortran contiguous numpy array.
+    """
+    return enet_path(X, y, rho=1., eps=eps, n_alphas=n_alphas, alphas=alphas,
+                  fit_intercept=fit_intercept, verbose=verbose, **fit_params)
 
 
+
+def enet_path(X, y, rho=0.5, eps=1e-3, n_alphas=100, alphas=None,
+              fit_intercept=True, verbose=False, **fit_params):
+    """Compute Elastic-Net path with coordinate descent
+
+    Parameters
+    ----------
+    X : numpy array of shape [n_samples, n_features]
+        Training data. Pass directly as fortran contiguous data to avoid
+        unnecessary memory duplication
+
+    y : numpy array of shape [n_samples]
+        Target values
+
+    rho : float, optional
+        float between 0 and 1 passed to ElasticNet (scaling between
+        l1 and l2 penalties). rho=1 corresponds to the Lasso
+
+    eps : float
+        Length of the path. eps=1e-3 means that
+        alpha_min / alpha_max = 1e-3
+
+    n_alphas : int, optional
+        Number of alphas along the regularization path
+
+    alphas : numpy array, optional
+        List of alphas where to compute the models.
+        If None alphas are set automatically
+
+    fit_params : kwargs
+        keyword arguments passed to the Lasso fit method
+
+    normalize : boolean, optional
+        If True, the regressors X are normalized
+
+    overwrite_X : boolean, optionnal
+        If True, X will not be copied
+        Default is False
+
+    Returns
+    -------
+    models : a list of models along the regularization path
+
+    Notes
+    -----
+    See examples/plot_lasso_coordinate_descent_path.py for an example.
+    """
+    X, y, Xmean, ymean = LinearModel._center_data(X, y, fit_intercept)
+    X = np.asfortranarray(X)  # make data contiguous in memory
+    n_samples = X.shape[0]
+    if alphas is None:
+        alpha_max = np.abs(np.dot(X.T, y)).max() / (n_samples * rho)
+        alphas = np.logspace(np.log10(alpha_max * eps), np.log10(alpha_max),
+                             num=n_alphas)[::-1]
+    else:
+        alphas = np.sort(alphas)[::-1]  # make sure alphas are properly ordered
+    coef_ = None  # init coef_
+    models = []
+    Xy = None
+    if not 'precompute' in fit_params \
+        or fit_params['precompute'] is True \
+        or (fit_intercept and hasattr(fit_params['precompute'], '__array__')):
+        fit_params['precompute'] = np.dot(X.T, X)
+        if not 'Xy' in fit_params or fit_params['Xy'] is None:
+            Xy = np.dot(X.T, y)
+    for alpha in alphas:
+        model = ElasticNet(alpha=alpha, rho=rho, fit_intercept=False)
+        model.set_params(**fit_params)
+        model.fit(X, y, coef_init=coef_, Xy=Xy)
+        if fit_intercept:
+            model.fit_intercept = True
+            model._set_intercept(X_mean, y_mean, X_std)
+        if verbose:
+            print model
+        coef_ = model.coef_.copy()
+        models.append(model)
+    return models
 
 
 
@@ -253,8 +384,6 @@ class LinearModelCV(LinearModel):
     def __init__(self, eps=1e-3, n_alphas=100, alphas=None, fit_intercept=True,
             normalize=False, precompute='auto', max_iter=1000, tol=1e-4,
             overwrite_X=False, cv=None):
-        self.normalize = normalize
-        self.overwrite_X = overwrite_X
         self.eps = eps
         self.n_alphas = n_alphas
         self.alphas = alphas
@@ -447,8 +576,6 @@ class ElasticNetCV(LinearModelCV):
     def __init__(self, rho=0.5, eps=1e-3, n_alphas=100, alphas=None,
                  fit_intercept=True, normalize=False, precompute='auto',
                  max_iter=1000, tol=1e-4, cv=None, overwrite_X=False):
-        self.normalize = normalize
-        self.overwrite_X = overwrite_X
         self.rho = rho
         self.eps = eps
         self.n_alphas = n_alphas

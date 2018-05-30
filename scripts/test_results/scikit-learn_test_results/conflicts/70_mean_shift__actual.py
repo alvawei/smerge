@@ -6,13 +6,32 @@ Authors: Conrad Lee conradlee@gmail.com
          Gael Varoquaux gael.varoquaux@normalesup.org
 """
 
+from math import floor
 import numpy as np
+from ..utils import extmath
 from collections import defaultdict
 
 from ..base import BaseEstimator
+from ..metrics.pairwise import euclidean_distances
 from ..ball_tree import BallTree
 
 
+def estimate_bandwidth(X, quantile=0.3):
+    """Estimate the bandwith ie the radius to use with an RBF kernel
+    in the MeanShift algorithm
+
+    X: array [n_samples, n_features]
+        Input points
+
+    quantile: float, default 0.3
+        should be between [0, 1]
+        0.5 means that the median is all pairwise distances is used
+    """
+    distances = euclidean_distances(X, X)
+    distances = np.triu(distances, 1)
+    distances_sorted = np.sort(distances[distances > 0])
+    bandwidth = distances_sorted[floor(quantile * len(distances_sorted))]
+    return bandwidth
 
 
 def mean_shift(X, bandwidth=None, seeds=None, bin_seeding=False,
@@ -131,8 +150,10 @@ def get_bin_seeds(X, bin_size, min_bin_freq=1):
     choosing those bins with at least min_bin_freq points.
     Parameters
     ----------
+
     X : array [n_samples, n_features]
         Input points, the same points that will be used in mean_shift
+
     bin_size: float
         Controls the coarseness of the binning. Smaller values lead
         to more seeding (which is computationally more expensive). If you're
@@ -149,19 +170,19 @@ def get_bin_seeds(X, bin_size, min_bin_freq=1):
     bin_seeds : array [n_samples, n_features]
         points used as initial kernel posistions in clustering.mean_shift
     """
-
     # Bin points
     bin_sizes = defaultdict(int)
     binned_points = X.copy() / bin_size
     binned_points = np.cast[np.int32](binned_points)
     for binned_point in binned_points:
         bin_sizes[tuple(binned_point)] += 1
-
     # Select only those bins as seeds which have enough members
     bin_seeds = np.array([point for point, freq in bin_sizes.iteritems() if \
                           freq >= min_bin_freq], dtype=np.float32)
     bin_seeds = bin_seeds * bin_size
     return bin_seeds
+
+
 
 ##############################################################################
 
@@ -227,7 +248,6 @@ class MeanShift(BaseEstimator):
     the mean shift algorithm and will be the bottleneck if it is used.
 
     """
-
     def __init__(self, bandwidth=None, seeds=None, bin_seeding=False,
                  cluster_all=True):
         self.bandwidth = bandwidth
@@ -236,7 +256,6 @@ class MeanShift(BaseEstimator):
         self.cluster_all = cluster_all
         self.cluster_centers_ = None
         self.labels_ = None
-
     def fit(self, X, **params):
         """ Compute MeanShift
 

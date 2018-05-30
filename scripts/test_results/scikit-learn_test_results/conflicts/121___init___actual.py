@@ -18,14 +18,14 @@ from . import cross_val
 from . import ball_tree
 from . import cluster
 from . import covariance
-from . import datasets
 from . import sgd
 from . import glm
+from . import logistic
 from . import lda
-from . import feature_selection
-from . import gaussian_process
 from . import metrics
+from . import gaussian_process
 from . import svm
+from . import features
 
 try:
     from numpy.testing import nosetester

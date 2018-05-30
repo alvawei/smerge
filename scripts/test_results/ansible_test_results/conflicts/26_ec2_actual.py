@@ -12,6 +12,11 @@ variables needed for Boto have already been set:
     export AWS_ACCESS_KEY_ID='AK123'
     export AWS_SECRET_ACCESS_KEY='abc123'
 
+This script also assumes there is an ec2.ini file alongside it.  To specify a
+different path to ec2.ini, define the EC2_INI_PATH environment variable:
+
+    export EC2_INI_PATH=/path/to/my_ec2.ini
+
 If you're using eucalyptus you need to set the above variables and
 you need to define:
 
@@ -162,9 +167,7 @@ class Ec2Inventory(object):
     def read_settings(self):
         ''' Reads the settings from the ec2.ini file '''
         config = ConfigParser.SafeConfigParser()
-        ec2_default_ini_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ec2.ini')
-        ec2_ini_path = os.environ.get('EC2_INI_PATH', ec2_default_ini_path)
-        config.read(ec2_ini_path)
+        config.read(os.path.dirname(os.path.realpath(__file__)) + '/ec2.ini')
         # is eucalyptus?
         self.eucalyptus_host = None
         self.eucalyptus = False
@@ -188,15 +191,8 @@ class Ec2Inventory(object):
         # Destination addresses
         self.destination_variable = config.get('ec2', 'destination_variable')
         self.vpc_destination_variable = config.get('ec2', 'vpc_destination_variable')
-        # Route53
-        self.route53_enabled = config.getboolean('ec2', 'route53')
-        self.route53_excluded_zones = []
-        if config.has_option('ec2', 'route53_excluded_zones'):
-            self.route53_excluded_zones.extend(
-                config.get('ec2', 'route53_excluded_zones', '').split(','))
-            self.route53_excluded_zones.extend(
-                config.get('ec2', 'route53_excluded_zones', '').split(','))
         # Cache related
+        self.vpc_destination_variable = config.get('ec2', 'vpc_destination_variable')
         cache_path = config.get('ec2', 'cache_path')
         self.cache_path_cache = cache_path + "/ansible-ec2.cache"
         self.cache_path_index = cache_path + "/ansible-ec2.index"
@@ -214,7 +210,6 @@ class Ec2Inventory(object):
     def do_api_calls_update_cache(self):
         ''' Do API calls to each region, and save data in cache files '''
         if self.route53_enabled:
-            self.get_route53_records()
             self.get_route53_records()
         for region in self.regions:
             self.get_instances_by_region(region)
@@ -317,9 +312,13 @@ class Ec2Inventory(object):
 # Inventory: Group by Route53 domain names if enabled
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-self.push(self.inventory, key, dest)
+self.push(self.inventory, 'ec2', dest)
 =======
-if self.route53_enabled:
+        if self.route53_enabled:
+            route53_names = self.get_instance_route53_names(instance)
+            for name in route53_names:
+                self.push(self.inventory, name, dest)
+
 >>>>>>> LOCAL
     def add_rds_instance(self, instance, region):
         ''' Adds an RDS instance to the inventory and index, as long as it is
@@ -350,18 +349,7 @@ if self.route53_enabled:
         try:
             if instance.security_group:
                 key = self.to_safe("security_group_" + instance.security_group.name)
-<<<<<<< REMOTE
-self.push(self.inventory, key, dest)
-=======
-self.push(self.inventory, key, dest)
->>>>>>> LOCAL
-                <<<<<<< REMOTE
-self.push(self.inventory, 'ec2', dest)
-=======
-self.push(self.inventory, key, dest)
-=======
-self.push(self.inventory, name, dest)
->>>>>>> LOCAL
+                self.push(self.inventory, key, dest)
         except AttributeError:
             print 'Package boto seems a bit older.'
             print 'Please upgrade boto >= 2.3.0.'
@@ -386,87 +374,7 @@ self.push(self.inventory, name, dest)
                 record_name = record_set.name
                 if record_name.endswith('.'):
                     record_name = record_name[:-1]
-                    record_name = record_name[:-1]
                 for resource in record_set.resource_records:
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-                record_name = record_set.name
-                if record_name.endswith('.'):
-                    record_name = record_name[:-1]
-                    record_name = record_name[:-1]
-                for resource in record_set.resource_records:
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-            rrsets = r53_conn.get_all_rrsets(zone.id)
-            for record_set in rrsets:
-                record_name = record_set.name
-                if record_name.endswith('.'):
-                    record_name = record_name[:-1]
-                    record_name = record_name[:-1]
-                for resource in record_set.resource_records:
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-                record_name = record_set.name
-                if record_name.endswith('.'):
-                    record_name = record_name[:-1]
-                    record_name = record_name[:-1]
-                for resource in record_set.resource_records:
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-        ''' Get and store the map of resource records to domain names that
-        point to them. '''
-        r53_conn = route53.Route53Connection()
-        all_zones = r53_conn.get_zones()
-        route53_zones = [ zone for zone in all_zones if zone.name[:-1]
-                          not in self.route53_excluded_zones ]
-        self.route53_records = {}
-        for zone in route53_zones:
-            rrsets = r53_conn.get_all_rrsets(zone.id)
-            for record_set in rrsets:
-                record_name = record_set.name
-                if record_name.endswith('.'):
-                    record_name = record_name[:-1]
-                    record_name = record_name[:-1]
-                for resource in record_set.resource_records:
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-                record_name = record_set.name
-                if record_name.endswith('.'):
-                    record_name = record_name[:-1]
-                    record_name = record_name[:-1]
-                for resource in record_set.resource_records:
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-            rrsets = r53_conn.get_all_rrsets(zone.id)
-            for record_set in rrsets:
-                record_name = record_set.name
-                if record_name.endswith('.'):
-                    record_name = record_name[:-1]
-                    record_name = record_name[:-1]
-                for resource in record_set.resource_records:
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-                record_name = record_set.name
-                if record_name.endswith('.'):
-                    record_name = record_name[:-1]
-                    record_name = record_name[:-1]
-                for resource in record_set.resource_records:
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
                     self.route53_records.setdefault(resource, set())
                     self.route53_records[resource].add(record_name)
     def get_instance_route53_names(self, instance):
@@ -479,47 +387,9 @@ self.push(self.inventory, name, dest)
         for attrib in instance_attributes:
             try:
                 value = getattr(instance, attrib)
-                value = getattr(instance, attrib)
             except AttributeError:
                 continue
-                continue
             if value in self.route53_records:
-                name_list.update(self.route53_records[value])
-                name_list.update(self.route53_records[value])
-            try:
-                value = getattr(instance, attrib)
-                value = getattr(instance, attrib)
-            except AttributeError:
-                continue
-                continue
-            if value in self.route53_records:
-                name_list.update(self.route53_records[value])
-                name_list.update(self.route53_records[value])
-        return list(name_list)
-        ''' Check if an instance is referenced in the records we have from
-        Route53. If it is, return the list of domain names pointing to said
-        instance. If nothing points to it, return an empty list. '''
-        instance_attributes = [ 'public_dns_name', 'private_dns_name',
-                                'ip_address', 'private_ip_address' ]
-        name_list = set()
-        for attrib in instance_attributes:
-            try:
-                value = getattr(instance, attrib)
-                value = getattr(instance, attrib)
-            except AttributeError:
-                continue
-                continue
-            if value in self.route53_records:
-                name_list.update(self.route53_records[value])
-                name_list.update(self.route53_records[value])
-            try:
-                value = getattr(instance, attrib)
-                value = getattr(instance, attrib)
-            except AttributeError:
-                continue
-                continue
-            if value in self.route53_records:
-                name_list.update(self.route53_records[value])
                 name_list.update(self.route53_records[value])
         return list(name_list)
     def get_host_info(self):
@@ -694,8 +564,6 @@ self.push(self.inventory, name, dest)
 
 
 # Run the script
-
 Ec2Inventory()
-
 
 

@@ -1,6 +1,7 @@
 # Author: Alexandre Gramfort <alexandre.gramfort@inria.fr>
 # License: BSD Style.
 
+from math import sqrt
 
 import numpy as np
 from scipy import linalg
@@ -12,15 +13,19 @@ def _assess_dimension_(spect, rk, n_samples, dim):
     """
     Compute the likelihood of a rank rk dataset
     embedded in gaussian noise of shape(n, dimf) having spectrum spect
+
     Parameters
     ----------
     spect: array of shape (n)
            data spectrum
     rk: int,  tested rank value
+    n_samples: int, number of samples
     dim: int, embedding/emprical dimension
+
     Returns
     -------
     ll, float, The log-likelihood
+
     Note
     ----
     This implements the method of Thomas P. Minka:
@@ -33,6 +38,7 @@ def _assess_dimension_(spect, rk, n_samples, dim):
     for i in range(rk):
         pu += gammaln((dim - i)/2) - np.log(np.pi) * (dim - i)/2
     pl = np.sum(np.log(spect[:rk]))
+    pl = -pl * n_samples / 2
     if rk == dim:
         pv = 0
         v = 1
@@ -50,9 +56,6 @@ def _assess_dimension_(spect, rk, n_samples, dim):
                      (1./spectrum_[j] - 1./spectrum_[i])) + np.log(n_samples)
     ll = pu + pl + pv + pp -pa/2 - rk*np.log(n_samples)/2
     return ll
-    
-    
-    
     
         
 
@@ -124,43 +127,13 @@ class PCA(BaseEstimator):
     def __init__(self, n_comp=None, copy=True):
         self.n_comp = n_comp
         self.copy = copy
-        self.n_comp = n_comp
-        self.copy = copy
     def fit(self, X, **params):
         self._set_params(**params)
         X = np.atleast_2d(X)
+        self.dim = X.shape[1]
         n_samples = X.shape[0]
-        if self.copy:
-            X = X.copy()
-            X = X.copy()
-        # Center data
-        self.mean_ = np.mean(X, axis=0)
-        X -= self.mean_
-        U, S, V = linalg.svd(X, full_matrices=False)
-        self.explained_variance_ = (S**2)/n_samples
-        self.explained_variance_ratio_ = self.explained_variance_ / \
-                                        self.explained_variance_.sum()
-        self.components_ = V.T
-        if self.n_comp=='mle':
-            self.n_comp = _infer_dimension_(self.explained_variance_,
-                                            n_samples, X.shape[1])
-            self.components_ = self.components_[:, :self.n_comp]
-            self.explained_variance_ = self.explained_variance_[:self.n_comp]
-            self.n_comp = _infer_dimension_(self.explained_variance_,
-                                            n_samples, X.shape[1])
-            self.components_ = self.components_[:, :self.n_comp]
-            self.explained_variance_ = self.explained_variance_[:self.n_comp]
-        elif self.n_comp is not None:
-            self.components_ = self.components_[:, :self.n_comp]
-            self.explained_variance_ = self.explained_variance_[:self.n_comp]
-            self.components_ = self.components_[:, :self.n_comp]
-            self.explained_variance_ = self.explained_variance_[:self.n_comp]
-        return self
-        self._set_params(**params)
         X = np.atleast_2d(X)
-        n_samples = X.shape[0]
         if self.copy:
-            X = X.copy()
             X = X.copy()
         # Center data
         self.mean_ = np.mean(X, axis=0)
@@ -175,13 +148,7 @@ class PCA(BaseEstimator):
                                             n_samples, X.shape[1])
             self.components_ = self.components_[:, :self.n_comp]
             self.explained_variance_ = self.explained_variance_[:self.n_comp]
-            self.n_comp = _infer_dimension_(self.explained_variance_,
-                                            n_samples, X.shape[1])
-            self.components_ = self.components_[:, :self.n_comp]
-            self.explained_variance_ = self.explained_variance_[:self.n_comp]
         elif self.n_comp is not None:
-            self.components_ = self.components_[:, :self.n_comp]
-            self.explained_variance_ = self.explained_variance_[:self.n_comp]
             self.components_ = self.components_[:, :self.n_comp]
             self.explained_variance_ = self.explained_variance_[:self.n_comp]
         return self
@@ -189,12 +156,61 @@ class PCA(BaseEstimator):
         Xr = X - self.mean_
         Xr = np.dot(Xr, self.components_)
         return Xr
-        Xr = X - self.mean_
-        Xr = np.dot(Xr, self.components_)
-        return Xr
 
+        
         
 
 
 
+class ProbabilisticPCA(PCA):
+    """ Additional layer on top of PCA that add a probabilistic evaluation
+    """
+    def fit(self, X, homoscedastic=True):
+        """Additionally to PCA.fit, learns a covariance model
+
+        Parameters
+        ----------
+        X: array of shape(n_samples, n_dim), test data
+        homoscedastic: bool, optional,
+                       if True, average variance across remaining dimensions
+        """
+        PCA.fit(self, X)
+        self.dim = X.shape[1]
+        Xr = X - self.mean_
+        Xr -= np.dot(np.dot(Xr, self.components_), self.components_.T)
+        n_samples = X.shape[0]
+        if self.dim <= self.n_comp:
+            delta = np.zeros(self.dim)
+        elif homoscedastic:
+            delta = (Xr**2).sum() / (n_samples * self.dim) * np.ones(self.dim)
+        else:
+            delta = (Xr**2).mean(0) / (self.dim-self.n_comp)
+        self.covariance_ = np.diag(delta)
+        for k in range(self.n_comp):
+            add_cov =  np.dot(
+                self.components_[:, k:k+1], self.components_[:, k:k+1].T)
+            self.covariance_ += self.explained_variance_[k] * add_cov
+        return self
+    def score(self, X):
+        """Return a scoreassociated to new data
+
+        Parameters
+        ----------
+        X: array of shape(n_samples, n_dim), test data
+
+        Returns
+        -------
+        ll: array of shape (n_samples),
+            log-likelihood of each row of X under the current model
+        """
+        Xr = X - self.mean_
+        log_like = np.zeros(X.shape[0])
+        self.precision_ = np.linalg.inv(self.covariance_)
+        for i in range(X.shape[0]):
+            log_like[i] = -.5 * np.dot(np.dot(self.precision_, Xr[i]), Xr[i])
+        log_like += fast_logdet(self.precision_) - \
+                                    self.dim / 2 * np.log(2 * np.pi)
+        return log_like
+
+        
 

@@ -14,6 +14,7 @@ from scipy.linalg.lapack import get_lapack_funcs
 
 from .base import LinearModel
 from ..utils import arrayfuncs
+from ..utils import deprecated
 
 
 def lars_path(X, y, Xy=None, Gram=None, max_features=None, max_iter=500,
@@ -355,14 +356,37 @@ class Lars(LinearModel):
     lars_path, LassoLARS
     """
     <<<<<<< REMOTE
-def __init__(self, fit_intercept=True, verbose=False, normalize=True,
+    def __init__(self, fit_intercept=True, verbose=False, normalize=True,
                  precompute='auto', max_iter=500):
+        self.fit_intercept = fit_intercept
+        self.max_iter = max_iter
+        self.verbose = verbose
+        self.normalize = normalize
+        self.method = 'lar'
+        self.precompute = precompute
+
 =======
-def __init__(self, fit_intercept=True, verbose=False, normalize=True, 
+    def __init__(self, fit_intercept=True, verbose=False, normalize=True, 
                  precompute='auto', max_iter=500):
+        self.fit_intercept = fit_intercept
+        self.max_iter = max_iter
+        self.verbose = verbose
+        self.normalize = normalize
+        self.method = 'lar'
+        self.precompute = precompute
+        self.n_features = n_features
+
 =======
-def __init__(self, fit_intercept=True, verbose=False, normalize=True,
+    def __init__(self, fit_intercept=True, verbose=False, normalize=True,
                  precompute='auto', max_iter=500, n_features=None):
+        self.fit_intercept = fit_intercept
+        self.max_iter = max_iter
+        self.verbose = verbose
+        self.normalize = normalize
+        self.method = 'lar'
+        self.precompute = precompute
+        self.n_features = n_features
+
 >>>>>>> LOCAL
         self.fit_intercept = fit_intercept
         self.max_iter = max_iter
@@ -395,7 +419,6 @@ def __init__(self, fit_intercept=True, verbose=False, normalize=True,
         if self.n_features:  # n_features parametrization takes priority
             alpha = 0.
         if not max_features:
-            max_features = self.n_features
             max_features = self.n_features
         if self.normalize:
             norms = np.sqrt(np.sum(X ** 2, axis=0))
@@ -502,15 +525,16 @@ class LassoLars(Lars):
         self.method = 'lasso'
         self.precompute = precompute
         self.n_features = n_features
-        self.alpha = alpha
-        self.fit_intercept = fit_intercept
-        self.max_iter = max_iter
-        self.verbose = verbose
-        self.normalize = normalize
-        self.method = 'lasso'
-        self.precompute = precompute
-        self.n_features = n_features
 
 
 
+# Deprecated classes
+class LARS(Lars):
+    pass
+LARS = deprecated("Use Lars instead")(LARS)
+
+
+class LassoLARS(LassoLars):
+    pass
+LassoLARS = deprecated("Use LassoLars instead")(LassoLARS)
 

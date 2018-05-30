@@ -17,11 +17,15 @@ true_result2 = [1, 2, 3]
 
 
 def test_CSVC():
+    """
     C_SVC algorithm and linear kernel.
+
     We test this on two datasets, the first one with two classes and
     the second one with three classes. We check for predicted values
     and estimated parameters.
+
     TODO: check with different parameters of C, nonlinear kernel
+    """
     clf = svm.SVC(kernel='linear')
     clf.fit(X, Y)
     pred = clf.predict(T)
@@ -35,6 +39,7 @@ def test_CSVC():
     assert_array_almost_equal(clf.dual_coef_,
                               [[ .99, -.006, -.49, -.49, -.07],
                                [ .072, .16, 0, 0, -.16]], decimal=2)
+    # TODO: why are we getting all the dataset as support vectors
     assert_array_equal(clf.support_, 
                        [[ 0.,  0.,  0.],
                         [ 1.,  1.,  1.],
@@ -45,18 +50,14 @@ def test_CSVC():
 
 
 
-
-
 def test_precomputed():
     """
-    SVC with a precomputed kernel.
-    We test it with a toy dataset and with iris.
+    Test with a precomputed kernel
     """
     clf = svm.SVC(kernel='precomputed')
     # just a linear kernel
     K = np.dot(X, np.array(X).T)
     clf.fit(K, Y)
-    # gram matrix
     KT = np.dot(T, np.array(X).T)
     pred = clf.predict(KT)
     assert_array_equal(clf.dual_coef_, [[0.25, -.25]])
@@ -64,16 +65,18 @@ def test_precomputed():
     assert_array_almost_equal(clf.support_, [[2], [4]])
     assert_array_equal(pred, true_result)
     # same as before, but using function instead of the kernel
-    # matrix. kernel is just a linear kernel
+    # matrix
+    kfunc = lambda x, y: np.dot(x, y.T)
     kfunc = lambda x, y: np.dot(x, y.T)
     clf = svm.SVC(kernel=kfunc)
+    # just a linear kernel
     clf.fit(X, Y)
     pred = clf.predict(T)
     assert_array_equal(clf.dual_coef_, [[0.25, -.25]])
     assert_array_equal(clf.intercept_, [0])
     assert_array_almost_equal(clf.support_, [[2], [4]])
     assert_array_equal(pred, true_result)
-    # test a precomputed kernel with the iris dataset
+    # test with a real dataset, also simulating a linear kernel
     clf = svm.SVC(kernel='precomputed')
     iris = datasets.load_iris()
     K = np.dot(iris.data, iris.data.T)
@@ -88,6 +91,9 @@ def test_precomputed():
 
 
 def test_SVR():
+    """
+    Test Support Vector Regression
+    """
     clf = svm.SVR(kernel='linear')
     clf.fit(X, Y)
     pred = clf.predict(T)
@@ -128,12 +134,16 @@ def test_oneclass():
 
 
 def test_tweak_params():
+    """
     Make sure some tweaking of parameters works.
+
     We change clf.dual_coef_ at run time and expect .predict() to change
     accordingly. Notice that this is not trivial since it involves a lot
     of C/Python copying in the libsvm bindings.
+
     The success of this test ensures that the mapping between libsvm and
     the python classifier is complete.
+    """
     clf = svm.SVC(kernel='linear')
     clf.fit(X, Y)
     assert_array_equal(clf.dual_coef_, [[.25, -.25]])
@@ -142,33 +152,23 @@ def test_tweak_params():
     assert_array_equal(clf.predict([[-.1, -.1]]), [2])
 
 
-
-
 def test_probability():
     """
-    """
-    This uses cross validation, so we use a slightly bigger testing
-    set.
-    """
-    from scikits.learn import datasets
-    iris = datasets.load_iris()
     Predict probabilities using SVC
-    clf.fit(iris.data, iris.target)
-    # predict on a simple dataset
-    T = [[0, 0, 0, 0],
-         [2, 2, 2, 2]]
-    assert_array_almost_equal(clf.predict_proba(T),
-                [[ 0.993,  0.003,  0.002],
-                 [ 0.740,  0.223  ,  0.035]],
-                 decimal=2)
-    # make sure probabilities sum to one
-    pprob = clf.predict_proba(X)
-    assert_array_almost_equal( pprob.sum(axis=1),
-                               np.ones(len(X)))
+
+    FIXME: is it harmless that we obtain slightly different results on
+    different operating systems ? (that is why we only check for 1
+    decimal precission)
+    TODO: test also on an example with intercept != 0
     """
     clf = svm.SVC(probability=True)
     clf.fit(X, Y)
-    
+    clf = svm.SVC(probability=True)
+    assert_array_almost_equal(clf.predict_proba(T),
+                              [[ 0.819,  0.18],
+                               [ 0.189,  0.810],
+                               [ 0.276,  0.723]],
+                              decimal=1)
 
 def test_margin():
     """
@@ -176,6 +176,7 @@ def test_margin():
     TODO: more tests
     """
     clf = svm.SVC()
+    clf.fit(X, Y)
     assert_array_almost_equal(clf.predict_margin(T),
                               [[ 0.976],
                                [-0.939],
@@ -184,7 +185,9 @@ def test_margin():
 
 
 def test_error():
+    """
     Test that it gives proper exception on deficient input
+    """
     # impossible value of nu
     clf = svm.SVC(impl='nu_svc', kernel='linear', nu=0.0)
     assert_raises(ValueError, clf.fit, X, Y)
@@ -194,7 +197,6 @@ def test_error():
     Xt = np.array(X).transpose()
     Yt = [1, 2]
     clf = svm.SVC()
-    clf = svm.SVC()
     clf.fit(Xt, Yt)
     assert_array_equal(clf.predict(T), [1, 2, 2])
 
@@ -202,22 +204,23 @@ def test_error():
 
 def test_LinearSVC():
     """
-    """
-    """
-    clf = svm.LinearSVC().fit(X, Y)
-    clf.fit(X, Y)
     Test basic routines using LinearSVC
     """
+    clf = svm.LinearSVC()
+    clf.fit(X, Y)
     assert_array_equal(clf.predict(T), true_result)
     assert_array_almost_equal(clf.intercept_, [0], decimal=5)
     # the same with l1 penalty
     clf = svm.LinearSVC(penalty='l1', dual=False).fit(X, Y)
+    clf.fit(X, Y)
     assert_array_equal(clf.predict(T), true_result)
     # l2 penalty with dual formulation
     clf = svm.LinearSVC(penalty='l2', dual=True).fit(X, Y)
     assert_array_equal(clf.predict(T), true_result)
     #
+    clf.fit(X, Y)
     clf = svm.LinearSVC(penalty='l2', loss='l1', dual=True).fit(X, Y)
+    clf.fit(X, Y)
     assert_array_equal(clf.predict(T), true_result)
 
 
@@ -226,12 +229,13 @@ def test_LinearSVC():
 
 def test_coef_and_intercept_SVC_vs_LinearSVC():
     """
-    """
-    """
-    svc = svm.SVC(kernel='linear', C=1).fit(X, Y)
     Test that SVC and LinearSVC return the same coef_ and intercept_
     """
+    svc = svm.SVC(kernel='linear', C=1)
     linsvc = svm.LinearSVC(C=1, penalty='l2', loss='l1', dual=True).fit(X, Y)
+    svc.fit(X, Y)
+    linsvc = svm.LinearSVC(C=1, penalty='l2', loss='l1', dual=True).fit(X, Y)
+    linsvc.fit(X, Y)
     assert_array_equal(linsvc.coef_.shape, svc.coef_.shape)
     assert_array_almost_equal(linsvc.coef_, svc.coef_, decimal=5)
     assert_array_almost_equal(linsvc.intercept_, svc.intercept_, decimal=5)

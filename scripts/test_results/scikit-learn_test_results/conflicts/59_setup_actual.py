@@ -44,9 +44,7 @@ def configuration(parent_package='', top_path=None):
     # the following packages depend on cblas, so they have to be build
     # after the above.
     config.add_subpackage('linear_model')
-    config.add_subpackage('utils')
     config.add_subpackage("tree")
-    config.add_subpackage('tests')
     # add the test directory
     config.add_subpackage("tree/tests")
     return config

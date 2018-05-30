@@ -12,6 +12,7 @@ import numpy as np
 
 from ..base import BaseEstimator
 from ..metrics.pairwise import euclidean_distances
+from ..utils import check_random_state
 
 
 ###############################################################################
@@ -80,6 +81,7 @@ def k_init(X, k, n_local_trials=None, random_state=None, x_squared_norms=None):
         distance_to_candidates = euclidean_distances(
             X[candidate_ids], X, Y_norm_squared=x_squared_norms, squared=True)
         # Decide which candidate is the best
+        best_pot = None
         best_candidate = None
         best_dist_sq = None
         for trial in xrange(n_local_trials):
@@ -90,6 +92,7 @@ def k_init(X, k, n_local_trials=None, random_state=None, x_squared_norms=None):
             # Store result if it is the best local trial so far
             if (best_candidate is None) or (new_pot < best_pot):
                 best_candidate = candidate_ids[trial]
+                best_pot = new_pot
                 best_dist_sq = new_dist_sq
         # Permanently add best center candidate found in local tries
         centers[c] = X[best_candidate]
@@ -182,6 +185,7 @@ def k_means(X, k, init='k-means++', n_init=10, max_iter=300, verbose=0,
     n_samples = X.shape[0]
     vdata = np.mean(np.var(X, 0))
     best_inertia = np.infty
+    # subtract of mean of x for more accurate distance computations
     if hasattr(init, '__array__'):
         init = np.asarray(init)
         if not n_init == 1:
@@ -189,10 +193,15 @@ def k_means(X, k, init='k-means++', n_init=10, max_iter=300, verbose=0,
                           'performing only one init in the k-means')
             n_init = 1
     X_mean = X.mean(axis=0)
+    # precompute squared norms of data points
     if copy_x:
         X = X.copy()
     X -= X_mean
     x_squared_norms = X.copy()
+    else:
+        best_labels = labels
+        best_centers = centers
+        best_inertia = inertia
     x_squared_norms **= 2
     x_squared_norms = x_squared_norms.sum(axis=1)
     for it in range(n_init):
@@ -217,7 +226,6 @@ def k_means(X, k, init='k-means++', n_init=10, max_iter=300, verbose=0,
                 best_labels = labels.copy()
                 best_centers = centers.copy()
                 best_inertia = inertia
-    else:
     if not copy_x:
         X += X_mean
     return best_centers + X_mean, best_labels, best_inertia
@@ -249,6 +257,16 @@ def _m_step(X, z, k):
     dim = X.shape[1]
     centers = np.empty((k, dim))
     X_center = None
+    for q in range(k):
+        center_mask = (z == q)
+        if not np.any(center_mask):
+            # The centroid of empty clusters is set to the center of
+            # everything
+            if X_center is None:
+                X_center = X.mean(axis=0)
+            centers[q] = X_center
+        else:
+            centers[q] = np.mean(X[center_mask], axis=0)
     return centers
 
 
@@ -282,35 +300,20 @@ def _e_step(x, centers, precompute_distances=True, x_squared_norms=None):
     """
     n_samples = x.shape[0]
     k = centers.shape[0]
-    k = centers.shape[0]
     if precompute_distances:
         distances = euclidean_distances(centers, x, x_squared_norms,
                                         squared=True)
     z = np.empty(n_samples, dtype=np.int)
     z.fill(-1)
     mindist = np.empty(n_samples)
-    for q in range(k):
-        if precompute_distances:
-            dist = distances[q]
-        else:
-            dist = np.sum((x - centers[q]) ** 2, axis=1)
-        z[dist < mindist] = q
-        mindist = np.minimum(dist, mindist)
-        if precompute_distances:
-            dist = distances[q]
-        else:
-            dist = np.sum((x - centers[q]) ** 2, axis=1)
-        z[dist < mindist] = q
-        mindist = np.minimum(dist, mindist)
     mindist.fill(np.infty)
     for q in range(k):
-        center_mask = (z == q)
-        if not np.any(center_mask):
-            # The centroid of empty clusters is set to the center of
-            # everything
-            if X_center is None:
-                X_center = X.mean(axis=0)
-            centers[q] = X_center
+        if precompute_distances:
+            dist = distances[q]
+        else:
+            dist = np.sum((x - centers[q]) ** 2, axis=1)
+        z[dist < mindist] = q
+        mindist = np.minimum(dist, mindist)
     inertia = mindist.sum()
     return z, inertia
 
@@ -400,10 +403,6 @@ class KMeans(BaseEstimator):
         """
         Set parameters and check the sample given is larger than k
         """
-        return X
-        """
-        Set parameters and check the sample given is larger than k
-        """
         X = np.asarray(X)
         if X.shape[0] < self.k:
             raise ValueError("n_samples=%d should be larger than k=%d" % (
@@ -417,11 +416,6 @@ self.random_state = check_random_state(self.random_state)
 =======
 X = self._check_data(X, **params)
 >>>>>>> LOCAL
-        X = np.asarray(X)
-        if X.shape[0] < self.k:
-            raise ValueError("n_samples=%d should be larger than k=%d" % (
-                X.shape[0], self.k))
-        self._set_params(**params)
         self.cluster_centers_, self.labels_, self.inertia_ = k_means(
             X, k=self.k, init=self.init, n_init=self.n_init,
             max_iter=self.max_iter, verbose=self.verbose,

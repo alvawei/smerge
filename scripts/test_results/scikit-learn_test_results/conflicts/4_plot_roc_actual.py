@@ -20,27 +20,18 @@ a classifier. In order to extend ROC curve and ROC area to multi-class
 or multi-label classification, it is necessary to binarize the output. One ROC
 curve can be drawn per label, but one can also draw a ROC curve by considering
 each element of the label indicator matrix as a binary prediction
-<<<<<<< REMOTE
-(micro-averaging). Another evaluation measure for multi-class classification is
-=======
-(micro-averaging). Another evaluation measure for multi-class classification is
->>>>>>> LOCAL
-<<<<<<< REMOTE
-macro-averaging, which gives equal weight to the classification of each label.
-=======
-macro-averaging, which gives equal weight to the classification of each label.
->>>>>>> LOCAL
+(micro-averaging).
 
 .. note::
-    See also :func:`sklearn.metrics.roc_auc_score`,
-             :ref:`example_model_selection_plot_roc_crossval.py`.
 
+    See also :func:`sklearn.metrics.roc_auc_score`,
+             :ref:`example_plot_roc_crossval.py`.
 
 """
 print(__doc__)
 
-import matplotlib.pyplot as plt
 import numpy as np
+import pylab as pl
 from sklearn import svm, datasets
 from sklearn.metrics import roc_curve, auc
 from sklearn.cross_validation import train_test_split
@@ -80,65 +71,32 @@ for i in range(n_classes):
 
 # Compute micro-average ROC curve and ROC area
 fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_score.ravel())
-<<<<<<< REMOTE
-# Compute macro-average ROC curve and ROC area
-=======
-# Plot of a ROC curve for a specific class
->>>>>>> LOCAL
-<<<<<<< REMOTE
-fpr["macro"] = np.mean([fpr[i] for i in range(n_classes)], axis=0)
-=======
-plt.figure()
->>>>>>> LOCAL
-tpr["macro"] = np.mean([tpr[i] for i in range(n_classes)], axis=0)
-roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
 roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
 
-plt.clf()
+# Plot of one ROC curve
 plt.plot(fpr[2], tpr[2], label='ROC curve (area = %0.2f)' % roc_auc[2])
 plt.plot([0, 1], [0, 1], 'k--')
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
 plt.xlabel('False Positive Rate')
-plt.figure()
 plt.ylabel('True Positive Rate')
 plt.title('Receiver operating characteristic example')
-# Compute macro-average ROC curve and ROC area
-fpr["macro"] = np.mean([fpr[i] for i in range(n_classes)], axis=0)
-tpr["macro"] = np.mean([tpr[i] for i in range(n_classes)], axis=0)
-roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
 plt.legend(loc="lower right")
-<<<<<<< REMOTE
-pl.plot(fpr["macro"], tpr["macro"],
-        label='macro-average ROC curve (area = {0:0.2f})'
-=======
-# Plot ROC curve
->>>>>>> LOCAL
-              ''.format(roc_auc["macro"]))
-plt.plot(fpr["micro"], tpr["micro"],
-        label='micro-average ROC curve (area = {0:0.2f})'
-<<<<<<< REMOTE
-
-=======
-''.format(roc_auc["micro"]))
->>>>>>> LOCAL
-plt.plot(fpr["macro"], tpr["macro"],
-        label='macro-average ROC curve (area = {0:0.2f})'
-              ''.format(roc_auc["macro"]))
 plt.show()
 
-
 # Plot ROC curve
+pl.clf()
 plt.plot(fpr["micro"], tpr["micro"],
          label='micro-average ROC curve (area = {0:0.2f})'
-              ''.format(roc_auc["micro"]))
+               ''.format(roc_auc["micro"]))
 for i in range(n_classes):
     plt.plot(fpr[i], tpr[i], label='ROC curve of class {0} (area = {1:0.2f})'
-                                  ''.format(i, roc_auc[i]))
+                                   ''.format(i, roc_auc[i]))
 
 plt.plot([0, 1], [0, 1], 'k--')
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
+plt.clf()
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title('Some extension of Receiver operating characteristic to multi-class')

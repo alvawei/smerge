@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import linalg
 
+from scipy.sparse import csr_matrix
 from scipy.spatial.distance import cosine, cityblock, minkowski
 
 from sklearn.utils.testing import assert_greater
@@ -100,6 +101,8 @@ def test_pairwise_distances():
     assert_raises(TypeError, pairwise_distances, X_sparse, metric="minkowski")
     assert_raises(TypeError, pairwise_distances, X, Y_sparse,
                   metric="minkowski")
+    # Test that a value error is raised if the metric is unkown
+    assert_raises(ValueError, pairwise_distances, X, Y, metric="blah")
 
 
 def test_pairwise_parallel():
@@ -187,25 +190,16 @@ def test_euclidean_distances():
     """ Check the pairwise Euclidean distances computation"""
     X = [[0]]
     Y = [[1], [2]]
-    Y = [[-1], [2]]
-    assert_array_almost_equal(D, [[1., 2.]])
     D = euclidean_distances(X, Y)
-    assert_array_almost_equal(D2, [0, 1])
-    X = csr_matrix(X)
     assert_array_almost_equal(D, [[1., 2.]])
+    X = csr_matrix(X)
     Y = csr_matrix(Y)
     D = euclidean_distances(X, Y)
-    assert_array_almost_equal(D, [0, 1])
+    assert_array_almost_equal(D, [[1., 2.]])
 
 
 
 def test_chi_square_kernel():
-<<<<<<< REMOTE
-rng = np.random.RandomState(0)
-=======
-rng = np.random.RandomState(0)
->>>>>>> LOCAL
-    X = rng.random_sample((5, 4))
     rng = np.random.RandomState(0)
     X = rng.random_sample((5, 4))
     Y = rng.random_sample((10, 4))
@@ -249,7 +243,6 @@ rng = np.random.RandomState(0)
     # sparse matrices
     # different n_features in X and Y
     assert_raises(ValueError, chi2_kernel, [[0, 1]], [[.2, .2, .6]])
-    # sparse matrix case
     assert_raises(ValueError, chi2_kernel, csr_matrix(X), csr_matrix(Y))
     assert_raises(ValueError, additive_chi2_kernel,
                   csr_matrix(X), csr_matrix(Y))
@@ -263,72 +256,35 @@ rng = np.random.RandomState(0)
 
 def test_kernel_symmetry():
     """ Valid kernels should be symmetric"""
-<<<<<<< REMOTE
-rng = np.random.RandomState(0)
-=======
-rng = np.random.RandomState(0)
->>>>>>> LOCAL
+    rng = np.random.RandomState(0)
     X = rng.random_sample((5, 4))
-    Y = rng.random_sample((5, 4))
     for kernel in (linear_kernel, polynomial_kernel, rbf_kernel,
                    sigmoid_kernel, cosine_similarity):
         K = kernel(X, X)
-<<<<<<< REMOTE
-assert_array_almost_equal(K, K.T, 15)
-=======
-assert_array_almost_equal(K1, K2)
->>>>>>> LOCAL
-        <<<<<<< REMOTE
-assert_array_almost_equal(D, [0, 1])
-=======
-assert_array_almost_equal(K, K.T, 15)
-=======
-assert_array_almost_equal(D, [1., 2.])
->>>>>>> LOCAL
+        assert_array_almost_equal(K, K.T, 15)
 
 
 def test_kernel_sparse():
-<<<<<<< REMOTE
-rng = np.random.RandomState(0)
-=======
-rng = np.random.RandomState(0)
->>>>>>> LOCAL
+    rng = np.random.RandomState(0)
+    X = rng.random_sample((5, 4))
     X_sparse = csr_matrix(X)
     for kernel in (linear_kernel, polynomial_kernel, rbf_kernel,
                    sigmoid_kernel, cosine_similarity):
         K = kernel(X, X)
         K2 = kernel(X_sparse, X_sparse)
-<<<<<<< REMOTE
-assert_array_almost_equal(K, K2)
-=======
-assert_array_almost_equal(K, K2)
->>>>>>> LOCAL
-        <<<<<<< REMOTE
-assert_array_almost_equal(D, [0, 1])
-=======
-assert_array_almost_equal(K, K2)
-=======
-assert_array_almost_equal(S, S2)
->>>>>>> LOCAL
+        assert_array_almost_equal(K, K2)
 
 
 def test_linear_kernel():
-<<<<<<< REMOTE
-rng = np.random.RandomState(0)
-=======
-rng = np.random.RandomState(0)
->>>>>>> LOCAL
+    rng = np.random.RandomState(0)
+    X = rng.random_sample((5, 4))
     K = linear_kernel(X, X)
     # the diagonal elements of a linear kernel are their squared norm
     assert_array_almost_equal(K.flat[::6], [linalg.norm(x) ** 2 for x in X])
 
 
 def test_rbf_kernel():
-<<<<<<< REMOTE
-rng = np.random.RandomState(0)
-=======
-rng = np.random.RandomState(0)
->>>>>>> LOCAL
+    rng = np.random.RandomState(0)
     X = rng.random_sample((5, 4))
     K = rbf_kernel(X, X)
     # the diagonal elements of a rbf kernel are 1
@@ -337,18 +293,11 @@ rng = np.random.RandomState(0)
 
 def test_cosine_similarity():
     """ Test the cosine_similarity. """
-<<<<<<< REMOTE
-rng = np.random.RandomState(0)
-=======
-rng = np.random.RandomState(0)
->>>>>>> LOCAL
+    rng = np.random.RandomState(0)
     X = rng.random_sample((5, 4))
     Y = rng.random_sample((3, 4))
     Ycsr = csr_matrix(Y)
-    X = rng.random_sample((5, 4))
-    Y = rng.random_sample((3, 4))
     Xcsr = csr_matrix(X)
-    Ysp = csr_matrix(Y)
     for X_, Y_ in ((X, None), (X, Y),
                    (Xcsr, None), (Xcsr, Ycsr)):
         # Test that the cosine is kernel is equal to a linear kernel when data
@@ -358,18 +307,7 @@ rng = np.random.RandomState(0)
         if Y_ is not None:
             Y_ = normalize(Y_)
         K2 = pairwise_kernels(X_, Y=Y_, metric="linear")
-<<<<<<< REMOTE
-assert_array_almost_equal(K1, K2)
-=======
-assert_array_almost_equal(K1, K2)
->>>>>>> LOCAL
-        <<<<<<< REMOTE
-assert_array_almost_equal(D, [0, 1])
-=======
-assert_array_almost_equal(K1, K2)
-=======
-assert_array_almost_equal(K, K.T, 15)
->>>>>>> LOCAL
+        assert_array_almost_equal(K1, K2)
 
 
 
@@ -393,22 +331,26 @@ def test_check_XB_returned():
     assert_array_equal(XA, XA_checked)
     assert_array_equal(XB, XB_checked)
     XB = np.resize(np.arange(40), (5, 8))
+    XA_checked, XB_checked = check_paired_arrays(XA, XB)
+    assert_array_equal(XA, XA_checked)
+    assert_array_equal(XB, XB_checked)
 
 
 def test_check_different_dimensions():
     """ Ensure an error is raised if the dimensions are different. """
+    XA = np.resize(np.arange(45), (5, 9))
     XB = np.resize(np.arange(32), (4, 8))
     assert_raises(ValueError, check_pairwise_arrays, XA, XB)
+    XB = np.resize(np.arange(4 * 9), (4, 9))
+    assert_raises(ValueError, check_paired_arrays, XA, XB)
 
 
 def test_check_invalid_dimensions():
     """ Ensure an error is raised on 1D input arrays. """
     XA = np.arange(45)
-    XB = np.resize(np.arange(32), (4, 8))
     XB = np.resize(np.arange(4 * 9), (4, 9))
-    XA = np.resize(np.arange(45), (5, 9))
-    assert_raises(ValueError, check_paired_arrays, XA, XB)
     assert_raises(ValueError, check_pairwise_arrays, XA, XB)
+    assert_raises(ValueError, check_paired_arrays, XA, XB)
     XA = np.resize(np.arange(45), (5, 9))
     XB = np.arange(32)
     assert_raises(ValueError, check_pairwise_arrays, XA, XB)
@@ -416,14 +358,9 @@ def test_check_invalid_dimensions():
 
 def test_check_sparse_arrays():
     """ Ensures that checks return valid sparse matrices. """
-<<<<<<< REMOTE
-rng = np.random.RandomState(0)
-=======
-rng = np.random.RandomState(0)
->>>>>>> LOCAL
+    rng = np.random.RandomState(0)
     XA = rng.random_sample((5, 4))
     XB = rng.random_sample((5, 4))
-    X = rng.random_sample((5, 4))
     XA_sparse = csr_matrix(XA)
     XB_sparse = csr_matrix(XB)
     XA_checked, XB_checked = check_pairwise_arrays(XA_sparse, XB_sparse)
@@ -450,11 +387,7 @@ def tuplify(X):
 
 def test_check_tuple_input():
     """ Ensures that checks return valid tuples. """
-<<<<<<< REMOTE
-rng = np.random.RandomState(0)
-=======
-rng = np.random.RandomState(0)
->>>>>>> LOCAL
+    rng = np.random.RandomState(0)
     XA = rng.random_sample((5, 4))
     XB = rng.random_sample((5, 4))
     XA_checked, XB_checked = check_pairwise_arrays(XA_tuples, XB_tuples)
@@ -462,8 +395,6 @@ rng = np.random.RandomState(0)
     assert_array_equal(XB_tuples, XB_checked)
     XA_tuples = tuplify(XA)
     XB_tuples = tuplify(XB)
-    assert_array_equal(XA, XA_checked)
-    assert_array_equal(XB, XB_checked)
 
 
 def test_check_preserve_type():
@@ -474,7 +405,6 @@ def test_check_preserve_type():
     assert_equal(XA_checked.dtype, np.float32)
     # both float32
     XA_checked, XB_checked = check_pairwise_arrays(XA, XB)
-    XA_checked, XB_checked = check_paired_arrays(XA, XB)
     assert_equal(XA_checked.dtype, np.float32)
     assert_equal(XB_checked.dtype, np.float32)
     # mismatched A

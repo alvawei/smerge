@@ -334,7 +334,7 @@ class GMM(BaseEstimator):
         posteriors = np.exp(lpr - logprob[:,np.newaxis])
         return logprob, posteriors
     def score(self, obs):
-        """Find most likely mixture components for each point in `obs`.
+        """Compute the log probability under the model.
 
         Parameters
         ----------
@@ -344,15 +344,13 @@ class GMM(BaseEstimator):
 
         Returns
         -------
-        logprobs : array_like, shape (n,)
-            Log probability of each point in `obs` under the model.
-        components : array_like, shape (n,)
-            Index of the most likelihod mixture components for each observation
+        logprob : array_like, shape (n,)
+            Log probabilities of each data point in `obs`
         """
         logprob, posteriors = self.eval(obs)
-        return logprob, posteriors.argmax(axis=1)
-    def decode(self, obs):
-        """Find most likely mixture components for each point in `obs`.
+        return logprob
+    def lpdf(self, obs):
+        """Compute the log probability under the model.
 
         Parameters
         ----------
@@ -362,13 +360,28 @@ class GMM(BaseEstimator):
 
         Returns
         -------
-        logprobs : array_like, shape (n,)
-            Log probability of each point in `obs` under the model.
-        components : array_like, shape (n,)
-            Index of the most likelihod mixture components for each observation
+        logprob : array_like, shape (n,)
+            Log probabilities of each data point in `obs`
         """
         logprob, posteriors = self.eval(obs)
-        return logprob, posteriors.argmax(axis=1)
+        return logprob
+    score = lpdf
+    def score(self, obs):
+        """Compute the log probability under the model.
+
+        Parameters
+        ----------
+        obs : array_like, shape (n, n_dim)
+            List of n_dim-dimensional data points.  Each row corresponds to a
+            single data point.
+
+        Returns
+        -------
+        logprob : array_like, shape (n,)
+            Log probabilities of each data point in `obs`
+        """
+        logprob, posteriors = self.eval(obs)
+        return logprob
     def predict(self, X):
         """Predict label for data.
 
@@ -522,6 +535,11 @@ class GMM(BaseEstimator):
 
 
 
+<<<<<<< REMOTE
+
+=======
+## some helper routines
+>>>>>>> LOCAL
 ##
 ## some helper routines
 ##

@@ -13,6 +13,7 @@ from itertools import cycle, izip
 
 import numpy as np
 import scipy.sparse as sp
+from math import floor
 
 from ..base import BaseEstimator
 from ..metrics.pairwise import euclidean_distances
@@ -257,9 +258,6 @@ def k_means(X, k, init='k-means++', n_init=10, max_iter=300, verbose=0,
 def _calculate_labels_inertia(X, centers, x_squared_norms=None):
     """Compute the inertia and the labels of the given samples and centers"""
     distance = euclidean_distances(centers, X, x_squared_norms, squared=True)
-    if sp.issparse(X):
-            raise ValueError("Init method 'k-means++' only for dense X.")
-    else:
     return distance.min(axis=0).sum(), distance.argmin(axis=0)
 
 
@@ -294,6 +292,8 @@ def _m_step(X, z, k):
             if X_center is None:
                 X_center = X.mean(axis=0)
             centers[q] = X_center
+        else:
+            centers[q] = np.mean(X[center_mask], axis=0)
     return centers
 
 
@@ -326,7 +326,7 @@ def _init_centroids(X, k, init, random_state=None, x_squared_norms=None):
     n_samples = X.shape[0]
     if init == 'k-means++':
         if sp.issparse(X):
-            raise ValueError("K-Means does not support sparse input matrices.")
+            raise ValueError("Init method 'k-means++' only for dense X.")
         centers = k_init(X, k,
                         random_state=random_state,
                         x_squared_norms=x_squared_norms)
@@ -337,11 +337,10 @@ def _init_centroids(X, k, init, random_state=None, x_squared_norms=None):
         centers = init
     elif callable(init):
         centers = init(X, k, random_state=random_state)
-        else:
+    else:
         raise ValueError("the init parameter for the k-means should "
             "be 'k-means++' or 'random' or an ndarray, "
             "'%s' (type '%s') was passed.")
-            centers[q] = np.mean(X[center_mask], axis=0)
     if sp.issparse(centers):
         centers = centers.toarray()
     return centers
@@ -389,9 +388,7 @@ def _e_step(x, centers, precompute_distances=True, x_squared_norms=None):
     for q in range(k):
         if precompute_distances:
             dist = distances[q]
-    else:
         else:
-            x_squared_norms = np.sum(X ** 2.0, axis=1)
             dist = np.sum((x - centers[q]) ** 2, axis=1)
         z[dist < mindist] = q
         mindist = np.minimum(dist, mindist)
@@ -487,6 +484,8 @@ class KMeans(BaseEstimator):
         """
         Set parameters and check the sample given is larger than k
         """
+        if sp.issparse(X):
+            raise ValueError("K-Means does not support sparse input matrices.")
         X = np.asanyarray(X)
         if X.shape[0] < self.k:
             raise ValueError("n_samples=%d should be larger than k=%d" % (
@@ -524,45 +523,8 @@ class KMeans(BaseEstimator):
         if not hasattr(self, "cluster_centers_"):
             raise AttributeError("Model has not been trained. "
                                  "Train k-means before using transform.")
-            raise AttributeError("Model has not been trained. "
-                                 "Train k-means before using transform.")
         cluster_shape = self.cluster_centers_.shape[1]
         if not X.shape[1] == cluster_shape:
-            raise ValueError("Incorrect number of features for points. "
-                             "Got %d features, expected %d" % (X.shape[1],
-                                                               cluster_shape))
-            raise ValueError("Incorrect number of features for points. "
-                             "Got %d features, expected %d" % (X.shape[1],
-                                                               cluster_shape))
-        return euclidean_distance(X, self.cluster_centers_)
-        """ Transforms X based on the learnt cluster centroids.
-
-            The transformation is performed using the euclidean distance of
-            each sample in X to each of the cluster clusters.
-
-            Parameters
-            ----------
-            X : array, shape (n_samples, n_features)
-                The data to be transformed using the k-means centers.
-                n_samples is the number of new points to be transformed,
-                while n_features is the same as that given to the fit()
-                method. Any different size will raise a ValueError.
-
-            Returns
-            -------
-            Z : array, shape (n_samples, k)
-                The transformation of X using the learnt clusters.
-        """
-        if not hasattr(self, "cluster_centers_"):
-            raise AttributeError("Model has not been trained. "
-                                 "Train k-means before using transform.")
-            raise AttributeError("Model has not been trained. "
-                                 "Train k-means before using transform.")
-        cluster_shape = self.cluster_centers_.shape[1]
-        if not X.shape[1] == cluster_shape:
-            raise ValueError("Incorrect number of features for points. "
-                             "Got %d features, expected %d" % (X.shape[1],
-                                                               cluster_shape))
             raise ValueError("Incorrect number of features for points. "
                              "Got %d features, expected %d" % (X.shape[1],
                                                                cluster_shape))
@@ -587,43 +549,8 @@ class KMeans(BaseEstimator):
         if not hasattr(self, "cluster_centers_"):
             raise AttributeError("Model has not been trained. "
                                  "Train k-means before using predict.")
-            raise AttributeError("Model has not been trained. "
-                                 "Train k-means before using predict.")
         cluster_shape = self.cluster_centers_.shape[1]
         if not X.shape[1] == cluster_shape:
-            raise ValueError("Incorrect number of features for points. "
-                             "Got %d features, expected %d" % (X.shape[1],
-                                                               cluster_shape))
-            raise ValueError("Incorrect number of features for points. "
-                             "Got %d features, expected %d" % (X.shape[1],
-                                                               cluster_shape))
-        return _e_step(X, self.cluster_centers_)[0]
-        """ Predict which of the learnt cluster each sample belongs to.
-
-            Parameters
-            ----------
-            X : array, shape (n_samples, n_features)
-                The data to assigned to the learnt clusters. n_samples is the
-                number of new points to be transformed, while n_features is the
-                same as that given to the fit(). Any different size will raise
-                a ValueError.
-
-            Returns
-            -------
-            Z : array, shape (n_samples,)
-                Cluster index with closest centroid to each of the given
-                samples.
-        """
-        if not hasattr(self, "cluster_centers_"):
-            raise AttributeError("Model has not been trained. "
-                                 "Train k-means before using predict.")
-            raise AttributeError("Model has not been trained. "
-                                 "Train k-means before using predict.")
-        cluster_shape = self.cluster_centers_.shape[1]
-        if not X.shape[1] == cluster_shape:
-            raise ValueError("Incorrect number of features for points. "
-                             "Got %d features, expected %d" % (X.shape[1],
-                                                               cluster_shape))
             raise ValueError("Incorrect number of features for points. "
                              "Got %d features, expected %d" % (X.shape[1],
                                                                cluster_shape))
@@ -706,6 +633,21 @@ def _mini_batch_step_sparse(X, batch_slice, centers, counts, x_squared_norms):
 
 
 
+def _euclidean_distances_sparse(X, Y, y_squared_norms=None, squared=False):
+    """euclidean distances for dense X and sparse Y.
+    """
+    XX = np.sum(X * X, axis=1)[:, np.newaxis]
+    # If added same as compute dot
+    # XX = np.ones((X.shape[0],))[:, np.newaxis]
+    if y_squared_norms == None:
+        y_squared_norms = _k_means.csr_row_norm_l2(Y, squared)
+    YY = y_squared_norms[np.newaxis, :]
+    distances = XX + YY
+    distances -= 2 * (X * Y.T)
+    distances = np.maximum(distances, 0)
+    if not squared:
+        distances = np.sqrt(distances)
+    return distances
 
 
 
@@ -714,41 +656,58 @@ def _mini_batch_step_sparse(X, batch_slice, centers, counts, x_squared_norms):
 class MiniBatchKMeans(KMeans):
     """
     Mini-Batch K-Means clustering
+
     Parameters
     ----------
+
     k : int, optional, default: 8
         The number of clusters to form as well as the number of
         centroids to generate.
+
     max_iter : int
         Maximum number of iterations of the k-means algorithm for a
         single run.
+
     chunk_size: int, optional, default: 1000
         Size of the mini batches
+
     init : {'k-means++', 'random' or an ndarray}
         Method for initialization, defaults to 'random':
+
         'k-means++' : selects initial cluster centers for k-mean
         clustering in a smart way to speed up convergence. See section
         Notes in k_init for more details. Only for dense `X`.
+
         'random': choose k observations (rows) at random from data for
         the initial centroids.
+
         if init is an 2d array, it is used as a seed for the centroids
+
     tol: float, optional default: 1e-4
         Relative tolerance w.r.t. inertia to declare convergence
+
     Methods
     -------
+
     fit(X):
         Compute K-Means clustering
+
     partial_fit(X):
         Compute a partial K-Means clustering
+
     Attributes
     ----------
+
     cluster_centers_: array, [n_clusters, n_features]
         Coordinates of cluster centers
+
     labels_:
         Labels of each point
+
     inertia_: float
         The value of the inertia criterion associated with the chosen
         partition.
+
     References
     ----------
     http://www.eecs.tufts.edu/~dsculley/papers/fastkmeans.pdf
@@ -763,12 +722,12 @@ class MiniBatchKMeans(KMeans):
     def fit(self, X, y=None, **params):
         """
         Calculates the centroids on a batch X
-        Parameters
-        ----------
-        X: array-like, shape = [n_samples, n_features]
+
+        params
+        ------
+        X: array, [n_samples, n_features]
             Coordinates of the data points to cluster
         """
-        self._set_params(**params)
         self.random_state = check_random_state(self.random_state)
         X = check_arrays(X, sparse_format="csr", copy=False)[0]
         n_samples, n_features = X.shape
@@ -781,16 +740,20 @@ class MiniBatchKMeans(KMeans):
         if sp.issparse(X_shuffled):
             x_squared_norms = _k_means.csr_row_norm_l2(X)
         else:
+            x_squared_norms = np.sum(X ** 2.0, axis=1)
         self.cluster_centers_ = _init_centroids(
             X_shuffled, self.k, self.init, random_state=self.random_state,
             x_squared_norms=x_squared_norms)
         self.counts = np.zeros(self.k, dtype=np.int32)
-        n_batches = int(np.ceil(float(n_samples) / self.chunk_size))
+        n_batches = int(floor(float(n_samples) / self.chunk_size))
         batch_slices = list(gen_even_slices(n_samples, n_batches))
         n_iterations = xrange(int(self.max_iter * n_batches))
         if sp.issparse(X_shuffled):
             _mini_batch_step = _mini_batch_step_sparse
             tol = self.tol
+        else:
+            _mini_batch_step = _mini_batch_step_dense
+            tol = np.mean(np.var(X_shuffled, axis=0)) * self.tol
         for i, batch_slice in izip(n_iterations, cycle(batch_slices)):
             old_centers = self.cluster_centers_.copy()
             _mini_batch_step(X_shuffled, batch_slice, self.cluster_centers_,
@@ -799,26 +762,11 @@ class MiniBatchKMeans(KMeans):
                 if self.verbose:
                     print 'Converged to similar centers at iteration', i
                 break
-        self.inertia_ = 0
-        self.labels_ = np.empty((n_samples,), dtype=np.int)
-        for batch_slice in batch_slices:
-            batch_inertia, batch_labels = _calculate_labels_inertia(
-            X[batch_slice], self.cluster_centers_)
-            self.inertia_ += batch_inertia
-            self.labels_[batch_slice] = batch_labels
-            batch_inertia, batch_labels = _calculate_labels_inertia(
-            X[batch_slice], self.cluster_centers_)
-            self.inertia_ += batch_inertia
-            self.labels_[batch_slice] = batch_labels
+        self.inertia_, self.labels_ = _calculate_labels_inertia(
+            X, self.cluster_centers_)
         return self
     def partial_fit(self, X, y=None, **params):
-        """Update k means estimate on a single mini-batch X.
-
-        Parameters
-        ----------
-        X: array-like, shape = [n_samples, n_features]
-            Coordinates of the data points to cluster.
-        """
+        """Update k means estimate on a single mini-batch X"""
         self.random_state = check_random_state(self.random_state)
         X = check_arrays(X, sparse_format="csr", copy=False)[0]
         n_samples, n_features = X.shape
@@ -830,9 +778,6 @@ class MiniBatchKMeans(KMeans):
             x_squared_norms = _k_means.csr_row_norm_l2(X)
         else:
             x_squared_norms = (X ** 2).sum(axis=1)
-            _mini_batch_step = _mini_batch_step_dense
-            tol = np.mean(np.var(X_shuffled, axis=0)) * self.tol
-        else:
         if self.counts is None:
             # this is the first call partial_fit on this object:
             # initialize the cluster centers
@@ -843,23 +788,13 @@ class MiniBatchKMeans(KMeans):
         batch_slice = slice(0, n_samples, None)
         if sp.issparse(X):
             _mini_batch_step = _mini_batch_step_sparse
+        else:
+            _mini_batch_step = _mini_batch_step_dense
         _mini_batch_step(X, batch_slice, self.cluster_centers_, self.counts,
                          x_squared_norms=x_squared_norms)
         self.inertia_, self.labels_ = _calculate_labels_inertia(
             X, self.cluster_centers_, x_squared_norms)
         return self
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

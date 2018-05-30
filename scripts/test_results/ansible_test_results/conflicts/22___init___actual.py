@@ -36,6 +36,7 @@ class PlayBook(object):
     runs an ansible playbook, given as a datastructure or YAML filename.
     A playbook is a deployment, config management, or automation based
     set of commands to run in series.
+
     multiple plays/tasks do not execute simultaneously, but tasks in each
     pattern do execute in parallel (according to the number of forks
     requested) among the hosts they address
@@ -252,13 +253,11 @@ class PlayBook(object):
     def _trim_unavailable_hosts(self, hostlist=[]):
         ''' returns a list of hosts that haven't failed and aren't dark '''
         return [ h for h in hostlist if (h not in self.stats.failures) and (h not in self.stats.dark)]
-        ''' returns a list of hosts that haven't failed and aren't dark '''
-        return [ h for h in hostlist if (h not in self.stats.failures) and (h not in self.stats.dark)]
     # *****************************************************
     def _run_task_internal(self, task):
         ''' run a particular module step in a playbook '''
         hosts = self._trim_unavailable_hosts(task.play._play_hosts)
-        self.inventory.restrict_to(hosts)
+        runner = ansible.runner.Runner(
             pattern=task.play.hosts,
             inventory=self.inventory,
             module_name=task.module_name,
@@ -273,11 +272,7 @@ class PlayBook(object):
             default_vars=task.default_vars,
             private_key_file=self.private_key_file,
             setup_cache=self.SETUP_CACHE,
-<<<<<<< REMOTE
-run_hosts=hosts
-=======
-basedir=task.play.basedir,
->>>>>>> LOCAL
+            basedir=task.play.basedir,
             conditional=task.when,
             callbacks=self.runner_callbacks,
             sudo=task.sudo,
@@ -290,14 +285,14 @@ basedir=task.play.basedir,
             environment=task.environment,
             complex_args=task.args,
             accelerate=task.play.accelerate,
-        runner = ansible.runner.Runner(
+            accelerate_port=task.play.accelerate_port,
             accelerate_ipv6=task.play.accelerate_ipv6,
+            error_on_undefined_vars=C.DEFAULT_UNDEFINED_VAR_BEHAVIOR,
             su=task.su,
             su_user=task.su_user,
             su_pass=task.su_pass
-            accelerate_port=task.play.accelerate_port,
-            error_on_undefined_vars=C.DEFAULT_UNDEFINED_VAR_BEHAVIOR,
         )
+        self.inventory.restrict_to(hosts)
         if task.async_seconds == 0:
             results = runner.run()
         else:
@@ -397,7 +392,7 @@ basedir=task.play.basedir,
         self.inventory.restrict_to(host_list)
         ansible.callbacks.set_task(self.callbacks, None)
         ansible.callbacks.set_task(self.runner_callbacks, None)
-        # push any variables down to the system
+        setup_results = ansible.runner.Runner(
             pattern=play.hosts,
             module_name='setup',
             module_args={},
@@ -422,8 +417,8 @@ basedir=task.play.basedir,
             diff=self.diff,
             accelerate=play.accelerate,
             accelerate_port=play.accelerate_port,
-        setup_results = ansible.runner.Runner(
         ).run()
+        # push any variables down to the system
         self.stats.compute(setup_results, setup=True)
         self.inventory.lift_restriction()
         # now for each result, load into the setup cache so we can
@@ -459,18 +454,16 @@ basedir=task.play.basedir,
     def _run_play(self, play):
         ''' run a list of tasks for a given pattern, in order '''
         self.callbacks.on_play_start(play.name)
-        # Get the hosts for this play
-        play._play_hosts = self.inventory.list_hosts(play.hosts)
         # if no hosts matches this play, drop out
-        if not play._play_hosts:
+        if not self.inventory.list_hosts(play.hosts):
             self.callbacks.on_no_hosts_matched()
             return True
         # get facts from system
         self._do_setup_step(play)
+        # get facts from system
         # now with that data, handle contentional variable file imports!
-        all_hosts = self._trim_unavailable_hosts(play._play_hosts)
+        all_hosts = self._list_available_hosts(play.hosts)
         play.update_vars_files(all_hosts)
-        hosts_count = len(all_hosts)
         serialized_batch = []
         if play.serial <= 0:
             serialized_batch = [all_hosts]
@@ -518,6 +511,7 @@ basedir=task.play.basedir,
                                             new_list.remove(host)
                                 handler.notified_by = new_list
                         continue
+                hosts_count = len(self._list_available_hosts(play.hosts))
                 # only run the task if the requested tags match
                 should_run = False
                 for x in self.only_tags:
@@ -527,6 +521,12 @@ basedir=task.play.basedir,
                             break
                 # Check for tags that we need to skip
                 if should_run:
+                    if not self._run_task(play, task, False):
+                        # whether no hosts matched is fatal or not depends if it was on the initial step.
+                        # if we got exactly no hosts on the first step (setup!) then the host group
+                        # just didn't match anything and that's ok
+                        return False
+                if should_run:
                     if any(x in task.tags for x in self.skip_tags):
                         should_run = False
                 if should_run:
@@ -535,9 +535,7 @@ basedir=task.play.basedir,
                         # if we got exactly no hosts on the first step (setup!) then the host group
                         # just didn't match anything and that's ok
                         return False
-                # Get a new list of what hosts are left as available, the ones that
-                # did not go fail/dark during the task
-                host_list = self._trim_unavailable_hosts(play._play_hosts)
+                host_list = self._list_available_hosts(play.hosts)
                 # Set max_fail_pct to 0, So if any hosts fails, bail out
                 if task.any_errors_fatal and len(host_list) < hosts_count:
                     play.max_fail_pct = 0
@@ -550,7 +548,6 @@ basedir=task.play.basedir,
                     return False
             self.inventory.lift_also_restriction()
         return True
-
 
 
 

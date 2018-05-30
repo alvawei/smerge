@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import os
 
@@ -25,7 +26,6 @@ class Project(object):
     def name(self):
         if self._name is None:
             self._name = self.pipfile_location.split(os.sep)[-2]
-            self._name = self.pipfile_location.split(os.sep)[-2]
         return self._name
     @property
     def pipfile_exists(self):
@@ -52,16 +52,12 @@ class Project(object):
         if self._download_location is None:
             loc = os.sep.join([self.virtualenv_location, 'downloads'])
             self._download_location = loc
-            loc = os.sep.join([self.virtualenv_location, 'downloads'])
-            self._download_location = loc
         # Create the directory, if it doesn't exist.
         mkdir_p(self._download_location)
         return self._download_location
     @property
     def proper_names_location(self):
         if self._proper_names_location is None:
-            loc = os.sep.join([self.virtualenv_location, 'pipenev-proper-names.txt'])
-            self._proper_names_location = loc
             loc = os.sep.join([self.virtualenv_location, 'pipenev-proper-names.txt'])
             self._proper_names_location = loc
         # Create the database, if it doesn't exist.
@@ -78,11 +74,6 @@ class Project(object):
     @property
     def pipfile_location(self):
         if self._pipfile_location is None:
-        try:
-                loc = pipfile.Pipfile.find(max_depth=PIPENV_MAX_DEPTH)
-        except RuntimeError:
-                loc = None
-            self._pipfile_location = loc
             try:
                 loc = pipfile.Pipfile.find(max_depth=PIPENV_MAX_DEPTH)
             except RuntimeError:
@@ -109,12 +100,6 @@ class Project(object):
     def write_toml(self, data, path=None):
         if path is None:
             path = self.pipfile_location
-            path = self.pipfile_location
-        with open(path, 'w') as f:
-            f.write(format_toml(toml.dumps(data)))
-        if path is None:
-            path = self.pipfile_location
-            path = self.pipfile_location
         with open(path, 'w') as f:
             f.write(format_toml(toml.dumps(data)))
     @property
@@ -139,6 +124,8 @@ class Project(object):
         # Write Pipfile.
         self.write_toml(p)
     def add_package_to_pipfile(self, package_name, dev=False):
+        # Find the Pipfile.
+        pipfile_path = pipfile.Pipfile.find()
         # Read and append Pipfile.
         p = self.parsed_pipfile
         key = 'dev-packages' if dev else 'packages'
@@ -146,11 +133,14 @@ class Project(object):
         if key not in p:
             p[key] = {}
         package = convert_deps_from_pip(package_name)
+        p[key][package_name] = package[package_name]
         package_name = [k for k in package.keys()][0]
         # Add the package to the group.
         p[key][package_name] = package[package_name]
         # Write Pipfile.
-        self.write_toml(p)
+        data = format_toml(toml.dumps(p))
+        with open(pipfile_path, 'w') as f:
+            f.write(data)
 
 
 

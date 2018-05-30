@@ -6,6 +6,7 @@ Generate samples of synthetic data sets.
 # License: BSD 3 clause
 
 import numpy as np
+import numpy.random as nr
 
 
 def test_dataset_classif(n_samples=100, n_features=100, param=[1, 1],
@@ -180,6 +181,7 @@ def friedman(n_samples=100, n_features=10, noise_std=1):
     return X, y
 
 
+
 def low_rank_fat_tail(n_samples=100, n_features=100, effective_rank=10,
                       tail_strength=0.5, seed=0):
     """Mostly low rank random matrix with bell-shaped singular values profile
@@ -241,7 +243,6 @@ def low_rank_fat_tail(n_samples=100, n_features=100, effective_rank=10,
     tail = tail_strength * np.exp(-0.1 * singular_ind / effective_rank)
     s = np.identity(n) * (low_rank + tail)
     return np.dot(np.dot(u, s), v.T)
-
 
 
 

@@ -86,66 +86,46 @@ def fetch_20newsgroups(data_home=None, subset='train', categories=None,
         instead of trying to download the data from the source site.
     """
     data_home = get_data_home(data_home=data_home)
-    cache_path = os.path.join(data_home, CACHE_NAME)
     twenty_home = os.path.join(data_home, "20news_home")
-    cache = None
-    if os.path.exists(cache_path):
-        try:
-            cache = pickle.loads(open(cache_path, 'rb').read().decode('zip'))
-            cache = pickle.loads(open(cache_path, 'rb').read().decode('zip'))
-        except Exception, e:
-            print 80*'_'
-            print 'Cache loading failed'
-            print 80*'_'
-            print e
-            print 80*'_'
-            print 'Cache loading failed'
-            print 80*'_'
-            print e
-        try:
-            cache = pickle.loads(open(cache_path, 'rb').read().decode('zip'))
-            cache = pickle.loads(open(cache_path, 'rb').read().decode('zip'))
-        except Exception, e:
-            print 80*'_'
-            print 'Cache loading failed'
-            print 80*'_'
-            print e
-            print 80*'_'
-            print 'Cache loading failed'
-            print 80*'_'
-            print e
-    if cache is None:
-    if subset in ('train', 'test'):
-        data = cache[subset]
-        data = cache[subset]
     archive_path = os.path.join(target_dir, ARCHIVE_NAME)
     train_path = os.path.join(target_dir, TRAIN_FOLDER)
-<<<<<<< REMOTE
-if categories is not None:
-=======
-else:
->>>>>>> LOCAL
-    if shuffle:
-        random_state = check_random_state(random_state)
-        indices = np.arange(data.target.shape[0])
-        random_state.shuffle(indices)
-        data.target = data.target[indices]
-        # Use an object array to shuffle: avoids memory copy
-        data_lst = np.array(data.data, dtype=object)
-        data_lst = data_lst[indices]
-        data.data = data_lst.tolist()
-        random_state = check_random_state(random_state)
-        indices = np.arange(data.target.shape[0])
-        random_state.shuffle(indices)
-        data.target = data.target[indices]
-        # Use an object array to shuffle: avoids memory copy
-        data_lst = np.array(data.data, dtype=object)
-        data_lst = data_lst[indices]
-        data.data = data_lst.tolist()
-    return data
     test_path = os.path.join(target_dir, TEST_FOLDER)
+    if not os.path.exists(twenty_home):
+        if download_if_missing:
+            os.makedirs(twenty_home)
+        else:
+            raise IOError("%s is missing, and will not be created" % twenty_home)
+    if not os.path.exists(train_path) or not os.path.exists(test_path):
+    if not os.path.exists(archive_path):
+            if download_if_missing:
+                logger.warn("Downloading dataset from %s (14 MB)", URL)
+                opener = urllib.urlopen(URL)
+                open(archive_path, 'wb').write(opener.read())
+            else:
+                raise IOError("%s is missing" % archive_path)
+    logger.info("Decompressing %s", archive_path)
+    tarfile.open(archive_path, "r:gz").extractall(path=target_dir)
+    os.remove(archive_path)
+    if subset == 'train':
+        folder_path = train_path
+    else:
+        raise ValueError(
+            "subset can only be 'train' or 'test', got '%s'" % subset)
     elif subset == 'all':
+        data_lst = list()
+        target = list()
+        for subset in ('train', 'test'):
+            data = cache[subset]
+            data_lst.extend(data.data)
+            target.extend(data.target)
+        data.data = data_lst
+        data.target = np.array(target)
+        data.description = 'the 20 newsgroups by date dataset'
+    description = subset + ' subset of the 20 newsgroups by date dataset'
+    return load_filenames(folder_path, description=description,
+                          categories=categories, shuffle=shuffle, random_state=random_state)
 
+ARCHIVE_NAME = "20news-bydate.tar.gz"
 
 
 

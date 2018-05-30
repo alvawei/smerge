@@ -9,7 +9,6 @@ import numpy as np
 from numpy.testing import assert_array_equal
 from numpy.testing import assert_array_almost_equal
 from numpy.testing import assert_equal
-from nose.tools import assert_true
 
 from sklearn.grid_search import GridSearchCV
 from sklearn.ensemble import RandomForestClassifier
@@ -178,6 +177,7 @@ def test_importances():
 
 
 
+
 def test_gridsearch():
     """Check that base trees can be grid-searched."""
     # Random forest
@@ -192,7 +192,6 @@ def test_gridsearch():
                   'max_depth': (1, 2)}
     clf = GridSearchCV(forest, parameters)
     clf.fit(iris.data, iris.target)
-
 
 
 def test_parallel():
@@ -218,6 +217,9 @@ def test_parallel():
     # Use all cores on the classification dataset
     forest = RandomForestClassifier(n_jobs=-1)
     forest.fit(iris.data, iris.target)
+
+
+
 
 
 
@@ -263,10 +265,6 @@ def test_pickle():
     assert_equal(type(obj2), obj.__class__)
     score2 = obj2.score(boston.data, boston.target)
     assert score == score2
-
-
-
-
 
 
 

@@ -40,15 +40,15 @@ for i in xrange(X.shape[0]):
 color_iter = itertools.cycle(['r', 'g', 'b', 'c', 'm'])
 
 
+<<<<<<< REMOTE
 for i, (clf, title) in enumerate([
-        (mixture.GMM(n_components=10, covariance_type='diag'), \
-             "Expectation-maximization"),
-        (mixture.DPGMM(n_components=10, covariance_type='diag', alpha=0.01),
+        (mixture.GMM(n_components=10, cvtype='diag'),
+         "Expectation-maximization"),
+        (mixture.DPGMM(n_components=10, cvtype='diag', alpha=0.01),
          "Dirichlet Process,alpha=0.01"),
-        (mixture.DPGMM(n_components=10, covariance_type='diag', alpha=100.),
+        (mixture.DPGMM(n_components=10, cvtype='diag', alpha=100.),
          "Dirichlet Process,alpha=100.")
         ]):
-
     clf.fit(X, n_iter=100)
     splot = pl.subplot(3, 1, 1 + i)
     Y_ = clf.predict(X)
@@ -69,11 +69,102 @@ for i, (clf, title) in enumerate([
         ell.set_clip_box(splot.bbox)
         ell.set_alpha(0.5)
         splot.add_artist(ell)
-
-
     pl.xlim(-6, 4 * np.pi - 6)
     pl.ylim(-5, 5)
     pl.title(title)
+
+=======
+for i, (clf, title) in enumerate([
+        (mixture.GMM(n_components=10, cvtype='diag'), "Expectation-maximization"),
+        (mixture.DPGMM(n_components=10, cvtype='diag', alpha=0.01),
+         "Dirichlet Process,alpha=0.01"),
+        (mixture.DPGMM(n_components=10, cvtype='diag', alpha=100.),
+         "Dirichlet Process,alpha=100.")
+        ]):
+    clf.fit(X, n_iter=100)
+    splot = pl.subplot(3, 1, 1 + i)
+    Y_ = clf.predict(X)
+    for i, (mean, covar, color) in enumerate(zip(clf.means, clf.covars,
+                                                 color_iter)):
+        v, w = linalg.eigh(covar)
+        u = w[0] / linalg.norm(w[0])
+        # as the DP will not use every component it has access to
+        # unless it needs it, we shouldn't plot the redundant
+        # components.
+        if not np.any(Y_ == i):
+            continue
+        pl.scatter(X[Y_ == i, 0], X[Y_ == i, 1], .8, color=color)
+        # Plot an ellipse to show the Gaussian component
+        angle = np.arctan(u[1] / u[0])
+        angle = 180 * angle / np.pi  # convert to degrees
+        ell = mpl.patches.Ellipse(mean, v[0], v[1], 180 + angle, color=color)
+        ell.set_clip_box(splot.bbox)
+        ell.set_alpha(0.5)
+        splot.add_artist(ell)
+    pl.xlim(-6, 4 * np.pi - 6)
+    pl.ylim(-5, 5)
+    pl.title(title)
+
+=======
+for i, (clf, title) in enumerate([
+        (mixture.GMM(n_components=10, covariance_type='diag'), \
+             "Expectation-maximization"),
+        (mixture.DPGMM(n_components=10, covariance_type='diag', alpha=0.01),
+         "Dirichlet Process,alpha=0.01"),
+        (mixture.DPGMM(n_components=10, covariance_type='diag', alpha=100.),
+         "Dirichlet Process,alpha=100.")
+        ]):
+    clf.fit(X, n_iter=100)
+    splot = pl.subplot(3, 1, 1+i)
+    Y_ = clf.predict(X)
+    for i, (mean, covar, color) in enumerate(zip(clf.means, clf.covars,
+                                                 color_iter)):
+        v, w = linalg.eigh(covar)
+        u = w[0] / linalg.norm(w[0])
+        # as the DP will not use every component it has access to
+        # unless it needs it, we shouldn't plot the redundant
+        # components.
+        if not np.any(Y_ == i):
+            continue
+        pl.scatter(X[Y_== i, 0], X[Y_== i, 1], .8, color=color)
+        # Plot an ellipse to show the Gaussian component
+        angle = np.arctan(u[1]/u[0])
+        angle = 180 * angle / np.pi # convert to degrees
+        ell = mpl.patches.Ellipse(mean, v[0], v[1], 180 + angle, color=color)
+        ell.set_clip_box(splot.bbox)
+        ell.set_alpha(0.5)
+        splot.add_artist(ell)
+    pl.xlim(-6, 4*np.pi-6)
+    pl.ylim(-5, 5)
+    pl.title(title)
+
+>>>>>>> LOCAL
+    clf.fit(X, n_iter=100)
+    splot = pl.subplot(3, 1, 1 + i)
+    Y_ = clf.predict(X)
+    for i, (mean, covar, color) in enumerate(zip(clf.means, clf.covars,
+                                                 color_iter)):
+        v, w = linalg.eigh(covar)
+        u = w[0] / linalg.norm(w[0])
+        # as the DP will not use every component it has access to
+        # unless it needs it, we shouldn't plot the redundant
+        # components.
+        if not np.any(Y_ == i):
+            continue
+        pl.scatter(X[Y_ == i, 0], X[Y_ == i, 1], .8, color=color)
+        # Plot an ellipse to show the Gaussian component
+        angle = np.arctan(u[1] / u[0])
+        angle = 180 * angle / np.pi  # convert to degrees
+        ell = mpl.patches.Ellipse(mean, v[0], v[1], 180 + angle, color=color)
+        ell.set_clip_box(splot.bbox)
+        ell.set_alpha(0.5)
+        splot.add_artist(ell)
+    pl.xlim(-6, 4 * np.pi - 6)
+    pl.ylim(-5, 5)
+    pl.title(title)
+
+
+
 
 pl.show()
 

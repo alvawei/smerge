@@ -177,6 +177,7 @@ def load_files(container_path, description=None, categories=None,
 
 
 
+###############################################################################
 
 def load_iris():
     """Load and return the iris dataset (classification).
@@ -214,17 +215,10 @@ def load_iris():
     for i, ir in enumerate(data_file):
         data[i] = np.asanyarray(ir[:-1], dtype=np.float)
         target[i] = np.asanyarray(ir[-1], dtype=np.int)
-<<<<<<< REMOTE
-return Bunch(data=data, target=target, target_names=target_names,
+    return Bunch(data=data, target=target, target_names=target_names,
                  DESCR=fdescr.read(),
                  feature_names=['sepal length (cm)', 'sepal width (cm)',
                                 'petal length (cm)', 'petal width (cm)'])
-=======
-return Bunch(data=data, target=target, target_names=target_names,
-                 DESCR=fdescr.read(),
-                 feature_names=['sepal length (cm)', 'sepal width (cm)',
-                                'petal length (cm)', 'petal width (cm)'])
->>>>>>> LOCAL
 
 
 
@@ -326,4 +320,28 @@ def load_linnerud():
                  DESCR=fdescr.read())
 
 
+###############################################################################
+# Add the description in the docstring
+
+def _add_notes(function, filename):
+    """Add a notes section to the docstring of a function reading it from a
+    file"""
+    fdescr = open(join(dirname(__file__), 'descr', filename), 'r')
+    # Dedent the docstring
+    doc = function.__doc__.split('\n')
+    doc = '%s\n%s' % (textwrap.dedent(doc[0]),
+                      textwrap.dedent('\n'.join(doc[1:])))
+    # Remove the first line of the description, which contains the
+    # dataset's name
+    descr = '\n'.join(fdescr.read().split('\n')[1:])
+    function.__doc__ = doc + descr
+
+
+for function, filename in ((load_iris, 'iris.rst'),
+                           (load_linnerud, 'linnerud.rst'),
+                           (load_digits, 'digits.rst')):
+    #try:
+        _add_notes(function, filename)
+    #except:
+    #    pass
 

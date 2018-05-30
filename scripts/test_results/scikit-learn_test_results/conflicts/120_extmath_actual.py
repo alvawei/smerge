@@ -6,6 +6,7 @@ Extended math utilities.
 
 import sys
 import math
+import warnings
 
 import numpy as np
 from scipy import linalg
@@ -88,6 +89,63 @@ def density(w, **kwargs):
 
 
 
+def fast_svd(M, k, p=10, q=0):
+    """Computes the k-truncated SVD using random projections
+
+    Parameters
+    ===========
+    M: ndarray or sparse matrix
+        Matrix to decompose
+
+    k: int
+        Number of singular values and vectors to extract.
+
+    p: int (default is 10)
+        Additional number of samples of the range of M to ensure proper
+        conditioning. See the notes below.
+
+    Notes
+    =====
+    This algorithm finds the exact truncated singular values decomposition
+    using randomization to speed up the computations. It is particularly
+    fast on large matrices on which you whish to extract only a small
+    number of components.
+
+    (k + p) should be strictly higher than the rank of M. This can be
+    checked by ensuring that the lowest extracted singular value is on
+    the order of the machine precision of floating points.
+
+    References: Finding structure with randomness: Stochastic
+    algorithms for constructing approximate matrix decompositions,
+    Halko, et al., 2009 (arXiv:909)
+
+    """
+    # lazy import of scipy sparse, because it is very slow.
+    from scipy import sparse
+    if p == None:
+        p = k
+    # generating random gaussian vectors r with shape: (M.shape[1], k + p)
+    r = np.random.normal(size=(M.shape[1], k + p))
+    # sampling the range of M using by linear projection of r
+    Y = _sparsedot(M, r)
+    del r
+    for i in xrange(q):
+        Y = _sparsedot(M, _sparsedot(M.T, Y))
+    # extracting an orthonormal basis of the M range samples
+    Q, R = linalg.qr(Y)
+    del R
+    # only keep the (k + p) first vectors of the basis
+    Q = Q[:, :(k + p)]
+    # project M to the (k + p) dimensional space using the basis vectors
+    B = _sparsedot(Q.T, M)
+    # compute the SVD on the thin matrix: (k + p) wide
+    Uhat, s, V = linalg.svd(B, full_matrices=False)
+    del B
+    if s[-1] > 1e-10:
+        warnings.warn("the image of M is under-sampled and the results "
+                      "might be incorrect: try again while increasing k or p")
+    U = np.dot(Q, Uhat)
+    return U[:, :k], s[:k], V[:k, :]
 
 
 

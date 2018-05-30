@@ -1219,19 +1219,18 @@ def _fit_and_score(estimator, X, y, scorer, train, test, verbose, parameters,
     # Adjust lenght of sample weights
     n_samples = _num_samples(X)
     fit_params = fit_params if fit_params is not None else {}
-    fit_params = dict([(k, (v.tocsr()[train] if sp.issparse(v)
 <<<<<<< REMOTE
-if not sp.issparse(v) and hasattr(v, '__len__') and
-=======
-else np.asarray(v)[train])
->>>>>>> LOCAL
-<<<<<<< REMOTE
-len(v) == n_samples else v[train]
-=======
-if _num_samples(v) == n_samples else v)
->>>>>>> LOCAL
+fit_params = dict([(k, np.asarray(v)[train]
+                        if not sp.issparse(v) and hasattr(v, '__len__') and
+                        len(v) == n_samples else v[train]
                         if sp.issparse(v) and v.shape[0] == n_samples else v)
                        for k, v in fit_params.items()])
+=======
+fit_params = dict([(k, (v.tocsr()[train] if sp.issparse(v)
+                            else np.asarray(v)[train])
+                        if _num_samples(v) == n_samples else v)
+                       for k, v in fit_params.items()])
+>>>>>>> LOCAL
     if parameters is not None:
         estimator.set_params(**parameters)
     start_time = time.time()

@@ -16,17 +16,21 @@ if __name__ == "__main__":
     noarch_lib = os.path.abspath( os.path.join(python_path, 'lib', 'noarch'))
     sys.path.append(noarch_lib)
 
+    gi.require_version('Gtk', '3.0')
+import gtk
+    gi.require_version('Gdk', '3.0')
+    from gi.repository import Gtk as gtk
+    from gi.repository import Gdk as gdk
 gtk.gdk.threads_init()
 
 try:
 import gi
 import pynotify
-gi.require_version('Gtk', '3.0')
-gi.require_version('Gdk', '3.0')
-from gi.repository import Gtk as gtk
-from gi.repository import Gdk as gdk
+    gi.require_version('Gtk', '3.0')
+    gi.require_version('Gdk', '3.0')
+    from gi.repository import Gtk as gtk
+    from gi.repository import Gdk as gdk
     use_gi = True
-    pynotify.init('XX-Net Notify')
 except:
     import pygtk
     pygtk.require('2.0')
@@ -36,25 +40,12 @@ except:
 
 import module_init
 
-try:
-<<<<<<< REMOTE
-import platform
-=======
-gi.require_version('Notify', '0.7')
->>>>>>> LOCAL
-from gi.repository import Notify as notify
-import appindicator
-        new_notification = notify.Notification.new
-    gi.require_version('AppIndicator3', '0.1')
-    from gi.repository import AppIndicator3 as appindicator
-except:
-<<<<<<< REMOTE
-platform = None
-=======
-xlog.warn("import Notify fail, please install libnotify if possible.")
->>>>>>> LOCAL
-    pynotify = None
-    appindicator = None
+    try:
+    import platform
+    import appindicator
+    except:
+    platform = None
+        appindicator = None
 
 
 class Gtk_tray():
@@ -62,8 +53,8 @@ class Gtk_tray():
     def __init__(self):
         logo_filename = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'web_ui', 'favicon.ico')
         if platform and appindicator and platform.dist()[0].lower() == 'ubuntu':
-        else:
             self.trayicon = self.ubuntu_trayicon(logo_filename)
+        else:
             self.trayicon = self.gtk_trayicon(logo_filename)
     def gtk_trayicon(self, logo_filename):
 <<<<<<< REMOTE
@@ -77,6 +68,10 @@ trayicon.set_from_file(logo_filename)
 trayicon.set_status(appind_status)
 >>>>>>> LOCAL
         trayicon.connect('popup-menu', lambda i, b, t: self.make_menu().popup(None, None, gtk.status_icon_position_menu, b, t, self.trayicon))
+        trayicon.connect('activate', self.show_control_web)
+        trayicon.set_tooltip('XX-Net')
+        trayicon.set_visible(True)
+        return trayicon
     def ubuntu_trayicon(self, logo_filename):
         trayicon = appindicator.Indicator('XX-Net', 'indicator-messages', appindicator.CATEGORY_APPLICATION_STATUS)
         trayicon.set_status(appindicator.STATUS_ACTIVE)
@@ -87,10 +82,6 @@ trayicon.connect('popup-menu', lambda i, b, t: popup_trayicon_menu(self.make_men
 >>>>>>> LOCAL
         trayicon.set_icon(logo_filename)
         trayicon.set_menu(self.make_menu())
-        return trayicon
-        trayicon.connect('activate', self.show_control_web)
-        trayicon.set_tooltip('XX-Net')
-        trayicon.set_visible(True)
         return trayicon
     def make_menu(self):
         menu = gtk.Menu()

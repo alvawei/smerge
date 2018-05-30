@@ -19,26 +19,33 @@ class SparseBaseLibSVM(BaseLibSVM):
     def fit(self, X, y, class_weight=None, sample_weight=None):
         """
         Fit the SVM model according to the given training data and parameters.
+
         Parameters
         ----------
         X : sparse matrix, shape = [n_samples, n_features]
             Training vectors, where n_samples is the number of samples and
             n_features is the number of features.
+
         y : array-like, shape = [n_samples]
             Target values (integers in classification, real numbers in
             regression)
+
         class_weight : {dict, 'auto'}, optional
             Weights associated with classes in the form
             {class_label : weight}. If not given, all classes are
             supposed to have weight one.
+
             The 'auto' mode uses the values of y to automatically adjust
             weights inversely proportional to class frequencies.
+
         sample_weight : array-like, shape = [n_samples], optional
             Weights applied to individual samples (1. for unweighted).
+
         Returns
         -------
         self : object
             Returns an instance of self.
+
         Notes
         -----
         For maximum effiency, use a sparse matrix in csr format
@@ -70,7 +77,6 @@ class SparseBaseLibSVM(BaseLibSVM):
         C = self.C
         if self.scale_C:
             C = C / float(X.shape[0])
-            C = C / float(X.shape[0])
         self.support_vectors_, dual_coef_data, self.intercept_, self.label_, \
             self.n_support_, self.probA_, self.probB_ = \
             libsvm.libsvm_sparse_train(
@@ -92,13 +98,17 @@ class SparseBaseLibSVM(BaseLibSVM):
         """
         This function does classification or regression on an array of
         test vectors T.
+
         For a classification model, the predicted class for each
         sample in T is returned.  For a regression model, the function
         value of T calculated is returned.
+
         For an one-class model, +1 or -1 is returned.
+
         Parameters
         ----------
         T : scipy.sparse.csr, shape = [n_samples, n_features]
+
         Returns
         -------
         C : array, shape = [n_samples]
@@ -121,15 +131,18 @@ class SparseBaseLibSVM(BaseLibSVM):
         """
         This function does classification or regression on a test vector X
         given a model with probability information.
+
         Parameters
         ----------
         X : scipy.sparse.csr, shape = [n_samples, n_features]
+
         Returns
         -------
         X : array-like, shape = [n_samples, n_classes]
             Returns the probability of the sample for each class in
             the model, where classes are ordered by arithmetical
             order.
+
         Notes
         -----
         The probability model is created using cross validation, so
@@ -182,24 +195,11 @@ class SparseBaseLibSVM(BaseLibSVM):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class SparseBaseLibLinear(BaseLibLinear):
     def fit(self, X, y, class_weight=None):
         """
         Fit the model using X, y as training data.
+
         Parameters
         ----------
         X : sparse matrix, shape = [n_samples, n_features]
@@ -207,6 +207,7 @@ class SparseBaseLibLinear(BaseLibLinear):
             n_features is the number of features.
         y : array, shape = [n_samples]
             Target vector relative to X
+
         Returns
         -------
         self : object
@@ -225,7 +226,6 @@ class SparseBaseLibLinear(BaseLibLinear):
         C = self.C
         if self.scale_C:
             C = C / float(X.shape[0])
-            C = C / float(X.shape[0])
         self.raw_coef_, self.label_ = \
                        liblinear.csr_train_wrap(X.shape[1], X.data, X.indices,
                        X.indptr, y,
@@ -236,9 +236,11 @@ class SparseBaseLibLinear(BaseLibLinear):
     def predict(self, X):
         """
         Predict target values of X according to the fitted model.
+
         Parameters
         ----------
         X : sparse matrix, shape = [n_samples, n_features]
+
         Returns
         -------
         C : array, shape = [n_samples]
@@ -259,9 +261,11 @@ class SparseBaseLibLinear(BaseLibLinear):
         """
         Return the decision function of X according to the trained
         model.
+
         Parameters
         ----------
         X : sparse matrix, shape = [n_samples, n_features]
+
         Returns
         -------
         T : array-like, shape = [n_samples, n_class]
@@ -283,11 +287,6 @@ class SparseBaseLibLinear(BaseLibLinear):
             return -dec_func
         else:
             return dec_func
-
-
-
-
-
 
 
 

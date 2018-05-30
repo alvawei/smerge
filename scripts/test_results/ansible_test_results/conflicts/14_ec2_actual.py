@@ -14,8 +14,8 @@ variables needed for Boto have already been set:
 
 This script also assumes there is an ec2.ini file alongside it.  To specify a
 different path to ec2.ini, define the EC2_INI_PATH environment variable:
-    export EC2_INI_PATH=/path/to/my_ec2.ini
 
+    export EC2_INI_PATH=/path/to/my_ec2.ini
 
 If you're using eucalyptus you need to set the above variables and
 you need to define:
@@ -210,15 +210,20 @@ class Ec2Inventory(object):
 <<<<<<< REMOTE
 self.rds_enabled = True
 =======
-if config.has_option('ec2', 'all_instances'):
+        if config.has_option('ec2', 'all_instances'):
+            self.all_instances = config.getboolean('ec2', 'all_instances')
+
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-if config.has_option('ec2', 'rds'):
+        if config.has_option('ec2', 'rds'):
+            self.rds_enabled = config.getboolean('ec2', 'rds')
+
 =======
-else:
+        else:
+            self.all_instances = False
+
 >>>>>>> LOCAL
         if config.has_option('ec2', 'all_rds_instances'):
-            self.all_rds_instances = config.getboolean('ec2', 'all_rds_instances')
             self.all_rds_instances = config.getboolean('ec2', 'all_rds_instances')
         else:
             self.all_rds_instances = False
@@ -232,10 +237,8 @@ else:
         # Configure nested groups instead of flat namespace.
         if config.has_option('ec2', 'nested_groups'):
             self.nested_groups = config.getboolean('ec2', 'nested_groups')
-            self.nested_groups = config.getboolean('ec2', 'nested_groups')
         else:
             self.nested_groups = False
-            dest =  getattr(instance, self.destination_variable)
     def parse_cli_args(self):
         ''' Command line argument processing '''
         parser = argparse.ArgumentParser(description='Produce an Ansible Inventory file based on EC2')
@@ -253,7 +256,6 @@ else:
         for region in self.regions:
             self.get_instances_by_region(region)
             if self.rds_enabled:
-            self.get_rds_instances_by_region(region)
                 self.get_rds_instances_by_region(region)
         self.write_to_cache(self.inventory, self.cache_path_cache)
         self.write_to_cache(self.index, self.cache_path_index)
@@ -264,6 +266,8 @@ else:
             if self.eucalyptus:
                 conn = boto.connect_euca(host=self.eucalyptus_host)
                 conn.APIVersion = '2010-08-31'
+            else:
+                conn = ec2.connect_to_region(region)
             # connect_to_region will fail "silently" by returning None if the region name is wrong or not supported
             if conn is None:
                 print("region name: %s likely not supported, or AWS is down.  connection to region failed." % region)
@@ -278,7 +282,20 @@ else:
             print e
             sys.exit(1)
     def get_rds_instances_by_region(self, region):
-    ''' Makes an AWS API call to the list of RDS instances in a particular
+        ''' Makes an AWS API call to the list of RDS instances in a particular
+        region '''
+        try:
+            conn = rds.connect_to_region(region)
+            if conn:
+                instances = conn.get_all_dbinstances()
+                for instance in instances:
+                    self.add_rds_instance(instance, region)
+        except boto.exception.BotoServerError, e:
+            if not e.reason == "Forbidden":
+                print "Looks like AWS RDS is down: "
+                print e
+                sys.exit(1)
+        ''' Makes an AWS API call to the list of RDS instances in a particular
         region '''
         try:
             conn = rds.connect_to_region(region)
@@ -296,6 +313,8 @@ else:
         if self.eucalyptus:
             conn = boto.connect_euca(self.eucalyptus_host)
             conn.APIVersion = '2010-08-31'
+        else:
+            conn = ec2.connect_to_region(region)
         # connect_to_region will fail "silently" by returning None if the region name is wrong or not supported
         if conn is None:
             print("region name: %s likely not supported, or AWS is down.  connection to region failed." % region)
@@ -307,13 +326,14 @@ else:
     def add_instance(self, instance, region):
         ''' Adds an instance to the inventory and index, as long as it is
         addressable '''
-        # Only want running instances unless all_instances is True
-        if not self.all_instances and instance.state != 'running':
+        # Only want running instances
+        if instance.state != 'running':
             return
         # Select the best destination address
         if instance.subnet_id:
             dest = getattr(instance, self.vpc_destination_variable)
         else:
+            dest =  getattr(instance, self.destination_variable)
         if not dest:
             # Skip instances we cannot address (e.g. private VPC subnet)
             return
@@ -321,40 +341,25 @@ else:
         self.index[dest] = [region, instance.id]
         # Inventory: Group by instance ID (always a group of 1)
         self.inventory[instance.id] = [dest]
-        if self.nested_groups:
-            self.push_group(self.inventory, 'instances', instance.id)
-            self.push_group(self.inventory, 'instances', instance.id)
         # Inventory: Group by region
-        if self.nested_groups:
-            self.push_group(self.inventory, 'regions', region)
-            self.push_group(self.inventory, 'regions', region)
-        else:
             self.push(self.inventory, region, dest)
-        self.push(self.inventory, region, dest)
         # Inventory: Group by availability zone
-        if self.nested_groups:
-            self.push_group(self.inventory, region, instance.placement)
-            self.push_group(self.inventory, region, instance.placement)
         self.push(self.inventory, instance.placement, dest)
-        type_name = self.to_safe('type_' + instance.instance_type)
-        if self.nested_groups:
-            self.push_group(self.inventory, 'types', type_name)
-            self.push_group(self.inventory, 'types', type_name)
         # Inventory: Group by instance type
+        self.push(self.inventory, self.to_safe('type_' + instance.instance_type), dest)
         # Inventory: Group by key pair
         if instance.key_name:
             key_name = self.to_safe('key_' + instance.key_name)
+            self.push(self.inventory, key_name, dest)
             if self.nested_groups:
-                self.push_group(self.inventory, 'keys', key_name)
                 self.push_group(self.inventory, 'keys', key_name)
         # Inventory: Group by security group
         try:
             for group in instance.groups:
                 key = self.to_safe("security_group_" + group.name)
+                self.push(self.inventory, key, dest)
                 if self.nested_groups:
                     self.push_group(self.inventory, 'security_groups', key)
-                    self.push_group(self.inventory, 'security_groups', key)
-            self.push(self.inventory, key_name, dest)
         except AttributeError:
             print 'Package boto seems a bit older.'
             print 'Please upgrade boto >= 2.3.0.'
@@ -362,13 +367,10 @@ else:
         # Inventory: Group by tag keys
         for k, v in instance.tags.iteritems():
             key = self.to_safe("tag_" + k + "=" + v)
-                self.push(self.inventory, key, dest)
+            self.push(self.inventory, key, dest)
             if self.nested_groups:
                 self.push_group(self.inventory, 'tags', self.to_safe("tag_" + k))
                 self.push_group(self.inventory, self.to_safe("tag_" + k), key)
-                self.push_group(self.inventory, 'tags', self.to_safe("tag_" + k))
-                self.push_group(self.inventory, self.to_safe("tag_" + k), key)
-            self.push(self.inventory, key, dest)
         # Inventory: Group by Route53 domain names if enabled
         if self.route53_enabled:
             route53_names = self.get_instance_route53_names(instance)
@@ -376,127 +378,13 @@ else:
                 self.push(self.inventory, name, dest)
                 if self.nested_groups:
                     self.push_group(self.inventory, 'route53', name)
-                    self.push_group(self.inventory, 'route53', name)
-        self.push(self.inventory, type_name, dest)
-        # Global Tag: tag all EC2 instances
-        self.inventory["_meta"]["hostvars"][dest] = self.get_host_info_dict_from_instance(instance)
-    def add_rds_instance(self, instance, region):
-        ''' Adds an RDS instance to the inventory and index, as long as it is
-        addressable '''
-        # Only want available instances unless all_rds_instances is True
-        if not self.all_rds_instances and instance.status != 'available':
-            return
-        # Select the best destination address
-        #if instance.subnet_id:
-            #dest = getattr(instance, self.vpc_destination_variable)
-        #else:
-            #dest =  getattr(instance, self.destination_variable)
-        dest = instance.endpoint[0]
-        if not dest:
-            # Skip instances we cannot address (e.g. private VPC subnet)
-            return
-        # Add to index
-        self.index[dest] = [region, instance.id]
-        # Inventory: Group by instance ID (always a group of 1)
-        self.inventory[instance.id] = [dest]
-        if self.nested_groups:
-            self.push_group(self.inventory, 'instances', instance.id)
-            self.push_group(self.inventory, 'instances', instance.id)
-        # Inventory: Group by region
-        if self.nested_groups:
-            self.push_group(self.inventory, 'regions', region)
-            self.push_group(self.inventory, 'regions', region)
-        else:
-            self.push(self.inventory, region, dest)
-        self.push(self.inventory, region, dest)
-        # Inventory: Group by availability zone
-        if self.nested_groups:
-            self.push_group(self.inventory, region, instance.availability_zone)
-            self.push_group(self.inventory, region, instance.availability_zone)
-        self.push(self.inventory, instance.availability_zone, dest)
-        type_name = self.to_safe('type_' + instance.instance_class)
-        self.push(self.inventory, type_name, dest)
-        if self.nested_groups:
-            self.push_group(self.inventory, 'types', type_name)
-            self.push_group(self.inventory, 'types', type_name)
-        # Inventory: Group by instance type
-        # Inventory: Group by security group
-        try:
-            if instance.security_group:
-                key = self.to_safe("security_group_" + instance.security_group.name)
-                self.push(self.inventory, key, dest)
-                if self.nested_groups:
-                    self.push_group(self.inventory, 'security_groups', key)
-                    self.push_group(self.inventory, 'security_groups', key)
         except AttributeError:
             print 'Package boto seems a bit older.'
             print 'Please upgrade boto >= 2.3.0.'
             sys.exit(1)
-        # Inventory: Group by engine
-        if self.nested_groups:
-            self.push_group(self.inventory, 'rds_engines', self.to_safe("rds_" + instance.engine))
-            self.push_group(self.inventory, 'rds_engines', self.to_safe("rds_" + instance.engine))
-        self.push(self.inventory, self.to_safe("rds_" + instance.engine), dest)
-        # Inventory: Group by parameter group
-        if self.nested_groups:
-            self.push_group(self.inventory, 'rds_parameter_groups', self.to_safe("rds_parameter_group_" + instance.parameter_group.name))
-            self.push_group(self.inventory, 'rds_parameter_groups', self.to_safe("rds_parameter_group_" + instance.parameter_group.name))
-        self.push(self.inventory, self.to_safe("rds_parameter_group_" + instance.parameter_group.name), dest)
-        self.push(self.inventory, 'rds', dest)
+        # Global Tag: tag all EC2 instances
+                self.push(self.inventory, name, dest)
         self.inventory["_meta"]["hostvars"][dest] = self.get_host_info_dict_from_instance(instance)
-        # Global Tag: all RDS instances
-        self.push(self.inventory, 'ec2', dest)
-    def get_route53_records(self):
-        ''' Get and store the map of resource records to domain names that
-        point to them. '''
-        r53_conn = route53.Route53Connection()
-        all_zones = r53_conn.get_zones()
-        route53_zones = [ zone for zone in all_zones if zone.name[:-1]
-                          not in self.route53_excluded_zones ]
-        self.route53_records = {}
-        for zone in route53_zones:
-            rrsets = r53_conn.get_all_rrsets(zone.id)
-            for record_set in rrsets:
-                record_name = record_set.name
-                if record_name.endswith('.'):
-                    record_name = record_name[:-1]
-                for resource in record_set.resource_records:
-                    self.route53_records.setdefault(resource, set())
-                    self.route53_records[resource].add(record_name)
-    def get_instance_route53_names(self, instance):
-        ''' Check if an instance is referenced in the records we have from
-        Route53. If it is, return the list of domain names pointing to said
-        instance. If nothing points to it, return an empty list. '''
-        instance_attributes = [ 'public_dns_name', 'private_dns_name',
-                                'ip_address', 'private_ip_address' ]
-        name_list = set()
-        for attrib in instance_attributes:
-            try:
-                value = getattr(instance, attrib)
-            except AttributeError:
-                continue
-            if value in self.route53_records:
-                name_list.update(self.route53_records[value])
-        return list(name_list)
-    def push_group(self, my_dict, key, element):
-        ''' Push a group as a child of another group. '''
-        parent_group = my_dict.setdefault(key, {})
-        if not isinstance(parent_group, dict):
-            parent_group = my_dict[key] = {'hosts': parent_group}
-            parent_group = my_dict[key] = {'hosts': parent_group}
-        child_groups = parent_group.setdefault('children', [])
-        if element not in child_groups:
-            child_groups.append(element)
-            child_groups.append(element)
-        ''' Push a group as a child of another group. '''
-        parent_group = my_dict.setdefault(key, {})
-        if not isinstance(parent_group, dict):
-            parent_group = my_dict[key] = {'hosts': parent_group}
-            parent_group = my_dict[key] = {'hosts': parent_group}
-        child_groups = parent_group.setdefault('children', [])
-        if element not in child_groups:
-            child_groups.append(element)
-            child_groups.append(element)
     def get_host_info_dict_from_instance(self, instance):
         instance_vars = {}
         for key in vars(instance):
@@ -538,8 +426,118 @@ else:
                 #print key
                 #print type(value)
                 #print value
+        return instance_vars
+    def add_rds_instance(self, instance, region):
+        ''' Adds an RDS instance to the inventory and index, as long as it is
+        addressable '''
+        # Only want available instances
+        if instance.status != 'available':
+            return
+        # Select the best destination address
+        #if instance.subnet_id:
+            #dest = getattr(instance, self.vpc_destination_variable)
+        #else:
+            #dest =  getattr(instance, self.destination_variable)
+        dest = instance.endpoint[0]
+        if not dest:
+            # Skip instances we cannot address (e.g. private VPC subnet)
+            return
+        # Add to index
+        self.index[dest] = [region, instance.id]
+        # Inventory: Group by instance ID (always a group of 1)
+        self.inventory[instance.id] = [dest]
+        # Inventory: Group by region
+            self.push(self.inventory, region, dest)
+        # Inventory: Group by availability zone
+        self.push(self.inventory, instance.availability_zone, dest)
+        # Inventory: Group by instance type
+        self.push(self.inventory, self.to_safe('type_' + instance.instance_class), dest)
+        # Inventory: Group by security group
+        try:
+            if instance.security_group:
+                key = self.to_safe("security_group_" + instance.security_group.name)
+                self.push(self.inventory, key, dest)
+                if self.nested_groups:
+                    self.push_group(self.inventory, 'security_groups', key)
+        except AttributeError:
+            print 'Package boto seems a bit older.'
+            print 'Please upgrade boto >= 2.3.0.'
+            sys.exit(1)
+        # Inventory: Group by engine
+        self.push(self.inventory, self.to_safe("rds_" + instance.engine), dest)
+        # Inventory: Group by parameter group
+        self.push(self.inventory, self.to_safe("rds_parameter_group_" + instance.parameter_group.name), dest)
+        # Global Tag: all RDS instances
+        self.push(self.inventory, 'ec2', dest)
+        self.push(self.inventory, self.to_safe("rds_" + instance.engine), dest)
+    def get_route53_records(self):
+        ''' Get and store the map of resource records to domain names that
+        point to them. '''
+        r53_conn = route53.Route53Connection()
+        all_zones = r53_conn.get_zones()
+        route53_zones = [ zone for zone in all_zones if zone.name[:-1]
+                          not in self.route53_excluded_zones ]
+        self.route53_records = {}
+        for zone in route53_zones:
+            rrsets = r53_conn.get_all_rrsets(zone.id)
+            for record_set in rrsets:
+                record_name = record_set.name
+                if record_name.endswith('.'):
+                    record_name = record_name[:-1]
+                for resource in record_set.resource_records:
+                    self.route53_records.setdefault(resource, set())
+                    self.route53_records[resource].add(record_name)
+    def get_instance_route53_names(self, instance):
+        ''' Check if an instance is referenced in the records we have from
+        Route53. If it is, return the list of domain names pointing to said
+        instance. If nothing points to it, return an empty list. '''
+        instance_attributes = [ 'public_dns_name', 'private_dns_name',
+                                'ip_address', 'private_ip_address' ]
+        name_list = set()
+        for attrib in instance_attributes:
+            try:
+                value = getattr(instance, attrib)
+            except AttributeError:
+                continue
+            if value in self.route53_records:
+                name_list.update(self.route53_records[value])
+        return list(name_list)
+    def get_host_info_dict_from_instance(self, instance):
+        instance_vars = {}
+        for key in vars(instance):
+            value = getattr(instance, key)
+            key = self.to_safe('ec2_' + key)
+            # Handle complex types
+            # state/previous_state changed to properties in boto in https://github.com/boto/boto/commit/a23c379837f698212252720d2af8dec0325c9518
+            if key == 'ec2__state':
+                instance_vars['ec2_state'] = instance.state or ''
+                instance_vars['ec2_state_code'] = instance.state_code
+            elif key == 'ec2__previous_state':
+                instance_vars['ec2_previous_state'] = instance.previous_state or ''
+                instance_vars['ec2_previous_state_code'] = instance.previous_state_code
+            elif type(value) in [int, bool]:
+                instance_vars[key] = value
+            elif type(value) in [str, unicode]:
+                instance_vars[key] = value.strip()
+            elif type(value) == type(None):
+                instance_vars[key] = ''
+            elif key == 'ec2_region':
+                instance_vars[key] = value.name
+            elif key == 'ec2__placement':
+                instance_vars['ec2_placement'] = value.zone
+            elif key == 'ec2_tags':
+                for k, v in value.iteritems():
+                    key = self.to_safe('ec2_tag_' + k)
+                    instance_vars[key] = v
+            elif key == 'ec2_groups':
+                group_ids = []
+                group_names = []
+                for group in value:
+                    group_ids.append(group.id)
+                    group_names.append(group.name)
+                instance_vars["ec2_security_group_ids"] = ','.join(group_ids)
+                instance_vars["ec2_security_group_names"] = ','.join(group_names)
             else:
-                conn = ec2.connect_to_region(region)
                 pass
                 # TODO Product codes if someone finds them useful
                 #print key
@@ -567,13 +565,8 @@ else:
         if isinstance(group_info, dict):
             host_list = group_info.setdefault('hosts', [])
             host_list.append(element)
-            host_list = group_info.setdefault('hosts', [])
-            host_list.append(element)
         else:
             group_info.append(element)
-            group_info.append(element)
-        else:
-            conn = ec2.connect_to_region(region)
     def get_inventory_from_cache(self):
         ''' Reads the inventory from the cache file and returns it as a JSON
         object '''
@@ -601,7 +594,6 @@ else:
         if pretty:
             return json.dumps(data, sort_keys=True, indent=2)
         else:
-            return json.dumps(data)
             return json.dumps(data)
 
 
@@ -719,6 +711,7 @@ else:
 
 
 # Run the script
+Ec2Inventory()
 Ec2Inventory()
 
 

@@ -9,9 +9,9 @@ import numpy as np
 
 from .base import LinearModel
 from ..utils.extmath import safe_sparse_dot
-from ..utils import safe_asarray
 from ..preprocessing import LabelBinarizer
 from ..grid_search import GridSearchCV
+from ..utils import safe_asarray
 
 
 def _solve(A, b, solver, tol):
@@ -275,10 +275,6 @@ class RidgeClassifier(Ridge):
                 fit_intercept=fit_intercept, normalize=normalize,
                 copy_X=copy_X, tol=tol)
         self.class_weight = class_weight
-        super(RidgeClassifier, self).__init__(alpha=alpha,
-                fit_intercept=fit_intercept, normalize=normalize,
-                copy_X=copy_X, tol=tol)
-        self.class_weight = class_weight
     def fit(self, X, y, solver='auto'):
         """Fit Ridge regression model.
 
@@ -304,7 +300,8 @@ class RidgeClassifier(Ridge):
         """
         self.label_binarizer = LabelBinarizer()
         Y = self.label_binarizer.fit_transform(y)
-        Ridge.fit(self, X, Y, solver=solver, sample_weight=sample_weight_classes)
+        self.label_binarizer = LabelBinarizer()
+        Ridge.fit(self, X, Y, solver=solver)
         return self
     def decision_function(self, X):
         return Ridge.decision_function(self, X)
@@ -383,14 +380,7 @@ class _RidgeGCV(LinearModel):
     def _decomp_diag(self, v_prime, Q):
         # compute diagonal of the matrix: dot(Q, dot(diag(v_prime), Q^T))
         return (v_prime * Q ** 2).sum(axis=-1)
-        # compute diagonal of the matrix: dot(Q, dot(diag(v_prime), Q^T))
-        return (v_prime * Q ** 2).sum(axis=-1)
     def _diag_dot(self, D, B):
-        # compute dot(diag(D), B)
-        if len(B.shape) > 1:
-            # handle case where B is > 1-d
-            D = D[(slice(None), ) + (np.newaxis, ) * (len(B.shape) - 1)]
-        return D * B
         # compute dot(diag(D), B)
         if len(B.shape) > 1:
             # handle case where B is > 1-d
@@ -404,16 +394,6 @@ class _RidgeGCV(LinearModel):
         # handle case where y is 2-d
         if len(y.shape) != 1:
             G_diag = G_diag[:, np.newaxis]
-            G_diag = G_diag[:, np.newaxis]
-        return (c / G_diag) ** 2, c
-        # don't construct matrix G, instead compute action on y & diagonal
-        w = 1.0 / (v + alpha)
-        c = np.dot(Q, self._diag_dot(w, QT_y))
-        G_diag = self._decomp_diag(w, Q)
-        # handle case where y is 2-d
-        if len(y.shape) != 1:
-            G_diag = G_diag[:, np.newaxis]
-            G_diag = G_diag[:, np.newaxis]
         return (c / G_diag) ** 2, c
     def _values(self, alpha, y, v, Q, QT_y):
         # don't construct matrix G, instead compute action on y & diagonal
@@ -423,29 +403,10 @@ class _RidgeGCV(LinearModel):
         # handle case where y is 2-d
         if len(y.shape) != 1:
             G_diag = G_diag[:, np.newaxis]
-            G_diag = G_diag[:, np.newaxis]
-        return y - (c / G_diag), c
-        # don't construct matrix G, instead compute action on y & diagonal
-        w = 1.0 / (v + alpha)
-        c = np.dot(Q, self._diag_dot(w, QT_y))
-        G_diag = self._decomp_diag(w, Q)
-        # handle case where y is 2-d
-        if len(y.shape) != 1:
-            G_diag = G_diag[:, np.newaxis]
-            G_diag = G_diag[:, np.newaxis]
         return y - (c / G_diag), c
     def _pre_compute_svd(self, X, y):
         from scipy import sparse
         if sparse.issparse(X) and hasattr(X, 'toarray'):
-            X = X.toarray()
-            X = X.toarray()
-        U, s, _ = np.linalg.svd(X, full_matrices=0)
-        v = s ** 2
-        UT_y = np.dot(U.T, y)
-        return v, U, UT_y
-        from scipy import sparse
-        if sparse.issparse(X) and hasattr(X, 'toarray'):
-            X = X.toarray()
             X = X.toarray()
         U, s, _ = np.linalg.svd(X, full_matrices=0)
         v = s ** 2
@@ -458,34 +419,12 @@ class _RidgeGCV(LinearModel):
         if len(y.shape) != 1:
             # handle case where y is 2-d
             G_diag = G_diag[:, np.newaxis]
-            # handle case where y is 2-d
-            G_diag = G_diag[:, np.newaxis]
-        return (c / G_diag) ** 2, c
-        w = ((v + alpha) ** -1) - (alpha ** -1)
-        c = np.dot(U, self._diag_dot(w, UT_y)) + (alpha ** -1) * y
-        G_diag = self._decomp_diag(w, U) + (alpha ** -1)
-        if len(y.shape) != 1:
-            # handle case where y is 2-d
-            G_diag = G_diag[:, np.newaxis]
-            # handle case where y is 2-d
-            G_diag = G_diag[:, np.newaxis]
         return (c / G_diag) ** 2, c
     def _values_svd(self, alpha, y, v, U, UT_y):
         w = ((v + alpha) ** -1) - (alpha ** -1)
         c = np.dot(U, self._diag_dot(w, UT_y)) + (alpha ** -1) * y
         G_diag = self._decomp_diag(w, U) + (alpha ** -1)
         if len(y.shape) != 1:
-            # handle case when y is 2-d
-            G_diag = G_diag[:, np.newaxis]
-            # handle case when y is 2-d
-            G_diag = G_diag[:, np.newaxis]
-        return y - (c / G_diag), c
-        w = ((v + alpha) ** -1) - (alpha ** -1)
-        c = np.dot(U, self._diag_dot(w, UT_y)) + (alpha ** -1) * y
-        G_diag = self._decomp_diag(w, U) + (alpha ** -1)
-        if len(y.shape) != 1:
-            # handle case when y is 2-d
-            G_diag = G_diag[:, np.newaxis]
             # handle case when y is 2-d
             G_diag = G_diag[:, np.newaxis]
         return y - (c / G_diag), c
@@ -509,70 +448,26 @@ class _RidgeGCV(LinearModel):
         """
         X = safe_asarray(X, dtype=np.float)
         y = np.asarray(y, dtype=np.float)
-        n_samples, n_features = X.shape
+        n_samples = X.shape[0]
         X, y, X_mean, y_mean, X_std = LinearModel._center_data(X, y,
                 self.fit_intercept, self.normalize, self.copy_X)
-        gcv_mode = self.gcv_mode
-        with_sw = len(np.shape(sample_weight))
-        if gcv_mode is None or gcv_mode == 'auto':
-            if n_features > n_samples or with_sw:
-                gcv_mode = 'eigen'
-                gcv_mode = 'eigen'
-            if n_features > n_samples or with_sw:
-                gcv_mode = 'eigen'
-                gcv_mode = 'eigen'
-            else:
-                gcv_mode = 'svd'
-        elif gcv_mode == "svd" and with_sw:
-            # FIXME non-uniform sample weights not yet supported
-            warnings.warn("non-uniform sample weights unsupported for svd, "
-                "forcing usage of eigen")
-            gcv_mode = 'eigen'
-            # FIXME non-uniform sample weights not yet supported
-            warnings.warn("non-uniform sample weights unsupported for svd, "
-                "forcing usage of eigen")
-            gcv_mode = 'eigen'
-        if gcv_mode == 'eigen':
-            _pre_compute = self._pre_compute
-            _errors = self._errors
-            _values = self._values
-            _pre_compute = self._pre_compute
-            _errors = self._errors
-            _values = self._values
-        elif gcv_mode == 'svd':
-            # assert n_samples >= n_features
-            _pre_compute = self._pre_compute_svd
-            _errors = self._errors_svd
-            _values = self._values_svd
-            # assert n_samples >= n_features
-            _pre_compute = self._pre_compute_svd
-            _errors = self._errors_svd
-            _values = self._values_svd
+        K, v, Q = self._pre_compute(X, y)
         n_y = 1 if len(y.shape) == 1 else y.shape[1]
-        v, Q, QT_y = _pre_compute(X, y)
         M = np.zeros((n_samples * n_y, len(self.alphas)))
         C = []
         error = self.score_func is None and self.loss_func is None
         for i, alpha in enumerate(self.alphas):
             if error:
                 out, c = _errors(sample_weight * alpha, y, v, Q, QT_y)
-        else:
-                out, c = _values(sample_weight * alpha, y, v, Q, QT_y)
             else:
-                gcv_mode = 'svd'
+                out, c = _values(sample_weight * alpha, y, v, Q, QT_y)
             M[:, i] = out.ravel()
             C.append(c)
         if error:
             best = M.mean(axis=0).argmin()
         else:
             raise ValueError('bad gcv_mode "%s"' % gcv_mode)
-            func = self.score_func if self.score_func else self.loss_func
-            out = [func(y.ravel(), M[:, i]) for i in range(len(self.alphas))]
-            best = np.argmax(out) if self.score_func else np.argmin(out)
-        else:
-            func = self.score_func if self.score_func else self.loss_func
-            out = [func(y.ravel(), M[:, i]) for i in range(len(self.alphas))]
-            best = np.argmax(out) if self.score_func else np.argmin(out)
+        n_y = 1 if len(y.shape) == 1 else y.shape[1]
         self.best_alpha = self.alphas[best]
         self.dual_coef_ = C[best]
         self.coef_ = safe_sparse_dot(self.dual_coef_.T, X)
@@ -651,15 +546,38 @@ class RidgeCV(LinearModel):
     Ridge, RidgeClassifierCV
     """
     <<<<<<< REMOTE
-def __init__(self, alphas=np.array([0.1, 1.0, 10.0]), fit_intercept=True,
+    def __init__(self, alphas=np.array([0.1, 1.0, 10.0]), fit_intercept=True,
                    normalize=False, score_func=None, loss_func=None, cv=None,
                    gcv_mode=None):
+        self.alphas = alphas
+        self.fit_intercept = fit_intercept
+        self.normalize = normalize
+        self.score_func = score_func
+        self.loss_func = loss_func
+        self.cv = cv
+        self.gcv_mode = gcv_mode
+
 =======
-def __init__(self, alphas=np.array([0.1, 1.0, 10.0]), fit_intercept=True,
+    def __init__(self, alphas=np.array([0.1, 1.0, 10.0]), fit_intercept=True,
                    normalize=False, score_func=None, loss_func=None, cv=None):
+        self.alphas = alphas
+        self.fit_intercept = fit_intercept
+        self.normalize = normalize
+        self.score_func = score_func
+        self.loss_func = loss_func
+        self.cv = cv
+        self.gcv_mode = gcv_mode
+
 =======
-def __init__(self, alphas=np.array([0.1, 1.0, 10.0]), fit_intercept=True,
+    def __init__(self, alphas=np.array([0.1, 1.0, 10.0]), fit_intercept=True,
             normalize=False, score_func=None, loss_func=None, cv=None):
+        self.alphas = alphas
+        self.fit_intercept = fit_intercept
+        self.normalize = normalize
+        self.score_func = score_func
+        self.loss_func = loss_func
+        self.cv = cv
+
 >>>>>>> LOCAL
         self.alphas = alphas
         self.fit_intercept = fit_intercept
@@ -693,16 +611,6 @@ def __init__(self, alphas=np.array([0.1, 1.0, 10.0]), fit_intercept=True,
             estimator.fit(X, y, sample_weight=sample_weight)
             self.best_alpha = estimator.best_alpha
         else:
-            parameters = {'alpha': self.alphas}
-            # FIXME: sample_weight must be split into training/validation data
-            #        too!
-            #fit_params = {'sample_weight' : sample_weight}
-            fit_params = {}
-            gs = GridSearchCV(Ridge(fit_intercept=self.fit_intercept),
-                              parameters, fit_params=fit_params, cv=self.cv)
-            gs.fit(X, y)
-            estimator = gs.best_estimator_
-            self.best_alpha = gs.best_estimator_.alpha
             parameters = {'alpha': self.alphas}
             # FIXME: sample_weight must be split into training/validation data
             #        too!
@@ -784,10 +692,6 @@ class RidgeClassifierCV(RidgeCV):
                 fit_intercept=fit_intercept, normalize=normalize,
                 score_func=score_func, loss_func=loss_func, cv=cv)
         self.class_weight = class_weight
-        super(RidgeClassifierCV, self).__init__(alphas=alphas,
-                fit_intercept=fit_intercept, normalize=normalize,
-                score_func=score_func, loss_func=loss_func, cv=cv)
-        self.class_weight = class_weight
     def fit(self, X, y, sample_weight=1.0, class_weight=None):
         """Fit the ridge classifier.
 
@@ -818,20 +722,12 @@ class RidgeClassifierCV(RidgeCV):
                     "Using it in the 'fit' method is deprecated.",
                     DeprecationWarning)
             self.class_weight = class_weight
-            warnings.warn("'class_weight' is now an initialization parameter."
-                    "Using it in the 'fit' method is deprecated.",
-                    DeprecationWarning)
-            self.class_weight = class_weight
         if self.class_weight is None:
-            self.class_weight = {}
             self.class_weight = {}
         sample_weight2 = np.array([self.class_weight.get(k, 1.0) for k in y])
-        if self.class_weight is None:
-            self.class_weight = {}
-        sample_weight_classes = np.array([self.class_weight.get(k, 1.0) for k in y])
-        RidgeCV.fit(self, X, Y, sample_weight=sample_weight * sample_weight2)
         self.label_binarizer = LabelBinarizer()
         Y = self.label_binarizer.fit_transform(y)
+        RidgeCV.fit(self, X, Y, sample_weight=sample_weight * sample_weight2)
         return self
     def decision_function(self, X):
         return RidgeCV.decision_function(self, X)

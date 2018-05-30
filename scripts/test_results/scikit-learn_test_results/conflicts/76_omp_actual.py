@@ -20,6 +20,39 @@ dependence in the dictionary. The requested precision might not have been met.
 
 
 def _cholesky_omp(X, y, n_nonzero_coefs, eps=None, overwrite_X=False):
+    """
+    Solves a single Orthogonal Matching Pursuit problem using
+    the Cholesky decomposition.
+
+    Parameters:
+    -----------
+    X: array, shape = (n_samples, n_features)
+        Input dictionary. Columns are assumed to have unit norm.
+
+    y: array, shape = (n_samples,)
+        Input targets
+
+    n_nonzero_coefs: int
+        Targeted number of non-zero elements
+
+    eps: float
+        Targeted squared error, if not None overrides n_nonzero_coefs.
+
+    overwrite_x: bool,
+        Whether the design matrix X can be overwritten by the algorithm. This
+        is only helpful if X is already Fortran-ordered, otherwise a copy
+        is made anyway.
+
+    Returns:
+    --------
+    gamma: array, shape = (n_nonzero_coefs,)
+        Non-zero elements of the solution
+
+    idx: array, shape = (n_nonzero_coefs,)
+        Indices of the positions of the elements in gamma within the solution
+        vector
+
+    """
     if not overwrite_X:
         X = X.copy('F')
     else:  # even if we are allowed to overwrite, still copy it if bad order
@@ -34,15 +67,34 @@ def _cholesky_omp(X, y, n_nonzero_coefs, eps=None, overwrite_X=False):
     max_features = X.shape[1] if eps is not None else n_nonzero_coefs
     L = np.empty((max_features, max_features), dtype=X.dtype)
     L[0, 0] = 1.
+    while True:
+        lam = np.argmax(np.abs(np.dot(X.T, residual)))
+        if lam < n_active or alpha[lam] ** 2 < min_float:
+            # atom already selected or inner product too small
+            warn(premature)
+            break
+        if n_active > 0:
+            # Updates the Cholesky decomposition of X' X
+            L[n_active, :n_active] = np.dot(X[:, :n_active].T, X[:, lam])
+            solve_triangular(L[:n_active, :n_active], L[n_active, :n_active])
+            v = nrm2(L[n_active, :n_active]) ** 2
+            if 1 - v <= min_float:  # selected atoms are dependent
+                warn(premature)
+                break
+            L[n_active, n_active] = np.sqrt(1 - v)
+        idx.append(lam)
+        X.T[n_active], X.T[lam] = swap(X.T[n_active], X.T[lam])
+        alpha[n_active], alpha[lam] = alpha[lam], alpha[n_active]
+        n_active += 1
+        # solves LL'x = y as a composition of two triangular systems
+        gamma, _ = potrs(L[:n_active, :n_active], alpha[:n_active], lower=True,
+                         overwrite_b=False)
+        residual = y - np.dot(X[:, :n_active], gamma)
+        if eps is not None and nrm2(residual) ** 2 <= eps:
+            break
+        elif n_active == max_features:
+            break
     return gamma, idx
-
-
-
-
-
-
-
-
 
 
 
@@ -53,9 +105,10 @@ def _cholesky_omp(X, y, n_nonzero_coefs, eps=None, overwrite_X=False):
 
 def _gram_omp(Gram, Xy, n_nonzero_coefs, eps_0=None, eps=None,
               overwrite_gram=False, overwrite_Xy=False):
-    """Orthogonal Matching Pursuit step on a precomputed Gram matrix.
-
-    This function uses the the Cholesky decomposition method.
+    """
+    Solves a single Orthogonal Matching Pursuit problem using
+    the Cholesky decomposition, based on the Gram matrix and more
+    precomputations.
 
     Parameters:
     -----------
@@ -142,16 +195,6 @@ def _gram_omp(Gram, Xy, n_nonzero_coefs, eps_0=None, eps=None,
         elif n_active == max_features:
             break
     return gamma, idx
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -345,6 +388,9 @@ def orthogonal_mp_gram(Gram, Xy, n_nonzero_coefs=None, eps=None,
                            overwrite_Xy=overwrite_Xy)
         coef[idx, k] = x
     return np.squeeze(coef)
+
+
+
 class OrthogonalMatchingPursuit(LinearModel):
     """Orthogonal Mathching Pursuit model (OMP)
 
@@ -417,10 +463,6 @@ class OrthogonalMatchingPursuit(LinearModel):
     def __init__(self, overwrite_X=False, overwrite_gram=False,
             overwrite_Xy=False, n_nonzero_coefs=None, eps=None,
             fit_intercept=True, normalize=True, precompute_gram=False):
-        self.overwrite_gram = overwrite_gram
-        self.overwrite_Xy = overwrite_Xy
-        self.overwrite_X = overwrite_X
-        self.eps = eps
         self.n_nonzero_coefs = n_nonzero_coefs
         self.eps = eps
         self.fit_intercept = fit_intercept
@@ -431,32 +473,6 @@ class OrthogonalMatchingPursuit(LinearModel):
         self.overwrite_X = overwrite_X
         self.eps = eps
     def fit(self, X, y, Gram=None, Xy=None, **params):
-        """Fit the model using X, y as training data.
-
-        Parameters
-        ----------
-        X: array-like, shape = (n_samples, n_features)
-            Training data.
-
-        y: array-like, shape = (n_samples,) or (n_samples, n_targets)
-            Target values.
-
-        Gram: array-like, shape = (n_features, n_features) (optional)
-            Gram matrix of the input data: X.T * X
-
-        Xy: array-like, shape = (n_features,) or (n_features, n_targets)
-            (optional)
-            Input targets multiplied by X: X.T * y
-
-
-        Returns
-        -------
-        self: object
-            returns an instance of self.
-        """
-        X, y, X_mean, y_mean, X_std = self._center_data(X, y, self.fit_intercept,
-                self.normalize, self.overwrite_X)
-        self._set_intercept(X_mean, y_mean, X_std)
         """Fit the model using X, y as training data.
 
         Parameters
@@ -508,6 +524,28 @@ class OrthogonalMatchingPursuit(LinearModel):
             self.coef_ = orthogonal_mp_gram(Gram, Xy, self.n_nonzero_coefs,
                                             self.eps, norms_sq,
                                             overwrite_gram, True).T
+        else:
+            precompute_gram = self.precompute_gram
+            if precompute_gram == 'auto':
+                precompute_gram = X.shape[0] > X.shape[1]
+            self.coef_ = orthogonal_mp(X, y, self.n_nonzero_coefs, self.eps,
+                                       precompute_gram=precompute_gram,
+                                       overwrite_X=self.overwrite_X).T
         self._set_intercept(X_mean, y_mean, X_std)
         return self
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

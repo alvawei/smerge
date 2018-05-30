@@ -10,7 +10,6 @@ import numpy as np
 from scipy import sparse
 from ..utils.fixes import in1d
 
-###############################################################################
 # From an image to a graph
 
 
@@ -29,17 +28,13 @@ def _make_edges_3d(n_x, n_y, n_z=1):
     vertices = np.arange(n_x * n_y * n_z).reshape((n_x, n_y, n_z))
     edges_deep = np.vstack((vertices[:, :, :-1].ravel(),
                             vertices[:, :, 1:].ravel()))
-<<<<<<< REMOTE
-edges_right = np.vstack((vertices[:, :-1].ravel(),
+    edges_right = np.vstack((vertices[:, :-1].ravel(),
                              vertices[:, 1:].ravel()))
-=======
-edges_right = np.vstack((vertices[:, :-1].ravel(),
-                             vertices[:, 1:].ravel()))
->>>>>>> LOCAL
     edges_down = np.vstack((vertices[:-1].ravel(), vertices[1:].ravel()))
     edges = np.hstack((edges_deep, edges_right, edges_down))
     return edges
 
+###############################################################################
 
 def _compute_gradient_3d(edges, img):
     n_x, n_y, n_z = img.shape
@@ -53,6 +48,8 @@ def _compute_gradient_3d(edges, img):
 
 
 # XXX: Why mask the image after computing the weights?
+
+
 
 def _mask_edges_weights(mask, edges, weights=None):
     """Apply a mask to edges (weighted or not)"""
@@ -73,8 +70,6 @@ def _mask_edges_weights(mask, edges, weights=None):
         return edges
     else:
         return edges, weights
-
-
 def _to_graph(n_x, n_y, n_z, mask=None, img=None,
               return_as=sparse.coo_matrix, dtype=None):
     """Auxiliary function for img_to_graph and grid_to_graph
@@ -167,11 +162,6 @@ def grid_to_graph(n_x, n_y, n_z=1, mask=None, return_as=sparse.coo_matrix,
     dtype: dtype, optional, default int
         The data of the returned sparse matrix. By default it is int
     """
-<<<<<<< REMOTE
-return _to_graph(n_x, n_y, n_z, mask=mask, return_as=return_as,
+    return _to_graph(n_x, n_y, n_z, mask=mask, return_as=return_as,
                      dtype=dtype)
-=======
-return _to_graph(n_x, n_y, n_z, mask=mask, return_as=return_as,
-                     dtype=dtype)
->>>>>>> LOCAL
 

@@ -177,6 +177,7 @@ def load_files(container_path, description=None, categories=None,
 
 
 
+###############################################################################
 
 def load_iris():
     """Load and return the iris dataset (classification).
@@ -276,6 +277,8 @@ def load_digits(n_class=10):
 
 
 
+
+
 def load_diabetes():
     """ Load and return the diabetes dataset (regression).
 
@@ -292,6 +295,8 @@ def load_diabetes():
     data = np.loadtxt(join(base_dir, 'diabetes_data.csv.gz'))
     target = np.loadtxt(join(base_dir, 'diabetes_target.csv.gz'))
     return Bunch(data=data, target=target)
+
+
 def load_linnerud():
     """ Load and return the linnerud dataset (multivariate regression).
 
@@ -321,4 +326,30 @@ def load_linnerud():
                  data_physiological=data_physiological,
                  header_physiological=header_physiological,
                  DESCR=fdescr.read())
+
+
+###############################################################################
+# Add the description in the docstring
+
+def _add_notes(function, filename):
+    """Add a notes section to the docstring of a function reading it from a
+    file"""
+    fdescr = open(join(dirname(__file__), 'descr', filename), 'r')
+    # Dedent the docstring
+    doc = function.__doc__.split('\n')
+    doc = '%s\n%s' % (textwrap.dedent(doc[0]),
+                      textwrap.dedent('\n'.join(doc[1:])))
+    # Remove the first line of the description, which contains the
+    # dataset's name
+    descr = '\n'.join(fdescr.read().split('\n')[1:])
+    function.__doc__ = doc + descr
+
+
+for function, filename in ((load_iris, 'iris.rst'),
+                           (load_linnerud, 'linnerud.rst'),
+                           (load_digits, 'digits.rst')):
+    #try:
+        _add_notes(function, filename)
+    #except:
+    #    pass
 

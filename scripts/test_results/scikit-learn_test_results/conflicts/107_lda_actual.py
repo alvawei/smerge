@@ -2,6 +2,7 @@
 LDA: Linear Discriminant Analysis
 """
 # Authors: Matthieu Perrot
+#          Mathieu Blondel
 
 import warnings
 
@@ -14,14 +15,16 @@ from .base import BaseEstimator, ClassifierMixin
 class LDA(BaseEstimator, ClassifierMixin):
     """
     Linear Discriminant Analysis (LDA)
+
     Parameters
     ----------
-    X : array-like, shape = [n_samples, n_features]
-        Training vector, where n_samples in the number of samples and
-        n_features is the number of features.
-    y : array, shape = [n_samples]
+
+    n_components: int
+        Number of components (< n_classes - 1)
+
     priors : array, optional, shape = [n_classes]
         Priors on classes
+
     Attributes
     ----------
     `means_` : array-like, shape = [n_classes, n_features]
@@ -32,6 +35,7 @@ class LDA(BaseEstimator, ClassifierMixin):
         Class priors (sum to 1)
     `covariance_` : array-like, shape = [n_features, n_features]
         Covariance matrix (shared by all classes)
+
     Examples
     --------
     >>> import numpy as np
@@ -43,15 +47,25 @@ class LDA(BaseEstimator, ClassifierMixin):
     LDA(priors=None)
     >>> print clf.predict([[-0.8, -1]])
     [1]
+
     See also
     --------
     QDA
+
     """
+    def __init__(self, n_components=None, priors=None):
+        self.n_components = n_components
+        self.priors = np.asarray(priors) if priors is not None else None
     def fit(self, X, y, store_covariance=False, tol=1.0e-4, **params):
         """
         Fit the LDA model according to the given training data and parameters.
+
         Parameters
         ----------
+        X : array-like, shape = [n_samples, n_features]
+            Training vector, where n_samples in the number of samples and
+            n_features is the number of features.
+        y : array, shape = [n_samples]
             Target values (integers)
         store_covariance : boolean
             If True the covariance matrix (shared by all classes) is computed
@@ -144,34 +158,64 @@ X = np.dot(((np.sqrt((n_samples * self.priors_)*fac)) *
         # compose the scalings
         self.scaling = np.dot(scaling, V.T[:, :rank])
         self.xbar_ = xbar
-        # weight vectors / centroids
-        self.coef_ = np.dot(self.means_ - self.xbar_, self.scaling)
-        self.intercept_ = -0.5 * np.sum(self.coef_ ** 2, axis=1) + \
-                           np.log(self.priors_)
+        self.scaling = scaling
+        self.means_ = means
+        self.xbar_ = xbar
         self.classes = classes
         return self
     def decision_function(self, X):
         """
         This function return the decision function values related to each
         class on an array of test vectors X.
+
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
+
         Returns
         -------
         C : array, shape = [n_samples, n_classes]
         """
         X = np.asanyarray(X)
-        # center and scale data
+        scaling = self.scaling
         X = np.dot(X - self.xbar_, self.scaling)
-        return np.dot(X, self.coef_.T) + self.intercept_
-    def predict(self, X):
+        # Remove overall mean (center) and scale
+        # a) data
+        X = np.dot(X - self.xbar_, self.scaling)
+        # b) centers
+        dm = np.dot(self.means_ - self.xbar_, scaling)
+        # for each class k, compute the linear discrinant function
+        # (p. 87 Hastie) of sphered (scaled data)
+        return -0.5 * np.sum(dm ** 2, 1) + \
+                np.log(self.priors_) + np.dot(X, dm.T)
+    def transform(self, X):
         """
-        This function does classification on an array of test vectors X.
-        The predicted class C for each sample in X is returned.
+        This function return the decision function values related to each
+        class on an array of test vectors X.
+
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
+
+        Returns
+        -------
+        X_new : array, shape = [n_samples, n_components]
+        """
+        X = np.asanyarray(X)
+        # center and scale data
+        X = np.dot(X - self.xbar_, self.scaling)
+        n_comp = X.shape[1] if self.n_components is None else self.n_components
+        return np.dot(X, self.coef_[:, :n_comp].T) + self.intercept_
+    def predict(self, X):
+        """
+        This function does classification on an array of test vectors X.
+
+        The predicted class C for each sample in X is returned.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_samples, n_features]
+
         Returns
         -------
         C : array, shape = [n_samples]
@@ -180,10 +224,18 @@ X = np.dot(((np.sqrt((n_samples * self.priors_)*fac)) *
         y_pred = self.classes[d.argmax(1)]
         return y_pred
     def predict_proba(self, X):
+        """
         This function return posterior probabilities of classification
         according to each class on an array of test vectors X.
+
+        Parameters
+        ----------
         X : array-like, shape = [n_samples, n_features]
+
+        Returns
+        -------
         C : array, shape = [n_samples, n_classes]
+        """
         values = self.decision_function(X)
         # compute the likelihood of the underlying gaussian models
         # up to a multiplicative constant.
@@ -192,39 +244,21 @@ X = np.dot(((np.sqrt((n_samples * self.priors_)*fac)) *
         return likelihood / likelihood.sum(axis=1)[:, np.newaxis]
     def predict_log_proba(self, X):
         """
-        """
         This function return posterior log-probabilities of classification
+        according to each class on an array of test vectors X.
+
         Parameters
         ----------
-        according to each class on an array of test vectors X.
+        X : array-like, shape = [n_samples, n_features]
+
         Returns
         -------
-        Parameters
+        C : array, shape = [n_samples, n_classes]
         """
         values = self.decision_function(X)
         loglikelihood = (values - values.min(axis=1)[:, np.newaxis])
         normalization = np.logaddexp.reduce(loglikelihood, axis=1)
         return loglikelihood - normalization[:, np.newaxis]
-        ----------
-        X : array-like, shape = [n_samples, n_features]
-        Returns
-        -------
-        C : array, shape = [n_samples, n_classes]
-        """
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

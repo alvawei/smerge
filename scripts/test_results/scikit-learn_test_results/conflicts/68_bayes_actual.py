@@ -10,6 +10,7 @@ import numpy as np
 from scipy import linalg
 
 from .base import LinearModel
+from ..utils import as_float_array
 from ..utils.extmath import fast_logdet
 
 
@@ -105,9 +106,8 @@ class BayesianRidge(LinearModel):
                 lambda_1=1.e-6, lambda_2=1.e-6, compute_score=False,
                 fit_intercept=True, normalize=False,
                 overwrite_X=False, verbose=False):
-        self.normalize = normalize
-        self.overwrite_X = overwrite_X
         self.n_iter = n_iter
+        self.eps = eps
         self.alpha_1 = alpha_1
         self.alpha_2 = alpha_2
         self.lambda_1 = lambda_1
@@ -134,9 +134,7 @@ class BayesianRidge(LinearModel):
         self._set_params(**params)
         X = np.asanyarray(X, dtype=np.float)
         y = np.asanyarray(y, dtype=np.float)
-        X = as_float_array(X, self.overwrite_X)
-        X, y, X_mean, y_mean, X_std = self._center_data(X, y,
-                self.fit_intercept, self.normalize)
+        X, y, Xmean, ymean = LinearModel._center_data(X, y, self.fit_intercept)
         n_samples, n_features = X.shape
         ### Initialization of the values of the parameters
         alpha_ = 1. / np.var(y)
@@ -198,8 +196,9 @@ class BayesianRidge(LinearModel):
             coef_old_ = np.copy(coef_)
         self.alpha_ = alpha_
         self.lambda_ = lambda_
+        self.lambda_ = lambda_
         self.coef_ = coef_
-        self._set_intercept(X_mean, y_mean, X_std)
+        self._set_intercept(Xmean, ymean)
         return self
 
 
@@ -317,18 +316,55 @@ class ARDRegression(LinearModel):
     See examples/linear_model/plot_ard.py for an example.
     """
     <<<<<<< REMOTE
-def __init__(self, n_iter=300, eps=1.e-3, alpha_1=1.e-6, alpha_2=1.e-6,
+    def __init__(self, n_iter=300, eps=1.e-3, alpha_1=1.e-6, alpha_2=1.e-6,
                   lambda_1=1.e-6, lambda_2=1.e-6, compute_score=False,
                   threshold_lambda=1.e+4, fit_intercept=True,
                   normalize=False, overwrite_X=False, verbose=False):
+        self.n_iter = n_iter
+        self.eps = eps
+        self.fit_intercept = fit_intercept
+        self.normalize = normalize
+        self.alpha_1 = alpha_1
+        self.alpha_2 = alpha_2
+        self.lambda_1 = lambda_1
+        self.lambda_2 = lambda_2
+        self.compute_score = compute_score
+        self.threshold_lambda = threshold_lambda
+        self.overwrite_X = overwrite_X
+        self.verbose = verbose
+
 =======
-def __init__(self, n_iter=300, eps=1.e-3, alpha_1=1.e-6, alpha_2=1.e-6,
+    def __init__(self, n_iter=300, eps=1.e-3, alpha_1=1.e-6, alpha_2=1.e-6,
                   lambda_1=1.e-6, lambda_2=1.e-6, compute_score=False,
                   threshold_lambda=1.e+4, fit_intercept=True, verbose=False):
+        self.n_iter = n_iter
+        self.tol = tol
+        self.normalize = normalize
+        self.fit_intercept = fit_intercept
+        self.alpha_1 = alpha_1
+        self.alpha_2 = alpha_2
+        self.lambda_1 = lambda_1
+        self.lambda_2 = lambda_2
+        self.compute_score = compute_score
+        self.overwrite_X = overwrite_X
+        self.threshold_lambda = threshold_lambda
+        self.verbose = verbose
+
 =======
-def __init__(self, n_iter=300, tol=1.e-3, alpha_1=1.e-6, alpha_2=1.e-6,
+    def __init__(self, n_iter=300, tol=1.e-3, alpha_1=1.e-6, alpha_2=1.e-6,
                   lambda_1=1.e-6, lambda_2=1.e-6, compute_score=False,
                   threshold_lambda=1.e+4, fit_intercept=True, verbose=False):
+        self.n_iter = n_iter
+        self.tol = tol
+        self.fit_intercept = fit_intercept
+        self.alpha_1 = alpha_1
+        self.alpha_2 = alpha_2
+        self.lambda_1 = lambda_1
+        self.lambda_2 = lambda_2
+        self.compute_score = compute_score
+        self.threshold_lambda = threshold_lambda
+        self.verbose = verbose
+
 >>>>>>> LOCAL
         self.n_iter = n_iter
         self.tol = tol
@@ -365,9 +401,7 @@ def __init__(self, n_iter=300, tol=1.e-3, alpha_1=1.e-6, alpha_2=1.e-6,
         y = np.asanyarray(y, dtype=np.float)
         n_samples, n_features = X.shape
         coef_ = np.zeros(n_features)
-        X = as_float_array(X, self.overwrite_X)
-        X, y, X_mean, y_mean, X_std = self._center_data(X, y, self.fit_intercept,
-                self.normalize)
+        X, y, Xmean, ymean = LinearModel._center_data(X, y, self.fit_intercept)
         ### Launch the convergence loop
         keep_lambda = np.ones(n_features, dtype=bool)
         lambda_1 = self.lambda_1
@@ -421,9 +455,11 @@ def __init__(self, n_iter=300, tol=1.e-3, alpha_1=1.e-6, alpha_2=1.e-6,
             coef_old_ = np.copy(coef_)
         self.coef_ = coef_
         self.alpha_ = alpha_
+        self.alpha_ = alpha_
         self.sigma_ = sigma_
-        self._set_intercept(X_mean, y_mean, X_std)
+        self._set_intercept(Xmean, ymean)
         return self
+
 
 
 

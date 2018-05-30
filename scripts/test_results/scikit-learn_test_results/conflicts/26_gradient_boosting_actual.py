@@ -37,8 +37,8 @@ from ..tree._tree import MSE
 from ..tree._tree import DTYPE
 
 from ._gradient_boosting import predict_stages
-from ._gradient_boosting import predict_stage
 
+from ._gradient_boosting import predict_stage
 __all__ = ["GradientBoostingClassifier",
            "GradientBoostingRegressor"]
 
@@ -242,38 +242,14 @@ class BinomialDeviance(LossFunction):
         return LogOddsEstimator()
     def __call__(self, y, pred):
         """Compute the deviance (= negative log-likelihood). """
-        diff = y - pred
-        gamma = self.gamma
-        gamma_mask = np.abs(diff) <= gamma
-        sq_loss = np.sum(0.5 * diff[gamma_mask] ** 2.0)
-        lin_loss = np.sum(gamma * (np.abs(diff[~gamma_mask]) - gamma / 2.0))
-        return (sq_loss + lin_loss) / y.shape[0]
         # logaddexp(0, v) == log(1.0 + exp(v))
         pred = pred.ravel()
         return np.sum(np.logaddexp(0.0, -2 * y * pred)) / y.shape[0]
     def negative_gradient(self, y, pred, **kargs):
-        pred = pred.ravel()
-        diff = y - pred
-        gamma = stats.scoreatpercentile(np.abs(diff), self.alpha)
-        gamma_mask = np.abs(diff) <= gamma
-        residual = np.zeros((y.shape[0],), dtype=np.float64)
-        residual[gamma_mask] = diff[gamma_mask]
-        residual[~gamma_mask] = gamma * np.sign(diff[~gamma_mask])
-        self.gamma = gamma
-        return residual
         return y - 1.0 / (1.0 + np.exp(-pred.ravel()))
     def _update_terminal_region(self, tree, terminal_regions, leaf, X, y,
                                 residual, pred):
-        """LAD updates terminal regions to median estimates. """
         """Make a single Newton-Raphson step. """
-        gamma = self.gamma
-        diff = y.take(terminal_region, axis=0) - \
-               pred.take(terminal_region, axis=0)
-        median = np.median(diff)
-        diff_minus_median = diff - median
-        tree.value[leaf, 0] = median + np.mean(
-            np.sign(diff_minus_median) *
-            np.minimum(np.abs(diff_minus_median), gamma))
         terminal_region = np.where(terminal_regions == leaf)[0]
         residual = residual.take(terminal_region, axis=0)
         y = y.take(terminal_region, axis=0)
@@ -305,14 +281,7 @@ class MultinomialDeviance(LossFunction):
         super(MultinomialDeviance, self).__init__(n_classes)
     def init_estimator(self):
         return PriorProbabilityEstimator()
-        return PriorProbabilityEstimator()
     def __call__(self, y, pred):
-        # create one-hot label encoding
-        Y = np.zeros((y.shape[0], self.K), dtype=np.float64)
-        for k in range(self.K):
-            Y[:, k] = y == k
-        return np.sum(-1 * (Y * pred).sum(axis=1) +
-                      np.log(np.exp(pred).sum(axis=1)))
         # create one-hot label encoding
         Y = np.zeros((y.shape[0], self.K), dtype=np.float64)
         for k in range(self.K):
@@ -322,21 +291,8 @@ class MultinomialDeviance(LossFunction):
     def negative_gradient(self, y, pred, k=0):
         """Compute negative gradient for the ``k``-th class. """
         return y - np.exp(pred[:, k]) / np.sum(np.exp(pred), axis=1)
-        """Compute negative gradient for the ``k``-th class. """
-        return y - np.exp(pred[:, k]) / np.sum(np.exp(pred), axis=1)
     def _update_terminal_region(self, tree, terminal_regions, leaf, X, y,
                                 residual, pred):
-        """Make a single Newton-Raphson step. """
-        terminal_region = np.where(terminal_regions == leaf)[0]
-        residual = residual.take(terminal_region, axis=0)
-        y = y.take(terminal_region, axis=0)
-        numerator = residual.sum()
-        numerator *= (self.K - 1) / self.K
-        denominator = np.sum((y - residual) * (1.0 - y + residual))
-        if denominator == 0.0:
-            tree.value[leaf, 0] = 0.0
-        else:
-            tree.value[leaf, 0] = numerator / denominator
         """Make a single Newton-Raphson step. """
         terminal_region = np.where(terminal_regions == leaf)[0]
         residual = residual.take(terminal_region, axis=0)
@@ -402,7 +358,6 @@ class BaseGradientBoosting(BaseEnsemble):
         self.random_state = check_random_state(random_state)
         if not (0.0 < alpha < 1.0):
             raise ValueError("alpha must be in (0.0, 1.0)")
-            raise ValueError("alpha must be in (0.0, 1.0)")
         self.alpha = alpha
         self.estimators_ = None
     def fit_stage(self, i, X, X_argsorted, y, y_pred, sample_mask):
@@ -457,7 +412,8 @@ class BaseGradientBoosting(BaseEnsemble):
         loss_class = LOSS_FUNCTIONS[self.loss]
         if self.loss == 'huber':
             loss = loss_class(self.n_classes_, self.alpha)
-            loss = loss_class(self.n_classes_, self.alpha)
+        else:
+            loss = loss_class(self.n_classes_)
         # store loss object for future use
         self.loss_ = loss
         if self.init is None:
@@ -491,7 +447,8 @@ class BaseGradientBoosting(BaseEnsemble):
                 self.oob_score_[i] = loss(y[~sample_mask],
                                           y_pred[~sample_mask])
             else:
-            loss = loss_class(self.n_classes_)
+                # no need to fancy index w/ no subsampling
+                self.train_score_[i] = loss(y, y_pred)
         return self
     def _make_estimator(self, append=True):
         # we don't need _make_estimator
@@ -707,11 +664,7 @@ class GradientBoostingClassifier(BaseGradientBoosting, ClassifierMixin):
             The class probabilities of the input samples. Classes are
             ordered by arithmetical order.
         """
-<<<<<<< REMOTE
-X = array2d(X, dtype=DTYPE, order='C')
-=======
-X = array2d(X, dtype=DTYPE, order='C')
->>>>>>> LOCAL
+        X = array2d(X, dtype=DTYPE, order='C')
         if self.estimators_ is None or len(self.estimators_) == 0:
             raise ValueError("Estimator not fitted, " \
                              "call `fit` before `predict_proba`.")
@@ -726,10 +679,6 @@ X = array2d(X, dtype=DTYPE, order='C')
         if not self.loss_.is_multi_class:
             proba[:, 1] = 1.0 / (1.0 + np.exp(-score.ravel()))
             proba[:, 0] -= proba[:, 1]
-        else:
-                # no need to fancy index w/ no subsampling
-                self.train_score_[i] = loss(y, y_pred)
-            proba = np.exp(score) / np.sum(np.exp(score), axis=1)[:, np.newaxis]
         return proba
 
 
@@ -885,11 +834,7 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
         y: array of shape = [n_samples]
             The predicted values.
         """
-<<<<<<< REMOTE
-X = array2d(X, dtype=DTYPE, order='C')
-=======
-X = array2d(X, dtype=DTYPE, order='C')
->>>>>>> LOCAL
+        X = array2d(X, dtype=DTYPE, order='C')
         if self.estimators_ is None or len(self.estimators_) == 0:
             raise ValueError("Estimator not fitted, " \
                              "call `fit` before `predict`.")
@@ -915,14 +860,9 @@ X = array2d(X, dtype=DTYPE, order='C')
         y : array of shape = [n_samples]
             The predicted value of the input samples.
         """
-<<<<<<< REMOTE
-X = array2d(X, dtype=DTYPE, order='C')
-=======
-X = array2d(X, dtype=DTYPE, order='C')
->>>>>>> LOCAL
+        X = array2d(X, dtype=DTYPE, order='C')
         for y in self.staged_decision_function(X):
             yield y.ravel()
-
 
 
 

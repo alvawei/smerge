@@ -108,11 +108,6 @@ class BaseForest(BaseEnsemble):
         # Build the importances
         if self.compute_importances:
             importances = np.zeros(self.estimators_[0].n_features_)
-        for tree in self.estimators_:
-                importances += tree.feature_importances_
-            importances /= self.n_estimators
-            self.feature_importances_ = importances
-            importances = np.zeros(self.estimators_[0].n_features_)
             for tree in self.estimators_:
                 importances += tree.feature_importances_
             importances /= self.n_estimators
@@ -183,6 +178,13 @@ class ForestClassifier(BaseForest, ClassifierMixin):
         """
         X = np.atleast_2d(X)
         p = np.zeros((X.shape[0], self.n_classes_))
+        for tree in self.estimators_:
+            if self.n_classes_ == tree.n_classes_:
+                p += tree.predict_proba(X)
+            else:
+                proba = tree.predict_proba(X)
+                for j, c in enumerate(tree.classes_):
+                    p[:, c] += proba[:, j]
         p /= self.n_estimators
         return p
     def predict_log_proba(self, X):
@@ -251,14 +253,6 @@ class ForestRegressor(BaseForest, RegressorMixin):
         X = np.atleast_2d(X)
         y_hat = np.zeros(X.shape[0])
         for tree in self.estimators_:
-            y_hat += tree.predict(X)
-        for tree in self.estimators_:
-            if self.n_classes_ == tree.n_classes_:
-                p += tree.predict_proba(X)
-            else:
-                proba = tree.predict_proba(X)
-                for j, c in enumerate(tree.classes_):
-                    p[:, c] += proba[:, j]
             y_hat += tree.predict(X)
         y_hat /= self.n_estimators
         return y_hat
@@ -504,6 +498,7 @@ class ExtraTreesClassifier(ForestClassifier):
         self.min_split = min_split
         self.min_density = min_density
         self.max_features = max_features
+
 
 
 

@@ -3,6 +3,7 @@ Testing for the gradient boosting module (sklearn.ensemble.gradient_boosting).
 """
 
 import numpy as np
+import warnings
 
 from sklearn.utils.testing import assert_equal
 from sklearn.utils.testing import assert_array_equal
@@ -324,6 +325,7 @@ def test_staged_predict():
     # test raise ValueError if not fitted
     assert_raises(ValueError, lambda X: np.fromiter(
         clf.staged_predict(X), dtype=np.float64), X_test)
+    clf.fit(X_train, y_train)
     y_pred = clf.predict(X_test)
     # test if prediction for last stage equals ``predict``
     for y in clf.staged_predict(X_test):
@@ -347,7 +349,6 @@ def test_staged_predict_proba():
     assert_raises(ValueError, lambda X: np.fromiter(
         clf.staged_predict_proba(X), dtype=np.float64), X_test)
     clf.fit(X_train, y_train)
-    gbrt.fit(X_train, y_train)
     # test if prediction for last stage equals ``predict``
     for y_pred in clf.staged_predict(X_test):
         assert_equal(y_test.shape, y_pred.shape)
@@ -443,6 +444,9 @@ def test_shape_y():
     clf = GradientBoostingClassifier(n_estimators=100, random_state=1)
     y_ = np.asarray(y, dtype=np.int32)
     y_ = y_[:, np.newaxis]
+    # This will raise a DataConversionWarning that we want to
+    # "always" raise, elsewhere the warnings gets ignored in the
+    # later tests, and the tests that check for this warning fail
     assert_warns(DataConversionWarning, clf.fit, X, y_)
     assert_array_equal(clf.predict(T), true_result)
     assert_equal(100, len(clf.estimators_))
@@ -471,6 +475,8 @@ def test_mem_layout():
     y_ = np.asarray(y, dtype=np.int32)
     y_ = np.asfortranarray(y_)
     clf = GradientBoostingClassifier(n_estimators=100, random_state=1)
+    clf.fit(X, y_)
+    clf.fit(X, y_)
     assert_array_equal(clf.predict(T), true_result)
     assert_equal(100, len(clf.estimators_))
 
@@ -572,9 +578,16 @@ def test_more_verbose_output():
 
 
 
+
 def test_warn_deviance():
     """Test if mdeviance and bdeviance give deprecated warning. """
     for loss in ('bdeviance', 'mdeviance'):
+        # This will raise a DataConversionWarning that we want to
+        # "always" raise, elsewhere the warnings gets ignored in the
+        # later tests, and the tests that check for this warning fail
+        clf = GradientBoostingClassifier(loss=loss)
+        try:
+            assert_warns(UserWarning, clf.fit, X, y)
         except ValueError:
             # mdeviance will raise ValueError because only 2 classes
             pass

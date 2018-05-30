@@ -59,9 +59,10 @@ def load_list_of_tasks(ds, block=None, role=None, task_include=None, use_handler
     return a list of Task() or TaskInclude() objects.
     '''
     # we import here to prevent a circular dependency with imports
+    from ansible.playbook.block import Block
     from ansible.playbook.handler import Handler
     from ansible.playbook.block import Block
-    from ansible.playbook.task import Task
+    #from ansible.playbook.task_include import TaskInclude
     assert type(ds) == list
     task_list = []
     for task in ds:
@@ -77,24 +78,15 @@ def load_list_of_tasks(ds, block=None, role=None, task_include=None, use_handler
                 variable_manager=variable_manager,
                 loader=loader,
             )
-            t = Block.load(
-                task,
-                parent_block=block,
-                role=role,
-                task_include=task_include,
-                use_handlers=use_handlers,
-                variable_manager=variable_manager,
-                loader=loader,
-            )
-            else:
+        else:
             if use_handlers:
                 t = Handler.load(task, block=block, role=role, task_include=task_include, variable_manager=variable_manager, loader=loader)
             else:
                 t = Task.load(task, block=block, role=role, task_include=task_include, variable_manager=variable_manager, loader=loader)
-                t = Task.load(task, block=block, role=role, task_include=task_include, variable_manager=variable_manager, loader=loader)
         #        pos_info = task.ansible_pos
         task_list.append(t)
     return task_list
+
 
 
 
@@ -118,6 +110,20 @@ def load_list_of_roles(ds, current_role_path=None, variable_manager=None, loader
         i = RoleInclude.load(role_def, current_role_path=current_role_path, variable_manager=variable_manager, loader=loader)
         roles.append(i)
     return roles
+
+
+
+
+
+def compile_block_list(block_list):
+    '''
+    Given a list of blocks, compile them into a flat list of tasks
+    '''
+    task_list = []
+    for block in block_list:
+        task_list.extend(block.compile())
+    return task_list
+
 
 
 

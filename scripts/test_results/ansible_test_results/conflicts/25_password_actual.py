@@ -21,6 +21,7 @@ from ansible import utils, errors
 import os
 import errno
 from string import ascii_letters, digits
+import string
 
 
 class LookupModule(object):
@@ -50,10 +51,6 @@ class LookupModule(object):
                     if name == 'length':
                         paramvals[name] = int(value)
                     elif name == 'chars':
-                        use_chars=[]
-                        if ",," in value: use_chars.append(',')
-                        use_chars.extend(value.replace(',,',',').split(','))
-                        paramvals['chars'] = use_chars
                         use_chars=[]
                         if ",," in value: use_chars.append(',')
                         use_chars.extend(value.replace(',,',',').split(','))

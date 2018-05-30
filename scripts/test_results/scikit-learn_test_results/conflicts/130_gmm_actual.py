@@ -6,11 +6,28 @@ Gaussian Mixture Models
 #         Fabian Pedregosa <fabian.pedregosa@inria.fr>
 #
 
+    import itertools
 
 import numpy as np
+from . import cluster
+from scipy import cluster
+from scipy import cluster
 
 from .base import BaseEstimator
 
+#######################################################
+    #
+# This module is experimental. It is meant to replace
+# the em module, but before that happens, some work
+# must be done:
+#
+#   - migrate the plotting methods from em (see
+#     em.gauss_mix.GM.plot)
+#   - profile and benchmark
+#   - adopt naming scheme used in other modules (svm, glm)
+#     for estimated parameters (trailing underscore, etc.)
+#
+#######################################################
 
 
 def logsum(A, axis=None):
@@ -519,6 +536,19 @@ self._means = cluster.KMeans(k=self._n_states).fit(X).cluster_centers_
 ## some helper routines
 ##
 
+def _distribute_covar_matrix_to_match_cvtype(tiedcv, cvtype, n_states):
+    if cvtype == 'spherical':
+        cv = np.tile(np.diag(tiedcv).mean(), n_states)
+    elif cvtype == 'tied':
+        cv = tiedcv
+    elif cvtype == 'diag':
+        cv = np.tile(np.diag(tiedcv), (n_states, 1))
+    elif cvtype == 'full':
+        cv = np.tile(tiedcv, (n_states, 1, 1))
+    else:
+        raise (ValueError,
+               "cvtype must be one of 'spherical', 'tied', 'diag', 'full'")
+    return cv
 
 def _lmvnpdfdiag(obs, means=0.0, covars=1.0):
     nobs, ndim = obs.shape
@@ -554,7 +584,7 @@ def _lmvnpdftied(obs, means, covars):
 def _lmvnpdffull(obs, means, covars):
     # FIXME: this representation of covars is going to lose for caching
     from scipy import linalg
-import itertools
+    import itertools
     nobs, ndim = obs.shape
     nmix = len(means)
     lpr = np.empty((nobs,nmix))
@@ -619,7 +649,7 @@ def _covar_mstep_diag(gmm, obs, posteriors, avg_obs, norm, min_covar):
     #                    weights_c)
     # (obs(t) - means_c) (obs(t) - means_c).T
     #     = obs(t) obs(t).T - 2 obs(t) means_c.T + means_c means_c.T
-#
+    #
     # But everything here is a row vector, so all of the
     # above needs to be transposed.
     avg_obs2 = np.dot(posteriors.T, obs * obs) * norm
@@ -633,10 +663,8 @@ def _covar_mstep_spherical(*args):
 
 
 def _covar_mstep_full(gmm, obs, posteriors, avg_obs, norm, min_covar):
-    print "THIS IS BROKEN"
     # Eq. 12 from K. Murphy, "Fitting a Conditional Linear Gaussian
     # Distribution"
-    avg_obs2 = np.dot(obs.T, obs)
     cv = np.empty((gmm._n_states, gmm.n_dim, gmm.n_dim))
     for c in xrange(gmm._n_states):
         post = posteriors[:,c]
@@ -652,7 +680,9 @@ def _covar_mstep_tied2(*args):
 
 
 def _covar_mstep_tied(gmm, obs, posteriors, avg_obs, norm, min_covar):
+    print "THIS IS BROKEN"
     # Eq. 15 from K. Murphy, "Fitting a Conditional Linear Gaussian
+    avg_obs2 = np.dot(obs.T, obs)
     avg_means2 = np.dot(gmm._means.T, gmm._means)
     return (avg_obs2 - avg_means2 + min_covar * np.eye(gmm.n_dim))
 
@@ -679,6 +709,8 @@ def _covar_mstep_slow(gmm, obs, posteriors, avg_obs, norm, min_covar):
         elif gmm.cvtype == 'tied':
             covars += cv / gmm._n_states
     return covars
+
+
 _covar_mstep_funcs = {'spherical': _covar_mstep_spherical,
                       'diag': _covar_mstep_diag,
                       #'tied': _covar_mstep_tied,

@@ -8,6 +8,7 @@ Univariate features selection.
 import numpy as np
 from scipy import stats
 
+from ..base import BaseEstimator
 
 ######################################################################
 # Scoring functions
@@ -19,39 +20,50 @@ from scipy import stats
 def f_oneway(*args):
     """
     Performs a 1-way ANOVA.
+
     The on-way ANOVA tests the null hypothesis that 2 or more groups have
     the same population mean.  The test is applied to samples from two or
     more groups, possibly with differing sizes.
+
     Parameters
     ----------
     sample1, sample2, ... : array_like
         The sample measurements should be given as arguments.
+
     Returns
     -------
     F-value : float
         The computed F-value of the test
     p-value : float
         The associated p-value from the F-distribution
+
     Notes
     -----
     The ANOVA test has important assumptions that must be satisfied in order
     for the associated p-value to be valid.
+
     1. The samples are independent
     2. Each sample is from a normally distributed population
     3. The population standard deviations of the groups are all equal.  This
        property is known as homocedasticity.
+
     If these assumptions are not true for a given set of data, it may still be
     possible to use the Kruskal-Wallis H-test (`stats.kruskal`_) although with
     some loss of power
+
     The algorithm is from Heiman[2], pp.394-7.
+
     See scipy.stats.f_oneway that should give the same results while
     being less efficient
+
     References
     ----------
     .. [1] Lowry, Richard.  "Concepts and Applications of Inferential
            Statistics". Chapter 14.
            http://faculty.vassar.edu/lowry/ch14pt1.html
+
     .. [2] Heiman, G.W.  Research Methods in Statistics. 2002.
+
     """
     n_classes = len(args)
     n_samples_per_class = np.array([len(a) for a in args])
@@ -75,26 +87,17 @@ def f_oneway(*args):
     return f, prob
 
 
-
-
-
-
-
-
-
-
-
-
-
 def f_classif(X, y):
     """
     Compute the Anova F-value for the provided sample
+
     Parameters
     ----------
     X : array of shape (n_samples, n_features)
         the set of regressors sthat will tested sequentially
     y : array of shape(n_samples)
         the data matrix
+
     Returns
     -------
     F : array of shape (m),
@@ -110,8 +113,6 @@ def f_classif(X, y):
     return f_oneway(*args)
 
 
-
-
 def f_regression(X, y, center=True):
     """
     Quick linear model for testing the effect of a single regressor,
@@ -121,14 +122,17 @@ def f_regression(X, y, center=True):
     wrt constant regressors
     2. the cross correlation between data and regressors is computed
     3. it is converted to an F score then to a p-value
+
     Parameters
     ----------
     X : array of shape (n_samples, n_features)
         the set of regressors sthat will tested sequentially
     y : array of shape(n_samples)
         the data matrix
+
     center : True, bool,
         If true, X and y are centered
+
     Returns
     -------
     F : array of shape (m),
@@ -156,14 +160,52 @@ def f_regression(X, y, center=True):
 
 
 
-
-
-
 ######################################################################
 # General class for filter univariate selection
 ######################################################################
 
 
+class _AbstractUnivariateFilter(BaseEstimator):
+    """ Abstract class, not meant to be used directly
+    """
+    def __init__(self, score_func):
+        """ Initialize the univariate feature selection.
+
+        Parameters
+        ===========
+        score_func: callable
+            function taking two arrays X and y, and returning 2 arrays:
+            both scores and pvalues
+        """
+        assert callable(score_func), ValueError(
+                "The score function should be a callable, '%s' (type %s) "
+                "was passed." % (score_func, type(score_func)))
+        self.score_func = score_func
+    def fit(self, X, y):
+        """
+        Evaluate the function
+        """
+        _scores = self.score_func(X, y)
+        self._scores = _scores[0]
+        self._pvalues = _scores[1]
+        return self
+    def transform(self, X, **params):
+        """
+        Transform a new matrix using the selected features
+        """
+        self._set_params(**params)
+        return X[:, self.get_support()]
+    def inverse_transform(self, X, **params):
+        """
+        Transform a new matrix using the selected features
+        """
+        self._set_params(**params)
+        support_ = self.get_support()
+        if X.ndim == 1:
+            X = X[None, :]
+        Xt = np.zeros((X.shape[0], support_.size))
+        Xt[:, support_] = X
+        return Xt
 
 
 
@@ -235,8 +277,6 @@ class SelectKBest(_AbstractUnivariateFilter):
 
 class SelectFpr(_AbstractUnivariateFilter):
     """
-    """
-    """
     Filter : Select the pvalues below alpha
     """
     def __init__(self, score_func, alpha=5e-2):
@@ -259,8 +299,10 @@ class SelectFpr(_AbstractUnivariateFilter):
 
 
 class SelectFdr(_AbstractUnivariateFilter):
+    """
     Filter : Select the p-values corresponding to an estimated false
     discovery rate of alpha. This uses the Benjamini-Hochberg procedure
+    """
     def __init__(self, score_func, alpha=5e-2):
         """ Initialize the univariate feature selection.
 
@@ -284,8 +326,6 @@ class SelectFdr(_AbstractUnivariateFilter):
 
 class SelectFwe(_AbstractUnivariateFilter):
     """
-    """
-    """
     Filter : Select the p-values corresponding to a corrected p-value of alpha
     """
     def __init__(self, score_func, alpha=5e-2):
@@ -307,7 +347,9 @@ class SelectFwe(_AbstractUnivariateFilter):
 
 
 
+######################################################################
 # Generic filter
+######################################################################
 
 class GenericUnivariateSelect(_AbstractUnivariateFilter):
     _selection_modes = {'percentile':   SelectPercentile,
@@ -350,6 +392,9 @@ class GenericUnivariateSelect(_AbstractUnivariateFilter):
         possible_params.remove('score_func')
         selector._set_params(**{possible_params[0]: self.param})
         return selector.get_support()
+
+
+
 
 
 

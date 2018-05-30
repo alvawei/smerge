@@ -39,7 +39,7 @@ class Play(object):
        'hosts', 'name', 'vars', 'vars_prompt', 'vars_files',
        'tasks', 'handlers', 'remote_user', 'user', 'port', 'include', 'accelerate', 'accelerate_port',
        'sudo', 'sudo_user', 'connection', 'tags', 'gather_facts', 'serial',
-       'any_errors_fatal', 'roles', 'pre_tasks', 'post_tasks', 'max_fail_percentage'
+       'any_errors_fatal', 'roles', 'pre_tasks', 'post_tasks', 'max_fail_percentage' 
     ]
     # *************************************************
     def __init__(self, playbook, ds, basedir):
@@ -112,7 +112,7 @@ class Play(object):
     def _get_role_path(self, role):
         """
         Returns the path on disk to the directory containing
-        the role directories like tasks, templates, etc. Also
+        the role directories like tasks, templates, etc. Also 
         returns any variables that were included with the role
         """
         orig_path = template(self.basedir,role,self.vars)
@@ -236,24 +236,23 @@ class Play(object):
             task_basepath     = utils.path_dwim(self.basedir, os.path.join(role_path, 'tasks'))
             handler_basepath  = utils.path_dwim(self.basedir, os.path.join(role_path, 'handlers'))
             vars_basepath     = utils.path_dwim(self.basedir, os.path.join(role_path, 'vars'))
-            meta_basepath     = utils.path_dwim(self.basedir, os.path.join(role_path, 'meta'))
             defaults_basepath = utils.path_dwim(self.basedir, os.path.join(role_path, 'defaults'))
             task      = self._resolve_main(task_basepath)
             handler   = self._resolve_main(handler_basepath)
             vars_file = self._resolve_main(vars_basepath)
-            meta_file = self._resolve_main(meta_basepath)
             defaults_file = self._resolve_main(defaults_basepath)
+            library   = utils.path_dwim(self.basedir, os.path.join(role_path, 'library'))
+            if not os.path.isfile(task) and not os.path.isfile(handler) and not os.path.isfile(vars_file) and not os.path.isdir(library):
+                raise errors.AnsibleError("found role at %s, but cannot find %s or %s or %s or %s or %s" % (role_path, task, handler, vars_file, meta_file, library))
+<<<<<<< REMOTE
+library   = utils.path_dwim(self.basedir, os.path.join(role_path, 'library'))
+=======
             if isinstance(role, dict):
                 role_name = role['role']
-                role_name = role['role']
-<<<<<<< REMOTE
-missing = lambda f: not os.path.isfile(f)
-=======
-else:
+
 >>>>>>> LOCAL
-            if missing(task) and missing(handler) and missing(vars_file) and missing(meta_file) and missing(library):
-                raise errors.AnsibleError("found role at %s, but cannot find %s or %s or %s or %s or %s" % (role_path, task, handler, vars_file, meta_file, library))
-            library   = utils.path_dwim(self.basedir, os.path.join(role_path, 'library'))
+            else:
+                role_name = role
             if os.path.isfile(task):
                 nt = dict(include=pipes.quote(task), vars=role_vars, default_vars=default_vars, role_name=role_name)
                 for k in special_keys:
@@ -308,6 +307,11 @@ else:
                 )
         if sum([os.path.isfile(x) for x in mains]) > 1:
             raise errors.AnsibleError("found multiple main files at %s, only one allowed" % (basepath))
+        else:
+            for m in mains:
+                if os.path.isfile(m):
+                    return m # exactly one main file
+            return mains[0] # zero mains (we still need to return something)
     # *************************************************
     def _load_tasks(self, tasks, vars={}, default_vars={}, sudo_vars={}, additional_conditions=[], original_file=None, role_name=None):
         ''' handle task and handler include statements '''
@@ -352,16 +356,13 @@ else:
                         included_additional_conditions.insert(0, utils.compile_when_to_only_if("jinja2_compare %s" % x[k]))
                     elif k in ("include", "vars", "default_vars", "only_if", "sudo", "sudo_user", "role_name"):
                         continue
-                else:
                     else:
-            for m in mains:
-                if os.path.isfile(m):
-                    return m # exactly one main file
-            return mains[0] # zero mains (we still need to return something)
                         include_vars[k] = x[k]
                 default_vars = x.get('default_vars', {})
                 if not default_vars:
                     default_vars = self.default_vars
+                else:
+                    default_vars = utils.combine_vars(self.default_vars, default_vars)
                 # append the vars defined with the include (from above)
                 # as well as the old-style 'vars' element. The old-style
                 # vars are given higher precedence here (just in case)
@@ -372,7 +373,6 @@ else:
                     included_additional_conditions.append(x['only_if'])
                 new_role = None
                 if 'role_name' in x:
-                    new_role = x['role_name']
                     new_role = x['role_name']
                 for item in items:
                     mv = task_vars.copy()
@@ -389,10 +389,7 @@ else:
                     results += self._load_tasks(data, mv, default_vars, included_sudo_vars, included_additional_conditions, original_file=include_filename, role_name=new_role)
             elif type(x) == dict:
                 results.append(Task(self,x,module_vars=task_vars,default_vars=default_vars,additional_conditions=additional_conditions,role_name=role_name))
-        else:
-            vars.update(self.vars)
             else:
-                    default_vars = utils.combine_vars(self.default_vars, default_vars)
                 raise Exception("unexpected task type")
         for x in results:
             if self.tags is not None:
@@ -422,6 +419,10 @@ else:
                     raise errors.AnsibleError("expecting a key-value pair in 'vars' section")
                 k, v = item.items()[0]
                 vars[k] = v
+        else:
+            vars.update(self.vars)
+            else:
+            vars.update(self.vars)
         if type(self.vars_prompt) == list:
             for var in self.vars_prompt:
                 if not 'name' in var:
@@ -446,6 +447,7 @@ else:
                                      varname=vname, private=False, prompt=prompt_msg, default=None
                                   )
         else:
+            vars.update(self.vars)
         if type(self.playbook.extra_vars) == dict:
             vars.update(self.playbook.extra_vars)
         return vars
@@ -541,29 +543,6 @@ else:
                     elif host is None:
                         # running a non-host specific pass and we can update the global vars instead
                         self.vars = utils.combine_vars(self.vars, new_vars)
-                # just one filename supplied, load it!
-                filename2 = template(self.basedir, filename, self.vars)
-                filename3 = filename2
-                if host is not None:
-                    filename3 = template(self.basedir, filename2, inject)
-                filename4 = utils.path_dwim(self.basedir, filename3)
-                if self._has_vars_in(filename4):
-                    continue
-                new_vars = utils.parse_yaml_from_file(filename4)
-                if new_vars:
-                    if type(new_vars) != dict:
-                        raise errors.AnsibleError("%s must be stored as dictionary/hash: %s" % (filename4, type(new_vars)))
-                    if host is not None and self._has_vars_in(filename2) and not self._has_vars_in(filename3):
-                        # running a host specific pass and has host specific variables
-                        # load into setup cache
-                        self.playbook.SETUP_CACHE[host] = utils.combine_vars(
-                            self.playbook.SETUP_CACHE[host], new_vars)
-                        self.playbook.callbacks.on_import_for_host(host, filename4)
-                    elif host is None:
-                        # running a non-host specific pass and we can update the global vars instead
-                        self.vars = utils.combine_vars(self.vars, new_vars)
-            else:
-            raise errors.AnsibleError("'vars_prompt' section is malformed, see docs")
 
 
 
@@ -574,6 +553,9 @@ else:
 
 
         
+
+
+
 
 
 

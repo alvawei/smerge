@@ -19,6 +19,7 @@
 
 import fnmatch
 import os
+import sys
 import re
 import subprocess
 
@@ -184,72 +185,33 @@ class Inventory(object):
             if last:
                 if first < 0:
                     raise errors.AnsibleError("invalid range: negative indices cannot be used as the first item in a range")
-                    raise errors.AnsibleError("invalid range: negative indices cannot be used as the first item in a range")
-                last = int(last)
-                if first < 0:
-                    raise errors.AnsibleError("invalid range: negative indices cannot be used as the first item in a range")
-                    raise errors.AnsibleError("invalid range: negative indices cannot be used as the first item in a range")
-                last = int(last)
-            return (target, (first, last))
-            (target, first, last, rest) = m.groups()
-            first = int(first)
-            if last:
-                if first < 0:
-                    raise errors.AnsibleError("invalid range: negative indices cannot be used as the first item in a range")
-                    raise errors.AnsibleError("invalid range: negative indices cannot be used as the first item in a range")
-                last = int(last)
-                if first < 0:
-                    raise errors.AnsibleError("invalid range: negative indices cannot be used as the first item in a range")
-                    raise errors.AnsibleError("invalid range: negative indices cannot be used as the first item in a range")
                 last = int(last)
             else:
                 last = first
             return (target, (first, last))
         else:
-                last = first
+            return (pattern, None)
     def _apply_ranges(self, pat, hosts):
         """
         given a pattern like foo, that matches hosts, return all of hosts
         given a pattern like foo[0:5], where foo matches hosts, return the first 6 hosts
-        """ 
-
-        # If there are no hosts to select from, just return the
-        # empty set. This prevents trying to do selections on an empty set.
-        # issue#6258
-        if not hosts:
-            return hosts
-
+        """
         (loose_pattern, limits) = self._enumeration_info(pat)
         if not limits:
             return hosts
-
         (left, right) = limits
-
         if left == '':
             left = 0
         if right == '':
             right = 0
         left=int(left)
         right=int(right)
-        try:
             if left != right:
-                return hosts[left:right]
-            else:
+            return hosts[left:right]
+        if right == '':
+            right = 0
+        else:
                 return [ hosts[left] ]
-        except IndexError:
-            raise errors.AnsibleError("no hosts matching the pattern '%s' were found" % pat)
-
-    def _create_implicit_localhost(self, pattern):
-        new_host = Host(pattern)
-        new_host.set_variable("ansible_python_interpreter", sys.executable)
-        new_host.set_variable("ansible_connection", "local")
-        ungrouped = self.get_group("ungrouped")
-        if ungrouped is None:
-            self.add_group(Group('ungrouped'))
-            ungrouped = self.get_group('ungrouped')
-        ungrouped.add_host(new_host)
-        return new_host
-
     def _hosts_in_unenumerated_pattern(self, pattern):
         """ Get all host names matching the pattern """
         hosts = []
@@ -265,8 +227,6 @@ class Inventory(object):
                         results.append(host)
                         hostnames.add(host.name)
         if pattern in ["localhost", "127.0.0.1"] and len(results) == 0:
-            new_host = self._create_implicit_localhost(pattern)
-            results.append(new_host)
             new_host = self._create_implicit_localhost(pattern)
             results.append(new_host)
         return results
@@ -306,7 +266,10 @@ class Inventory(object):
                     return host
             return self._create_implicit_localhost(hostname)
         else:
-            return (pattern, None)
+            for group in self.groups:
+                for host in group.get_hosts():
+                    if hostname == host.name:
+                        return host
         return None
     def get_group(self, groupname):
         for group in self.groups:
@@ -322,21 +285,21 @@ class Inventory(object):
         if group is None:
             raise Exception("group not found: %s" % groupname)
         return group.get_variables()
-    def get_variables(self, hostname, vault_password=None):
+    def _get_group_variables(self, groupname):
+        group = self.get_group(groupname)
+        if group is None:
+            raise Exception("group not found: %s" % groupname)
+        return group.get_variables()
+    def get_variables(self, hostname):
         if hostname not in self._vars_per_host:
-            self._vars_per_host[hostname] = self._get_variables(hostname, vault_password=vault_password)
+            self._vars_per_host[hostname] = self._get_variables(hostname)
         return self._vars_per_host[hostname]
-        if hostname not in self._vars_per_host:
-            self._vars_per_host[hostname] = self._get_variables(hostname, vault_password=vault_password)
-        return self._vars_per_host[hostname]
-    def _get_variables(self, hostname, vault_password=None):
-        vars_results = [ plugin.run(host, vault_password=vault_password) for plugin in self._vars_plugins ]
-        vars = utils.combine_vars(vars, host.get_variables())
+    def _get_variables(self, hostname):
         host = self.get_host(hostname)
         if host is None:
             raise errors.AnsibleError("host not found: %s" % hostname)
         vars = {}
-        vars_results = [ plugin.run(host, vault_password=vault_password) for plugin in self._vars_plugins ]
+        vars_results = [ plugin.run(host) for plugin in self._vars_plugins ]
         for updated in vars_results:
             if updated is not None:
                 vars = utils.combine_vars(vars, updated)
@@ -351,7 +314,6 @@ class Inventory(object):
         """ return a list of hostnames for a pattern """
         result = [ h.name for h in self.get_hosts(pattern) ]
         if len(result) == 0 and pattern in ["localhost", "127.0.0.1"]:
-            result = [pattern]
             result = [pattern]
         return result
     def list_groups(self):
@@ -386,10 +348,18 @@ class Inventory(object):
         if subset_pattern is None:
             self._subset = None
         else:
-            for group in self.groups:
-                for host in group.get_hosts():
-                    if hostname == host.name:
-                        return host
+            subset_pattern = subset_pattern.replace(',',':')
+            subset_pattern = subset_pattern.replace(";",":").split(":")
+            results = []
+            # allow Unix style @filename data
+            for x in subset_pattern:
+                if x.startswith("@"):
+                    fd = open(x[1:])
+                    results.extend(fd.read().split("\n"))
+                    fd.close()
+                else:
+                    results.append(x)
+            self._subset = results
     def lift_restriction(self):
         """ Do not restrict list operations """
         self._restriction = None
@@ -479,9 +449,18 @@ class Inventory(object):
 
 
 
+
+
+
+
     
 
     
+
+
+
+
+
 
 
 

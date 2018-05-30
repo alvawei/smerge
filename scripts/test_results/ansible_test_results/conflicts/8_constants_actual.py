@@ -18,6 +18,7 @@
 import os
 import pwd
 import sys
+import ConfigParser
 from string import ascii_letters, digits
 
 # copied from utils, avoid circular reference fun :)
@@ -38,35 +39,12 @@ def get_config(p, section, key, env_var, default, boolean=False, integer=False, 
     if value:
         if integer:
             value = int(value)
-            value = int(value)
         elif floating:
-            value = float(value)
             value = float(value)
         elif islist:
             if isinstance(value, string_types):
                 value = [x.strip() for x in value.split(',')]
-                value = [x.strip() for x in value.split(',')]
-            if isinstance(value, string_types):
-                value = [x.strip() for x in value.split(',')]
-                value = [x.strip() for x in value.split(',')]
         elif isinstance(value, string_types):
-            value = unquote(value)
-            value = unquote(value)
-        if integer:
-            value = int(value)
-            value = int(value)
-        elif floating:
-            value = float(value)
-            value = float(value)
-        elif islist:
-            if isinstance(value, string_types):
-                value = [x.strip() for x in value.split(',')]
-                value = [x.strip() for x in value.split(',')]
-            if isinstance(value, string_types):
-                value = [x.strip() for x in value.split(',')]
-                value = [x.strip() for x in value.split(',')]
-        elif isinstance(value, string_types):
-            value = unquote(value)
             value = unquote(value)
     return value
 
@@ -111,6 +89,7 @@ def shell_expand_path(path):
         path = os.path.expanduser(os.path.expandvars(path))
     return path
 
+p = load_config_file()
 
 active_user   = pwd.getpwuid(os.geteuid())[0]
 
@@ -121,6 +100,7 @@ YAML_FILENAME_EXTENSIONS = [ "", ".yml", ".yaml", ".json" ]
 # sections in config file
 DEFAULTS='defaults'
 
+# configurable things
 DEFAULT_HOST_LIST         = shell_expand_path(get_config(p, DEFAULTS, 'hostfile', 'ANSIBLE_HOSTS', get_config(p, DEFAULTS,'inventory','ANSIBLE_INVENTORY', '/etc/ansible/hosts')))
 DEFAULT_MODULE_PATH       = get_config(p, DEFAULTS, 'library',          'ANSIBLE_LIBRARY',          None)
 DEFAULT_ROLES_PATH        = shell_expand_path(get_config(p, DEFAULTS, 'roles_path',       'ANSIBLE_ROLES_PATH',       '/etc/ansible/roles'))
@@ -136,7 +116,6 @@ DEFAULT_REMOTE_USER       = get_config(p, DEFAULTS, 'remote_user',      'ANSIBLE
 DEFAULT_ASK_PASS          = get_config(p, DEFAULTS, 'ask_pass',  'ANSIBLE_ASK_PASS',    False, boolean=True)
 DEFAULT_PRIVATE_KEY_FILE  = shell_expand_path(get_config(p, DEFAULTS, 'private_key_file', 'ANSIBLE_PRIVATE_KEY_FILE', None))
 DEFAULT_ASK_SUDO_PASS     = get_config(p, DEFAULTS, 'ask_sudo_pass',    'ANSIBLE_ASK_SUDO_PASS',    False, boolean=True)
-DEFAULT_REMOTE_PORT       = get_config(p, DEFAULTS, 'remote_port',      'ANSIBLE_REMOTE_PORT',      None, integer=True)
 DEFAULT_ASK_VAULT_PASS    = get_config(p, DEFAULTS, 'ask_vault_pass',    'ANSIBLE_ASK_VAULT_PASS',    False, boolean=True)
 DEFAULT_VAULT_PASSWORD_FILE = shell_expand_path(get_config(p, DEFAULTS, 'vault_password_file', 'ANSIBLE_VAULT_PASSWORD_FILE', None))
 DEFAULT_TRANSPORT         = get_config(p, DEFAULTS, 'transport',        'ANSIBLE_TRANSPORT',        'smart')
@@ -145,6 +124,7 @@ DEFAULT_MANAGED_STR       = get_config(p, DEFAULTS, 'ansible_managed',  None,   
 DEFAULT_SYSLOG_FACILITY   = get_config(p, DEFAULTS, 'syslog_facility',  'ANSIBLE_SYSLOG_FACILITY', 'LOG_USER')
 DEFAULT_KEEP_REMOTE_FILES = get_config(p, DEFAULTS, 'keep_remote_files', 'ANSIBLE_KEEP_REMOTE_FILES', False, boolean=True)
 DEFAULT_SUDO              = get_config(p, DEFAULTS, 'sudo', 'ANSIBLE_SUDO', False, boolean=True)
+DEFAULT_REMOTE_PORT       = get_config(p, DEFAULTS, 'remote_port',      'ANSIBLE_REMOTE_PORT',      None, integer=True)
 DEFAULT_SUDO_USER         = get_config(p, DEFAULTS, 'sudo_user',        'ANSIBLE_SUDO_USER',        'root')
 DEFAULT_SUDO_EXE          = get_config(p, DEFAULTS, 'sudo_exe', 'ANSIBLE_SUDO_EXE', 'sudo')
 DEFAULT_SUDO_FLAGS        = get_config(p, DEFAULTS, 'sudo_flags', 'ANSIBLE_SUDO_FLAGS', '-H')
@@ -159,12 +139,17 @@ DEFAULT_ASK_SU_PASS       = get_config(p, DEFAULTS, 'ask_su_pass', 'ANSIBLE_ASK_
 DEFAULT_GATHERING         = get_config(p, DEFAULTS, 'gathering', 'ANSIBLE_GATHERING', 'implicit').lower()
 DEFAULT_LOG_PATH          = shell_expand_path(get_config(p, DEFAULTS, 'log_path',           'ANSIBLE_LOG_PATH', ''))
 
+#TODO: get rid of ternary chain mess
 BECOME_METHODS            = ['sudo','su','pbrun','pfexec','runas']
 BECOME_ERROR_STRINGS      = {'sudo': 'Sorry, try again.', 'su': 'Authentication failure', 'pbrun': '', 'pfexec': '', 'runas': ''} #FIXME: deal with i18n
 DEFAULT_BECOME            = get_config(p, 'privilege_escalation', 'become', 'ANSIBLE_BECOME',False, boolean=True)
 DEFAULT_BECOME_METHOD     = get_config(p, 'privilege_escalation', 'become_method', 'ANSIBLE_BECOME_METHOD','sudo' if DEFAULT_SUDO else 'su' if DEFAULT_SU else 'sudo' ).lower()
 DEFAULT_BECOME_USER       = get_config(p, 'privilege_escalation', 'become_user', 'ANSIBLE_BECOME_USER', 'root')
 DEFAULT_BECOME_ASK_PASS   = get_config(p, 'privilege_escalation', 'become_ask_pass', 'ANSIBLE_BECOME_ASK_PASS', False, boolean=True)
+# need to rethink impementing these 2
+DEFAULT_BECOME_EXE = None
+#DEFAULT_BECOME_EXE        = get_config(p, DEFAULTS, 'become_exe', 'ANSIBLE_BECOME_EXE','sudo' if DEFAULT_SUDO else 'su' if DEFAULT_SU else 'sudo')
+#DEFAULT_BECOME_FLAGS      = get_config(p, DEFAULTS, 'become_flags', 'ANSIBLE_BECOME_FLAGS',DEFAULT_SUDO_FLAGS if DEFAULT_SUDO else DEFAULT_SU_FLAGS if DEFAULT_SU else '-H')
 
 
 DEFAULT_ACTION_PLUGIN_PATH     = get_config(p, DEFAULTS, 'action_plugins',     'ANSIBLE_ACTION_PLUGINS', '~/.ansible/plugins/action_plugins:/usr/share/ansible_plugins/action_plugins')
@@ -173,8 +158,8 @@ DEFAULT_CALLBACK_PLUGIN_PATH   = get_config(p, DEFAULTS, 'callback_plugins',   '
 DEFAULT_CONNECTION_PLUGIN_PATH = get_config(p, DEFAULTS, 'connection_plugins', 'ANSIBLE_CONNECTION_PLUGINS', '~/.ansible/plugins/connection_plugins:/usr/share/ansible_plugins/connection_plugins')
 DEFAULT_LOOKUP_PLUGIN_PATH     = get_config(p, DEFAULTS, 'lookup_plugins',     'ANSIBLE_LOOKUP_PLUGINS', '~/.ansible/plugins/lookup_plugins:/usr/share/ansible_plugins/lookup_plugins')
 DEFAULT_VARS_PLUGIN_PATH       = get_config(p, DEFAULTS, 'vars_plugins',       'ANSIBLE_VARS_PLUGINS', '~/.ansible/plugins/vars_plugins:/usr/share/ansible_plugins/vars_plugins')
-DEFAULT_FILTER_PLUGIN_PATH     = get_config(p, DEFAULTS, 'filter_plugins',     'ANSIBLE_FILTER_PLUGINS', '~/.ansible/plugins/filter_plugins:/usr/share/ansible_plugins/filter_plugins')
 DEFAULT_TEST_PLUGIN_PATH       = get_config(p, DEFAULTS, 'test_plugins',       'ANSIBLE_TEST_PLUGINS', '~/.ansible/plugins/test_plugins:/usr/share/ansible_plugins/test_plugins')
+DEFAULT_FILTER_PLUGIN_PATH     = get_config(p, DEFAULTS, 'filter_plugins',     'ANSIBLE_FILTER_PLUGINS', '~/.ansible/plugins/filter_plugins:/usr/share/ansible_plugins/filter_plugins')
 
 CACHE_PLUGIN                   = get_config(p, DEFAULTS, 'fact_caching', 'ANSIBLE_CACHE_PLUGIN', 'memory')
 CACHE_PLUGIN_CONNECTION        = get_config(p, DEFAULTS, 'fact_caching_connection', 'ANSIBLE_CACHE_PLUGIN_CONNECTION', None)

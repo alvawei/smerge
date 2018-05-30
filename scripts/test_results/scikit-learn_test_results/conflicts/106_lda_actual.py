@@ -15,12 +15,16 @@ from .base import BaseEstimator, ClassifierMixin
 class LDA(BaseEstimator, ClassifierMixin):
     """
     Linear Discriminant Analysis (LDA)
+
     Parameters
     ----------
+
     n_components: int
         Number of components (< n_classes - 1)
+
     priors : array, optional, shape = [n_classes]
         Priors on classes
+
     Attributes
     ----------
     `means_` : array-like, shape = [n_classes, n_features]
@@ -31,6 +35,7 @@ class LDA(BaseEstimator, ClassifierMixin):
         Class priors (sum to 1)
     `covariance_` : array-like, shape = [n_features, n_features]
         Covariance matrix (shared by all classes)
+
     Examples
     --------
     >>> import numpy as np
@@ -42,16 +47,25 @@ class LDA(BaseEstimator, ClassifierMixin):
     LDA(priors=None)
     >>> print clf.predict([[-0.8, -1]])
     [1]
+
     See also
     --------
     QDA
+
     """
     def __init__(self, n_components=None, priors=None):
         self.n_components = n_components
         self.priors = np.asarray(priors) if priors is not None else None
+        if self.priors is not None:
+            if (self.priors < 0).any():
+                raise ValueError('priors must be non-negative')
+            if self.priors.sum() != 1:
+                print 'warning: the priors do not sum to 1. Renormalizing'
+                self.priors = self.priors / self.priors.sum()
     def fit(self, X, y, store_covariance=False, tol=1.0e-4, **params):
         """
         Fit the LDA model according to the given training data and parameters.
+
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
@@ -153,9 +167,11 @@ class LDA(BaseEstimator, ClassifierMixin):
         """
         This function return the decision function values related to each
         class on an array of test vectors X.
+
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
+
         Returns
         -------
         C : array, shape = [n_samples, n_classes]
@@ -168,9 +184,11 @@ class LDA(BaseEstimator, ClassifierMixin):
         """
         This function return the decision function values related to each
         class on an array of test vectors X.
+
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
+
         Returns
         -------
         X_new : array, shape = [n_samples, n_components]
@@ -183,10 +201,13 @@ class LDA(BaseEstimator, ClassifierMixin):
     def predict(self, X):
         """
         This function does classification on an array of test vectors X.
+
         The predicted class C for each sample in X is returned.
+
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
+
         Returns
         -------
         C : array, shape = [n_samples]
@@ -198,9 +219,11 @@ class LDA(BaseEstimator, ClassifierMixin):
         """
         This function return posterior probabilities of classification
         according to each class on an array of test vectors X.
+
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
+
         Returns
         -------
         C : array, shape = [n_samples, n_classes]
@@ -215,9 +238,11 @@ class LDA(BaseEstimator, ClassifierMixin):
         """
         This function return posterior log-probabilities of classification
         according to each class on an array of test vectors X.
+
         Parameters
         ----------
         X : array-like, shape = [n_samples, n_features]
+
         Returns
         -------
         C : array, shape = [n_samples, n_classes]
@@ -226,21 +251,6 @@ class LDA(BaseEstimator, ClassifierMixin):
         loglikelihood = (values - values.max(axis=1)[:, np.newaxis])
         normalization = np.logaddexp.reduce(loglikelihood, axis=1)
         return loglikelihood - normalization[:, np.newaxis]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

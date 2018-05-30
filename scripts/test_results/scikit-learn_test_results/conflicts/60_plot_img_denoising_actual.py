@@ -33,11 +33,11 @@ from time import time
 
 import pylab as pl
 import scipy as sp
-from sklearn.feature_extraction.image import extract_patches_2d
-from sklearn.feature_extraction.image import reconstruct_from_patches_2d
 import numpy as np
 
 from sklearn.decomposition import DictionaryLearningOnline
+from sklearn.feature_extraction.image import extract_patches_2d
+                                             reconstruct_from_patches_2d
 
 ###############################################################################
 # Load Lena image and extract patches
@@ -58,13 +58,11 @@ print 'Extracting clean patches...'
 patch_size = (7, 7)
 data = extract_patches_2d(distorted[:, :height / 2], patch_size)
 data = data.reshape(data.shape[0], -1)
-print 'done in %.2fs.' % (time() - t0)
 data -= np.mean(data, axis=0)
 data /= np.std(data, axis=0)
 
 ###############################################################################
 # Learn the dictionary from clean patches
-    t0 = time()
 print 'Learning the dictionary... '
 t0 = time()
 dico = DictionaryLearningOnline(n_atoms=100, alpha=1e-2, n_iter=500)
@@ -110,27 +108,41 @@ show_with_diff(distorted, lena, 'Distorted image')
 
 ###############################################################################
 # Extract noisy patches and reconstruct them using the dictionary
-t0 = time()
 print 'Extracting noisy patches... '
-    ('Least-angle regression\n5 atoms', 'lars',
-                            {'transform_n_nonzero_coefs': 5}),
 data = extract_patches_2d(distorted[:, height / 2:], patch_size)
 data = data.reshape(data.shape[0], -1)
-print 'done in %.2fs.' % (time() - t0)
 intercept = np.mean(data, axis=0)
 data -= intercept
 
+<<<<<<< REMOTE
+transform_algorithms = [
+    ('Orthogonal Matching Pursuit\n1 atom', 'omp',
+     {'transform_n_nonzero_coefs': 1}),
+    ('Orthogonal Matching Pursuit\n2 atoms', 'omp',
+     {'transform_n_nonzero_coefs': 2}),
+    ('Least-angle regression\n5 atoms', 'lars',
+                            {'transform_n_nonzero_coefs': 5}),
+    ('Thresholding\n alpha=0.1', 'threshold', {'transform_alpha': .1})]
+=======
+transform_algorithms = [
+    ('Orthogonal Matching Pursuit\n1 atom', 'omp',
+     {'transform_n_nonzero_coefs': 1}),
+    ('Orthogonal Matching Pursuit\n2 atoms', 'omp',
+     {'transform_n_nonzero_coefs': 2}),
+    ('Least-angle regression\n5 atoms', 'lars', {'transform_n_nonzero_coefs': 5}),
+    ('Thresholding\n alpha=0.1', 'threshold', {'transform_alpha': .1})]
+=======
 transform_algorithms = [
     ('Orthogonal Matching Pursuit\n1 atom',
      'omp', {'transform_n_nonzero_coefs': 1}),
     ('Orthogonal Matching Pursuit\n2 atoms',
      'omp', {'transform_n_nonzero_coefs': 2}),
-]
+    ('Least-angle regression\n5 atoms',
+     'lars', {'transform_n_nonzero_coefs': 5}),
     ('Thresholding\n alpha=0.1', 'threshold',
      {'transform_alpha': .1}),
-
-
-
+]
+>>>>>>> LOCAL
 
 reconstructions = {}
 for title, transform_algorithm, kwargs in transform_algorithms:

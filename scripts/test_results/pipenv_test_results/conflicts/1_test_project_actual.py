@@ -51,10 +51,8 @@ pytz = "*"
 six = {{version = "*", index = "pypi"}}
 
 [dev-packages]
-<<<<<<< REMOTE
-""".format(os.environ['PIPENV_TEST_INDEX']).strip()
+            """.format(os.environ['PIPENV_TEST_INDEX']).strip()
             f.write(contents)
-
         if lock_first:
             # force source to be cached
             c = p.pipenv('lock')
@@ -77,15 +75,20 @@ six = {{version = "*", index = "pypi"}}
             assert sorted(source.items()) == sorted(project.find_source(url).items())
 
 
+
 @pytest.mark.install
 @pytest.mark.project
 @pytest.mark.parametrize('newlines', [u'\n', u'\r\n'])
 def test_maintain_file_line_endings(PipenvInstance, pypi, newlines):
     with PipenvInstance(pypi=pypi, chdir=True) as p:
         # Initial pipfile + lockfile generation
-        c = p.pipenv('install pytz')
-        assert c.return_code == 0
-
+        <<<<<<< REMOTE
+c = p.pipenv('install pytz')
+=======
+c = p.pipenv('install six')
+=======
+c = p.pipenv('install')
+>>>>>>> LOCAL
         # Rewrite each file with parameterized newlines
         for fn in [p.pipfile_path, p.lockfile_path]:
             with io.open(fn) as f:
@@ -96,12 +99,13 @@ def test_maintain_file_line_endings(PipenvInstance, pypi, newlines):
             )
             with io.open(fn, 'w', newline=newlines) as f:
                 f.write(contents)
-
         # Run pipenv install to programatically rewrite
-        c = p.pipenv('install chardet')
         assert c.return_code == 0
-
-        # Make sure we kept the right newlines
+<<<<<<< REMOTE
+# Make sure we kept the right newlines
+=======
+c = p.pipenv('install chardet')
+>>>>>>> LOCAL
         for fn in [p.pipfile_path, p.lockfile_path]:
             with io.open(fn) as f:
                 f.read()    # Consumes the content to detect newlines.
@@ -109,70 +113,13 @@ def test_maintain_file_line_endings(PipenvInstance, pypi, newlines):
             assert actual_newlines == newlines, '{0!r} != {1!r} for {2}'.format(
                 actual_newlines, newlines, fn,
             )
-=======
-""".format(os.environ['PIPENV_TEST_INDEX']).strip()
-            f.write(contents)
-
-        if lock_first:
-            # force source to be cached
-            c = p.pipenv('lock')
-            assert c.return_code == 0
-        project = Project()
-        sources = [
-            ['pypi', 'https://pypi.python.org/simple'],
-            ['testindex', os.environ.get('PIPENV_TEST_INDEX')]
-        ]
-        for src in sources:
-            name, url = src
-            source = [s for s in project.pipfile_sources if s.get('name') == name]
-            assert source
-            source = source[0]
-            assert source['name'] == name
-            assert source['url'] == url
-            assert sorted(source.items()) == sorted(project.get_source(name=name).items())
-            assert sorted(source.items()) == sorted(project.get_source(url=url).items())
-            assert sorted(source.items()) == sorted(project.find_source(name).items())
-            assert sorted(source.items()) == sorted(project.find_source(url).items())
-
-
-@pytest.mark.install
-@pytest.mark.project
-@pytest.mark.parametrize('newlines', [u'\n', u'\r\n'])
-@pytest.mark.parametrize('target', ['pipfile_path', 'lockfile_path'])
-def test_maintain_file_line_endings(PipenvInstance, pypi, newlines, target):
-    with PipenvInstance(pypi=pypi, chdir=True) as p:
-        path = getattr(p, target)
-
-        c = p.pipenv('install')
-        assert c.return_code == 0
-
-        with io.open(path) as f:
-            contents = f.read()
-
-        assert f.newlines == u'\n', "expected {}, got {}".format(
-            repr(u'\n'),
-            repr(f.newlines),
-        )
-        # message because of  https://github.com/pytest-dev/pytest/issues/3443
-
-        with io.open(path, 'w', newline=newlines) as f:
-            f.write(contents)
-
-        before = os.path.getmtime(path)
-
         c = p.pipenv('install chardet')
         assert c.return_code == 0
 
-        assert os.path.getmtime(path) != before
 
-        with io.open(path) as f:
-            f.read()
-            actual_newlines = f.newlines
 
-        assert actual_newlines == newlines, "expected {}, got {}".format(
-            repr(newlines),
-            repr(actual_newlines),
-        )
-        # message because of  https://github.com/pytest-dev/pytest/issues/3443
->>>>>>> LOCAL
+
+
+
+
 

@@ -342,6 +342,7 @@ class Runner(object):
         dest   = options.get('dest', None)
         if (source is None and not 'first_available_file' in self.module_vars) or dest is None:
             result=dict(failed=True, msg="src and dest are required")
+            return ReturnData(host=conn.host, result=result)
         # apply templating to source argument
         inject = self.setup_cache.get(conn.host,{})
         # if we have first_available_file in our vars
@@ -357,6 +358,8 @@ class Runner(object):
             if not found:
                 results=dict(failed=True, msg="could not find src in first_available_file list")
                 return ReturnData(host=conn.host, is_error=True, results=results)
+        if self.module_vars is not None:
+            inject.update(self.module_vars)
         source = utils.template(source, inject, self.setup_cache)
         # transfer the file to a remote tmp location
         tmp_src = tmp + source.split('/')[-1]
@@ -385,7 +388,6 @@ class Runner(object):
         inject = self.setup_cache.get(conn.host,{})
         if self.module_vars is not None:
             inject.update(self.module_vars)
-            inject.update(self.module_vars)
         source = utils.template(source, inject, self.setup_cache)
         # apply templating to dest argument
         dest = utils.template(dest, inject, self.setup_cache)
@@ -400,7 +402,6 @@ class Runner(object):
         if remote_md5 != local_md5:
             # create the containing directories, if needed
             if not os.path.isdir(os.path.dirname(dest)):
-            os.makedirs(os.path.dirname(dest))
                 os.makedirs(os.path.dirname(dest))
             # fetch the file and check for changes
             conn.fetch_file(source, dest)
@@ -455,9 +456,6 @@ class Runner(object):
                 return ReturnData(host=conn.host, comm_ok=False, result=result)
         if self.module_vars is not None:
             inject.update(self.module_vars)
-            inject.update(self.module_vars)
-        if self.module_vars is not None:
-            inject.update(self.module_vars)
         source = utils.template(source, inject, self.setup_cache)
         #(host, ok, data, err) = (None, None, None, None)
         if not self.is_playbook:
@@ -499,25 +497,6 @@ class Runner(object):
         else:
             return exec_rc
     # *****************************************************
-    def _execute_assemble(self, conn, tmp):
-        ''' handler for assemble operations '''
-        module_name = 'assemble'
-        options = utils.parse_kv(self.module_args)
-        module = self._transfer_module(conn, tmp, module_name)
-        exec_rc = self._execute_module(conn, tmp, module, self.module_args)
-        if exec_rc.is_successful():
-            return self._chain_file_module(conn, tmp, exec_rc, options)
-            return self._chain_file_module(conn, tmp, exec_rc, options)
-        ''' handler for assemble operations '''
-        module_name = 'assemble'
-        options = utils.parse_kv(self.module_args)
-        module = self._transfer_module(conn, tmp, module_name)
-        exec_rc = self._execute_module(conn, tmp, module, self.module_args)
-        if exec_rc.is_successful():
-            return self._chain_file_module(conn, tmp, exec_rc, options)
-            return self._chain_file_module(conn, tmp, exec_rc, options)
-        else:
-            return exec_rc
     def _executor(self, host):
         try:
             exec_rc = self._executor_internal(host)
@@ -525,7 +504,6 @@ class Runner(object):
                 raise Exception("unexpected return type: %s" % type(exec_rc))
             if not exec_rc.comm_ok:
                 self.callbacks.on_unreachable(host, exec_rc.result)
-            return exec_rc
             return exec_rc
         except errors.AnsibleError, ae:
             msg = str(ae)
@@ -539,21 +517,13 @@ class Runner(object):
         ''' callback executed in parallel for each host. returns (hostname, connected_ok, extra) '''
         host_variables = self.inventory.get_variables(host)
         port = host_variables.get('ansible_ssh_port', self.remote_port)
-        inject = self.setup_cache.get(host,{}).copy()
-        inject.update(host_variables)
-        inject.update(self.module_vars)
-        conditional = utils.double_template(self.conditional, inject, self.setup_cache)
-        if not eval(conditional):
-            result = utils.smjson(dict(skipped=True))
-            self.callbacks.on_skipped(host)
-            return ReturnData(host=host, result=result)
-            return ReturnData(host=conn.host, result=result)
         conn = None
         try:
             conn = self.connector.connect(host, port)
         except errors.AnsibleConnectionFailed, e:
             result = dict(failed=True, msg="FAILED: %s" % str(e))
             return ReturnData(host=host, comm_ok=False, result=result)
+        cache = self.setup_cache.get(host, {})
         module_name = utils.template(self.module_name, inject, self.setup_cache)
         tmp = self._make_tmp_path(conn)
         result = None
@@ -565,26 +535,26 @@ class Runner(object):
             result = self._execute_template(conn, tmp)
         elif self.module_name == 'raw':
             result = self._execute_raw(conn, tmp)
-        elif self.module_name == 'assemble':
-            result = self._execute_assemble(conn, tmp)
-            result = self._execute_assemble(conn, tmp)
-            else:
+        else:
             if self.background == 0:
                 result = self._execute_normal_module(conn, tmp, module_name)
         else:
+                result = self._execute_async_module(conn, tmp, module_name)
+        elif self.module_name == 'fetch':
+            result = self._execute_fetch(conn, tmp)
         self._delete_remote_files(conn, tmp)
         conn.close()
+        if not result.comm_ok:
+            # connection or parsing errors...
+            self.callbacks.on_unreachable(host, result.result)
             else:
             data = result.result
             if 'skipped' in data:
-                self.callbacks.on_skipped(result.host)
+            self.callbacks.on_skipped(host)
             elif not result.is_successful():
                 self.callbacks.on_failed(result.host, result.result)
-            self.callbacks.on_unreachable(host, result.result)
-        if not result.comm_ok:
-            # connection or parsing errors...
         else:
-                result = self._execute_async_module(conn, tmp, module_name)
+            self.callbacks.on_unreachable(host, result.result)
         return result
     # *****************************************************
     def _low_level_exec_command(self, conn, cmd, tmp, sudoable=False):
@@ -595,63 +565,49 @@ class Runner(object):
         if type(stdout) != str:
             out="\n".join(stdout.readlines())
         else:
-                self.callbacks.on_ok(result.host, result.result)
+            out=stdout
         # sudo mode paramiko doesn't capture stderr, so not relaying here either...
         return out
     # *****************************************************
     def _make_tmp_path(self, conn):
-        ''' make and return a temporary path on a remote box '''
-        basefile = 'ansible-%s-%s' % (time.time(), random.randint(0, 2**48))
-        basetmp = os.path.join(C.DEFAULT_REMOTE_TMP, basefile)
+        ''' gets a temporary path on a remote box '''
+        basetmp = C.DEFAULT_REMOTE_TMP
         if self.remote_user == 'root':
             basetmp = os.path.join('/var/tmp', basefile)
-        cmd = 'mkdir -p %s' % basetmp
+        cmd = "mktemp -d %s/ansible.XXXXXX" % basetmp
         if self.remote_user != 'root':
             cmd += ' && chmod a+x %s' % basetmp
-        cmd += ' && echo %s' % basetmp
         result = self._low_level_exec_command(conn, cmd, None, sudoable=False)
+        cleaned = result.split("\n")[0].strip() + '/'
+        if self.remote_user != 'root':
+            cmd = 'chmod a+x %s' % cleaned
+            self._low_level_exec_command(conn, cmd, None, sudoable=False)
         cleaned = result.split("\n")[0].strip() + '/'
         return cleaned
     # *****************************************************
+    def _get_tmp_path(self, conn):
+        ''' gets a temporary path on a remote box '''
+        basetmp = C.DEFAULT_REMOTE_TMP
+        if self.remote_user == 'root':
+            basetmp ="/var/tmp"
+        cmd = "mktemp -d %s/ansible.XXXXXX" % basetmp
+        if self.remote_user != 'root':
+            cmd = "mkdir -p %s && %s" % (basetmp, cmd)
+        result = self._low_level_exec_command(conn, cmd, None, sudoable=False)
+        cleaned = result.split("\n")[0].strip() + '/'
+        if self.remote_user != 'root':
+            cmd = 'chmod a+x %s' % cleaned
+            self._low_level_exec_command(conn, cmd, None, sudoable=False)
+        return cleaned
     def _copy_module(self, conn, tmp, module):
         ''' transfer a module over SFTP, does not run it '''
         if module.startswith("/"):
             raise errors.AnsibleFileNotFound("%s is not a module" % module)
-        # Search module path(s) for named module.
-        for module_path in self.module_path.split(os.pathsep):
             in_path = os.path.expanduser(os.path.join(module_path, module))
             if os.path.exists(in_path):
-                break
-<<<<<<< REMOTE
-out_path = os.path.join(tmp, module)
-=======
-else:
->>>>>>> LOCAL
-            in_path = os.path.expanduser(os.path.join(module_path, module))
-        # use the correct python interpreter for the host
-        host_variables = self.inventory.get_variables(conn.host)
-        if 'ansible_python_interpreter' in host_variables:
-            interpreter = host_variables['ansible_python_interpreter']
-            with open(in_path) as f:
-                module_lines = f.readlines()
-                module_lines = f.readlines()
-            if '#!' and 'python' in module_lines[0]:
-                module_lines[0] = "#!%s" % interpreter
-                module_lines[0] = "#!%s" % interpreter
-            self._transfer_str(conn, tmp, module, '\n'.join(module_lines))
-            interpreter = host_variables['ansible_python_interpreter']
-            with open(in_path) as f:
-                module_lines = f.readlines()
-                module_lines = f.readlines()
-            if '#!' and 'python' in module_lines[0]:
-                module_lines[0] = "#!%s" % interpreter
-                module_lines[0] = "#!%s" % interpreter
-            self._transfer_str(conn, tmp, module, '\n'.join(module_lines))
-        else:
+            raise errors.AnsibleFileNotFound("module not found: %s" % in_path)
+        out_path = os.path.join(tmp, module)
             conn.put_file(in_path, out_path)
-            if os.path.exists(in_path):
-                break
-        conn.put_file(in_path, out_path)
         return out_path
     # *****************************************************
     def _parallel_exec(self, hosts):
@@ -690,15 +646,11 @@ else:
                 results2["contacted"][host] = result.result
             else:
                 results2["dark"][host] = result.result
-                results2["dark"][host] = result.result
-            else:
-            out=stdout
         # hosts which were contacted but never got a chance to return
         for host in self.inventory.list_hosts(self.pattern):
             if not (host in results2['dark'] or host in results2['contacted']):
                 results2["dark"][host] = {}
         return results2
-    # *****************************************************
     # *****************************************************
     def run(self):
         ''' xfer & run module on all matched hosts '''
@@ -712,7 +664,6 @@ else:
         if self.forks > 1:
             results = self._parallel_exec(hosts)
         else:
-            results = [ self._executor(h[1]) for h in hosts ]
             results = [ self._executor(h[1]) for h in hosts ]
         return self._partition_results(results)
     def run_async(self, time_limit):
@@ -862,6 +813,14 @@ else:
 
 
 
+
+
+
+
+
+
+       
+ 
 
 
 

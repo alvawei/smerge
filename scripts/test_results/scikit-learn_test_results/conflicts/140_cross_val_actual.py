@@ -23,10 +23,12 @@ class LeaveOneOut(object):
         """
         Leave-One-Out cross validation iterator:
         Provides train/test indexes to split data in train test sets
+
         Parameters
         ===========
         n: int
             Total number of elements
+
         Examples
         ========
         >>> from scikits.learn import cross_val
@@ -69,24 +71,25 @@ class LeaveOneOut(object):
 
 
 
-
-
 ##############################################################################
 class LeavePOut(object):
     """
     Leave-P-Out cross validation iterator:
     Provides train/test indexes to split data in train test sets
+
     """
     def __init__(self, n, p):
         """
         Leave-P-Out cross validation iterator:
         Provides train/test indexes to split data in train test sets
+
         Parameters
         ===========
         n: int
             Total number of elements
         p: int
             Size test sets
+
         Examples
         ========
         >>> from scikits.learn import cross_val
@@ -132,9 +135,7 @@ class LeavePOut(object):
 
 
 
-
-
-
+##############################################################################
 
 
 
@@ -149,12 +150,14 @@ class KFold(object):
         """
         K-Folds cross validation iterator:
         Provides train/test indexes to split data in train test sets
+
         Parameters
         ===========
         n: int
             Total number of elements
         k: int
             number of folds
+
         Examples
         ========
         >>> from scikits.learn import cross_val
@@ -170,25 +173,14 @@ class KFold(object):
         ...    X_train, X_test, y_train, y_test = cross_val.split(train_index, test_index, X, y)
         TRAIN: [False False  True  True] TEST: [ True  True False False]
         TRAIN: [ True  True False False] TEST: [False False  True  True]
+
         Note
         ====
         All the folds have size trunc(n/k), the last one has the complementary
         """
-<<<<<<< REMOTE
-assert k>0, ('cannot have k below 1')
-=======
-assert k>0, ('cannot have k below 1')
->>>>>>> LOCAL
-<<<<<<< REMOTE
-assert k<n, ('cannot have k=%d greater than the number '
-=======
-assert k<n, ('cannot have k=%d greater than the number '
->>>>>>> LOCAL
-<<<<<<< REMOTE
-'of samples: %d'% (k, n))
-=======
-'of samples: %d'% (k, n))
->>>>>>> LOCAL
+        assert k>0, ('cannot have k below 1')
+        assert k<n, ('cannot have k=%d greater than the number '
+                            'of samples: %d'% (k, n))
         self.n = n
         self.k = k
     def __iter__(self):
@@ -221,17 +213,16 @@ assert k<n, ('cannot have k=%d greater than the number '
 
 
 
-
-
-
 ##############################################################################
 class StratifiedKFold(object):
     """
     Stratified K-Folds cross validation iterator:
     Provides train/test indexes to split data in train test sets
+
     This cross-validation object is a variation of KFold, which
     returns stratified folds. The folds are made by preserving
     the percentage of samples for each class.
+
     """
     # XXX: Should maybe have an argument to raise when
     # folds are not balanced
@@ -239,12 +230,14 @@ class StratifiedKFold(object):
         """
         K-Folds cross validation iterator:
         Provides train/test indexes to split data in train test sets
+
         Parameters
         ===========
         y: array, [n_samples]
             Samples to split in K folds
         k: int
             number of folds
+
         Examples
         ========
         >>> from scikits.learn import cross_val
@@ -260,27 +253,16 @@ class StratifiedKFold(object):
         ...    X_train, X_test, y_train, y_test = cross_val.split(train_index, test_index, X, y)
         TRAIN: [False  True False  True] TEST: [ True False  True False]
         TRAIN: [ True False  True False] TEST: [False  True False  True]
+
         Note
         ====
         All the folds have size trunc(n/k), the last one has the complementary
         """
         y = np.asanyarray(y)
         n = y.size
-<<<<<<< REMOTE
-assert k>0, ValueError('cannot have k below 1')
-=======
-assert k>0, ValueError('cannot have k below 1')
->>>>>>> LOCAL
-<<<<<<< REMOTE
-assert k<n, ValueError('cannot have k=%d greater than %d'% (k, n))
-=======
-assert k<n, ValueError('cannot have k=%d greater than %d'% (k, n))
->>>>>>> LOCAL
-<<<<<<< REMOTE
-'of samples %d' % (k, n))
-=======
-'of samples %d' % (k, n))
->>>>>>> LOCAL
+        assert k>0, ValueError('cannot have k below 1')
+        assert k<n, ValueError('cannot have k=%d greater than the number '
+                               'of samples %d' % (k, n))
 <<<<<<< REMOTE
 _, y_sorted = np.unique1d(y, return_inverse=True)
 =======
@@ -324,11 +306,6 @@ assert k<np.min(np.bincount(y_sorted))
                                 )
     def __len__(self):
         return self.k
-    
-    
-
-
-
 
 
 
@@ -351,10 +328,12 @@ class LeaveOneLabelOut(object):
         """
         Leave-One-Label_Out cross validation:
         Provides train/test indexes to split data in train test sets
+
         Parameters
         ----------
         labels : list
                 List of labels
+
         Examples
         ----------
         >>> from scikits.learn import cross_val
@@ -379,6 +358,7 @@ class LeaveOneLabelOut(object):
         [[1 2]
          [3 4]] [[5 6]
          [7 8]] [1 2] [1 2]
+
         """
         self.labels = labels
         self.n_labels = np.unique(labels).size
@@ -406,9 +386,6 @@ class LeaveOneLabelOut(object):
 
 
 
-
-
-
 ##############################################################################
 class LeavePLabelOut(object):
     """
@@ -419,10 +396,12 @@ class LeavePLabelOut(object):
         """
         Leave-P-Label_Out cross validation:
         Provides train/test indexes to split data in train test sets
+
         Parameters
         ----------
         labels : list
                 List of labels
+
         Examples
         ----------
         >>> from scikits.learn import cross_val
@@ -448,6 +427,7 @@ class LeavePLabelOut(object):
         TRAIN: [ True False False] TEST: [False  True  True]
         [[1 2]] [[3 4]
          [5 6]] [1] [2 1]
+
         """
         self.labels = labels
         self.unique_labels = np.unique(self.labels)
@@ -482,7 +462,9 @@ class LeavePLabelOut(object):
 
 
 
+    
 ##############################################################################
+
 def _cross_val_score(estimator, X, y, score_func, train, test):
     """ Inner loop for cross validation.
     """
@@ -491,6 +473,8 @@ def _cross_val_score(estimator, X, y, score_func, train, test):
     if y is None:
         return score_func(estimator.fit(X[train]), X[test])
     return score_func(estimator.fit(X[train], y[train]), X[test], y[test])
+
+
 def cross_val_score(estimator, X, y=None, score_func=None, cv=None,
                 n_jobs=1, verbose=0):
     """ Evaluate a score by cross-validation.
@@ -537,6 +521,8 @@ def cross_val_score(estimator, X, y=None, score_func=None, cv=None,
                                                         train, test)
                 for train, test in cv)
     return np.array(scores)
+
+
 ################################################################################
 # Depreciated
 def split(train_indices, test_indices, *args):

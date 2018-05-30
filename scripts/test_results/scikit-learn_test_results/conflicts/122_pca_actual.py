@@ -11,12 +11,23 @@ def _assess_dimension_(spect, rk, n_samples, dim):
     """
     Compute the likelihood of a rank rk dataset
     embedded in gaussian noise of shape(n, dimf) having spectrum spect
+
     Parameters
     ----------
     spect: array of shape (n)
-           data spectrum
+        data spectrum
+    rk: int,
+        tested rank value
+    n_samples: int,
+        number of samples
+    dim: int,
+        embedding/emprical dimension
+
     Returns
     -------
+    ll: float,
+        The log-likelihood
+
     Notes
     -----
     This implements the method of Thomas P. Minka:
@@ -47,9 +58,6 @@ def _assess_dimension_(spect, rk, n_samples, dim):
                      (1./spectrum_[j] - 1./spectrum_[i])) + np.log(n_samples)
     ll = pu + pl + pv + pp -pa/2 - rk*np.log(n_samples)/2
     return ll
-
-
-
 
 
 
@@ -156,6 +164,7 @@ class PCA(BaseEstimator):
 
 
 
+
 ################################################################################
 class ProbabilisticPCA(PCA):
     """ Additional layer on top of PCA that add a probabilistic evaluation
@@ -208,11 +217,6 @@ class ProbabilisticPCA(PCA):
         log_like += fast_logdet(self.precision_) - \
                                     self.dim / 2 * np.log(2 * np.pi)
         return log_like
-
-
-
-
-
 
 
 

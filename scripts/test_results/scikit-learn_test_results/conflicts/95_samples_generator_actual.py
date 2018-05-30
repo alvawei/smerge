@@ -145,6 +145,7 @@ def sparse_uncorrelated(n_samples=100, n_features=10):
     return X, y
 
 
+
 def friedman(n_samples=100, n_features=10, noise_std=1):
     """Function creating simulated data with non linearities
 
@@ -178,7 +179,6 @@ def friedman(n_samples=100, n_features=10, noise_std=1):
             + 10 * X[:, 3] + 5 * X[:, 4]
     y += noise_std * nr.normal(loc=0, scale=1, size=n_samples)
     return X, y
-
 
 def low_rank_fat_tail(n_samples=100, n_features=100, effective_rank=10,
                       tail_strength=0.5, seed=0):
@@ -343,6 +343,35 @@ def make_regression_dataset(n_train_samples=100, n_test_samples=100,
 
 
 
+
+
+
+
+
+def S_curve(n_samples, noise=0.0):
+    """Generate S curve dataset
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of points on the S curve
+
+    noise : float (optional)
+        Noise level. By default no noise.
+
+    Returns
+    -------
+    X : array of shape [n_samples, 3]
+        The points.
+    """
+    np.random.seed(0)
+    t = 3*np.pi * (np.random.rand(1,n_samples) - 0.5)
+    x = np.sin(t)
+    y = np.random.rand(1,n_samples)*2.0
+    z = np.sign(t)*(np.cos(t)-1)
+    X = np.concatenate((x,y,z)).T
+    t = np.squeeze(t)
+    return X, t
 
 
 

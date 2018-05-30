@@ -51,7 +51,13 @@ X_lda = lda.LDA(n_components=2).fit_transform(X2, y)
 #----------------------------------------------------------------------
 # Locally linear embedding of the digits dataset
 
+from scikits.learn import manifold, datasets
+digits = datasets.load_digits(n_class=6)
+method = 'standard'
 
+print "Computing LLE embedding (method = %s)" % method
+X_lle, err = manifold.locally_linear_embedding(digits.data, 30, 2, reg=1e-2,
+                                             method=method)
 print "Done. Reconstruction error: %g" % err
 
 #----------------------------------------------------------------------
@@ -84,9 +90,11 @@ def plot_embedding(X, title=None):
         pl.title(title)
 
 
+
 plot_embedding(X_projected, "Random Projection of the digits")
 plot_embedding(X_pca, "Principal Components projection of the digits")
 plot_embedding(X_lda, "Linear Discriminant projection of the digits")
 plot_embedding(X_lle, "Locally Linear Embedding of the digits")
+
 pl.show()
 

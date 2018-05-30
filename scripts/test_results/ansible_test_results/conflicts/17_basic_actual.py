@@ -30,6 +30,7 @@
 # == BEGIN DYNAMICALLY INSERTED CODE ==
 
 MODULE_ARGS = "<<INCLUDE_ANSIBLE_MODULE_ARGS>>"
+MODULE_LANG = "<<INCLUDE_ANSIBLE_MODULE_LANG>>"
 MODULE_COMPLEX_ARGS = "<<INCLUDE_ANSIBLE_MODULE_COMPLEX_ARGS>>"
 
 BOOLEANS_TRUE = ['yes', 'on', '1', 'true', 1]
@@ -126,12 +127,22 @@ def get_platform():
 def get_distribution():
     ''' return the distribution name '''
     if platform.system() == 'Linux':
+        try:
+            distribution = platform.linux_distribution()[0].capitalize()
+            if not distribution and os.path.isfile('/etc/system-release'):
+                distribution = platform.linux_distribution(supported_dists=['system'])[0].capitalize()
+                if 'Amazon' in distribution:
+                    distribution = 'Amazon'
+                else:
+                    distribution = 'OtherLinux'
         except:
             # FIXME: MethodMissing, I assume?
             distribution = platform.dist()[0].capitalize()
     else:
         distribution = None
     return distribution
+
+
 
 def load_platform_subclass(cls, *args, **kwargs):
     '''
@@ -156,8 +167,6 @@ def load_platform_subclass(cls, *args, **kwargs):
 
 
 
-
-
 class AnsibleModule(object):
     def __init__(self, argument_spec, bypass_checks=False, no_log=False,
         check_invalid_arguments=True, mutually_exclusive=None, required_together=None,
@@ -173,10 +182,6 @@ class AnsibleModule(object):
         self.no_log = no_log
         self.cleanup_files = []
         self.aliases = {}
-        if add_file_common_args:
-            for k, v in FILE_COMMON_ARGUMENTS.iteritems():
-                if k not in self.argument_spec:
-                    self.argument_spec[k] = v
         # check the locale as set by the current environment, and
         # reset to LANG=C if it's an invalid/unavailable locale
         self._check_locale()
@@ -212,7 +217,7 @@ class AnsibleModule(object):
         if path is None:
             return {}
         else:
-        distribution_version = None
+            path = os.path.expanduser(path)
         mode   = params.get('mode', None)
         owner  = params.get('owner', None)
         group  = params.get('group', None)
@@ -244,7 +249,6 @@ class AnsibleModule(object):
         if selinux.is_selinux_mls_enabled() == 1:
             return True
         else:
-            path = os.path.expanduser(path)
             return False
     def selinux_enabled(self):
         if not HAVE_SELINUX:
@@ -256,9 +260,8 @@ class AnsibleModule(object):
             return False
         if selinux.is_selinux_enabled() == 1:
             return True
-            else:
-            return False
         else:
+            return False
     # Determine whether we need a placeholder for selevel/mls
     def selinux_initial_context(self):
         context = [None, None, None]
@@ -282,17 +285,8 @@ class AnsibleModule(object):
         context = self.selinux_initial_context()
         if not HAVE_SELINUX or not self.selinux_enabled():
             return context
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
         try:
-<<<<<<< REMOTE
-distribution = platform.linux_distribution()[0].capitalize()
-=======
-distribution_version = platform.linux_distribution()[1]
->>>>>>> LOCAL
+            ret = selinux.matchpathcon(self._to_filesystem_str(path), mode)
         except OSError:
             return context
         if ret[0] == -1:
@@ -305,14 +299,13 @@ distribution_version = platform.linux_distribution()[1]
         context = self.selinux_initial_context()
         if not HAVE_SELINUX or not self.selinux_enabled():
             return context
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+        try:
+            ret = selinux.lgetfilecon_raw(self._to_filesystem_str(path))
         except OSError, e:
             if e.errno == errno.ENOENT:
                 self.fail_json(path=path, msg='path %s does not exist' % path)
+            else:
+                self.fail_json(path=path, msg='failed to retrieve selinux context')
         if ret[0] == -1:
             return context
         # Limit split to 4 because the selevel, the last in the list,
@@ -329,51 +322,22 @@ try:
         path = os.path.abspath(os.path.expanduser(os.path.expandvars(path)))
         while not os.path.ismount(path):
             path = os.path.dirname(path)
-            path = os.path.dirname(path)
-        return path
-        path = os.path.abspath(os.path.expanduser(os.path.expandvars(path)))
-        while not os.path.ismount(path):
-            path = os.path.dirname(path)
-            path = os.path.dirname(path)
         return path
     def is_nfs_path(self, path):
         """
         Returns a tuple containing (True, selinux_context) if the given path
         is on a NFS mount point, otherwise the return will be (False, None).
         """
-        path_mount_point = self.find_mount_point(path)
-        for line in mount_data:
-            (device, mount_point, fstype, options, rest) = line.split(' ', 4)
-            if path_mount_point == mount_point and 'nfs' in fstype:
-                nfs_context = self.selinux_context(path_mount_point)
-                return (True, nfs_context)
-                nfs_context = self.selinux_context(path_mount_point)
-                return (True, nfs_context)
-            (device, mount_point, fstype, options, rest) = line.split(' ', 4)
-            if path_mount_point == mount_point and 'nfs' in fstype:
-                nfs_context = self.selinux_context(path_mount_point)
-                return (True, nfs_context)
-                nfs_context = self.selinux_context(path_mount_point)
-                return (True, nfs_context)
-        return (False, None)
-        """
-        Returns a tuple containing (True, selinux_context) if the given path
-        is on a NFS mount point, otherwise the return will be (False, None).
-        """
+        try:
+            f = open('/proc/mounts', 'r')
+            mount_data = f.readlines()
+            f.close()
         except:
             return (False, None)
         path_mount_point = self.find_mount_point(path)
         for line in mount_data:
             (device, mount_point, fstype, options, rest) = line.split(' ', 4)
             if path_mount_point == mount_point and 'nfs' in fstype:
-                nfs_context = self.selinux_context(path_mount_point)
-                return (True, nfs_context)
-                nfs_context = self.selinux_context(path_mount_point)
-                return (True, nfs_context)
-            (device, mount_point, fstype, options, rest) = line.split(' ', 4)
-            if path_mount_point == mount_point and 'nfs' in fstype:
-                nfs_context = self.selinux_context(path_mount_point)
-                return (True, nfs_context)
                 nfs_context = self.selinux_context(path_mount_point)
                 return (True, nfs_context)
         return (False, None)
@@ -392,13 +356,19 @@ try:
         (is_nfs, nfs_context) = self.is_nfs_path(path)
         if is_nfs:
             new_context = nfs_context
-            new_context = nfs_context
+        else:
+            for i in range(len(cur_context)):
+                if len(context) > i:
+                    if context[i] is not None and context[i] != cur_context[i]:
+                        new_context[i] = context[i]
+                    if context[i] is None:
+                        new_context[i] = cur_context[i]
         if cur_context != new_context:
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+            try:
+                if self.check_mode:
+                    return True
+                rc = selinux.lsetfilecon(self._to_filesystem_str(path),
+                                         str(':'.join(new_context)))
             except OSError:
                 self.fail_json(path=path, msg='invalid selinux context', new_context=new_context, cur_context=cur_context, input_was=context)
             if rc != 0:
@@ -410,40 +380,18 @@ try:
         if owner is None:
             return changed
         orig_uid, orig_gid = self.user_and_group(path)
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
         try:
-<<<<<<< REMOTE
-if self.check_mode:
-=======
-f = open('/proc/mounts', 'r')
->>>>>>> LOCAL
-<<<<<<< REMOTE
-rc = selinux.lsetfilecon(self._to_filesystem_str(path),
-                                         str(':'.join(new_context)))
-=======
-mount_data = f.readlines()
->>>>>>> LOCAL
-            f.close()
+            uid = int(owner)
         except ValueError:
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+            try:
+                uid = pwd.getpwnam(owner).pw_uid
             except KeyError:
                 self.fail_json(path=path, msg='chown failed: failed to look up user %s' % owner)
         if orig_uid != uid:
             if self.check_mode:
                 return True
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+            try:
+                os.lchown(path, uid, -1)
             except OSError:
                 self.fail_json(path=path, msg='chown failed')
             changed = True
@@ -453,27 +401,18 @@ try:
         if group is None:
             return changed
         orig_uid, orig_gid = self.user_and_group(path)
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+        try:
+            gid = int(group)
         except ValueError:
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+            try:
+                gid = grp.getgrnam(group).gr_gid
             except KeyError:
                 self.fail_json(path=path, msg='chgrp failed: failed to look up group %s' % group)
         if orig_gid != gid:
             if self.check_mode:
                 return True
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+            try:
+                os.lchown(path, -1, gid)
             except OSError:
                 self.fail_json(path=path, msg='chgrp failed')
             changed = True
@@ -482,11 +421,10 @@ try:
         path = os.path.expanduser(path)
         if mode is None:
             return changed
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+        try:
+            # FIXME: support English modes
+            if not isinstance(mode, int):
+                mode = int(mode, 8)
         except Exception, e:
             self.fail_json(path=path, msg='mode needs to be something octalish', details=str(e))
         st = os.lstat(path)
@@ -496,23 +434,18 @@ try:
                 return True
             # FIXME: comparison against string above will cause this to be executed
             # every time
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+            try:
+                if 'lchmod' in dir(os):
+                    os.lchmod(path, mode)
+                else:
+                    os.chmod(path, mode)
             except OSError, e:
                 if os.path.islink(path) and e.errno == errno.EPERM:  # Can't set mode on symbolic links
                     pass
                 elif e.errno == errno.ENOENT: # Can't set mode on broken symbolic links
                     pass
                 else:
-        for i in range(len(cur_context)):
-            if len(context) > i:
-                if context[i] is not None and context[i] != cur_context[i]:
-                    new_context[i] = context[i]
-                if context[i] is None:
-                    new_context[i] = cur_context[i]
+                    raise e
             except Exception, e:
                 self.fail_json(path=path, msg='chmod failed', details=str(e))
             st = os.lstat(path)
@@ -551,27 +484,12 @@ try:
             (uid, gid) = self.user_and_group(path)
             kwargs['uid'] = uid
             kwargs['gid'] = gid
-        try:
-<<<<<<< REMOTE
-group = grp.getgrgid(gid)[0]
-=======
-user = pwd.getpwuid(uid)[0]
->>>>>>> LOCAL
-            else:
-<<<<<<< REMOTE
-result = _literal_eval(str, None, locals)
-=======
-kwargs['state'] = 'absent'
->>>>>>> LOCAL
-            else:
-                self.fail_json(msg="internal error: do not know how to interpret argument_spec")
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+            try:
+                user = pwd.getpwuid(uid)[0]
             except KeyError:
                 user = str(uid)
+            try:
+                group = grp.getgrgid(gid)[0]
             except KeyError:
                 group = str(gid)
             kwargs['owner'] = user
@@ -581,44 +499,28 @@ try:
             # secontext not yet supported
             if os.path.islink(path):
                 kwargs['state'] = 'link'
-            else:
             elif os.path.isdir(path):
                 kwargs['state'] = 'directory'
             elif os.stat(path).st_nlink > 1:
                 kwargs['state'] = 'hard'
+            else:
+                kwargs['state'] = 'file'
             if HAVE_SELINUX and self.selinux_enabled():
                 kwargs['secontext'] = ':'.join(self.selinux_context(path))
             kwargs['size'] = st[stat.ST_SIZE]
         else:
-                    raise e
+            kwargs['state'] = 'absent'
         return kwargs
     def _check_locale(self):
-        Uses the locale module to test the currently set locale
-        (per the LANG and LC_CTYPE environment settings)
-        except locale.Error, e:
-            # fallback to the 'C' locale, which may cause unicode
-            # issues but is preferable to simply failing because
-            # of an unknown locale
-            locale.setlocale(locale.LC_ALL, 'C')
-            os.environ['LANG']     = 'C'
-            os.environ['LC_CTYPE'] = 'C'
-            # fallback to the 'C' locale, which may cause unicode
-            # issues but is preferable to simply failing because
-            # of an unknown locale
-            locale.setlocale(locale.LC_ALL, 'C')
-            os.environ['LANG']     = 'C'
-            os.environ['LC_CTYPE'] = 'C'
         '''
         Uses the locale module to test the currently set locale
         (per the LANG and LC_CTYPE environment settings)
         '''
+        try:
+            # setting the locale to '' uses the default locale
+            # as it would be returned by locale.getdefaultlocale()
+            locale.setlocale(locale.LC_ALL, '')
         except locale.Error, e:
-            # fallback to the 'C' locale, which may cause unicode
-            # issues but is preferable to simply failing because
-            # of an unknown locale
-            locale.setlocale(locale.LC_ALL, 'C')
-            os.environ['LANG']     = 'C'
-            os.environ['LC_CTYPE'] = 'C'
             # fallback to the 'C' locale, which may cause unicode
             # issues but is preferable to simply failing because
             # of an unknown locale
@@ -715,6 +617,8 @@ try:
                         choices_str=",".join([str(c) for c in choices])
                         msg="value of %s must be one of: %s, got: %s" % (k, choices_str, self.params[k])
                         self.fail_json(msg=msg)
+            else:
+                self.fail_json(msg="internal error: do not know how to interpret argument_spec")
     def _check_argument_types(self):
         ''' ensure all arguments have the requested type '''
         for (k, v) in self.argument_spec.iteritems():
@@ -740,31 +644,13 @@ try:
                 if not isinstance(value, dict):
                     if isinstance(value, basestring):
                         if value.startswith("{"):
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
                             try:
-<<<<<<< REMOTE
-result = None
-=======
-group = grp.getgrgid(gid)[0]
->>>>>>> LOCAL
-            if not locals:
-                result = _literal_eval(str)
-            else:
-<<<<<<< REMOTE
-result = _literal_eval(str, None, locals)
-=======
-kwargs['state'] = 'absent'
->>>>>>> LOCAL
-            if include_exceptions:
-            else:
-                self.fail_json(msg="internal error: do not know how to interpret argument_spec")
+                                self.params[k] = json.loads(value)
                             except:
-            # FIXME: MethodMissing, I assume?
-            distribution_version = platform.dist()[1]
+                                (result, exc) = self.safe_eval(value, dict(), include_exceptions=True)
+                                if exc is not None:
+                                    self.fail_json(msg="unable to evaluate dictionary for %s" % k)
+                                self.params[k] = result
                         elif '=' in value:
                             self.params[k] = dict([x.split("=", 1) for x in value.split(",")])
                         else:
@@ -810,19 +696,8 @@ kwargs['state'] = 'absent'
         items   = shlex.split(args)
         params = {}
         for x in items:
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
             try:
-<<<<<<< REMOTE
-self.params[k] = json.loads(value)
-=======
-# setting the locale to '' uses the default locale
->>>>>>> LOCAL
-            # as it would be returned by locale.getdefaultlocale()
-            locale.setlocale(locale.LC_ALL, '')
+                (k, v) = x.split("=",1)
             except Exception, e:
                 self.fail_json(msg="this module requires key=value arguments (%s)" % (items))
             params[k] = v
@@ -838,7 +713,7 @@ self.params[k] = json.loads(value)
         filter_re = [
             # filter out things like user:pass@foo/whatever
             # and http://username:pass@wherever/foo
-            re.compile('^(?P<before>.*:)(?P<password>.*)(?P<after>\@.*)$'),
+            re.compile('^(?P<before>.*:)(?P<password>.*)(?P<after>\@.*)$'), 
         ]
         for param in self.params:
             canon  = self.aliases.get(param, param)
@@ -867,7 +742,6 @@ self.params[k] = json.loads(value)
         for arg in log_args:
             if isinstance(log_args[arg], basestring):
                 msg = msg + arg + '=' + log_args[arg].decode('utf-8') + ' '
-                msg = msg + arg + '=' + log_args[arg].decode('utf-8') + ' '
             else:
                 msg = msg + arg + '=' + str(log_args[arg]) + ' '
         if msg:
@@ -875,11 +749,8 @@ self.params[k] = json.loads(value)
         else:
             msg = 'Invoked'
         # 6655 - allow for accented characters
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+        try:
+            msg = msg.encode('utf8')
         except UnicodeDecodeError, e:
             pass
         if (has_journal):
@@ -887,11 +758,8 @@ try:
             journal_args.append("MODULE=%s" % os.path.basename(__file__))
             for arg in log_args:
                 journal_args.append(arg.upper() + "=" + str(log_args[arg]))
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+            try:
+                journal.sendv(*journal_args)
             except IOError, e:
                 # fall back to syslog since logging to journal failed
                 syslog.openlog(str(module), 0, syslog.LOG_USER)
@@ -900,30 +768,20 @@ try:
             syslog.openlog(str(module), 0, syslog.LOG_USER)
             syslog.syslog(syslog.LOG_NOTICE, msg) #2
     def _set_cwd(self):
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+        try:
+            cwd = os.getcwd()
+            if not os.access(cwd, os.F_OK|os.R_OK):
+                raise
+            return cwd
         except:
-            self.fail_json(rc=257, msg=traceback.format_exc(), cmd=clean_args)
-        except:
-            return (False, None)
             # we don't have access to the cwd, probably because of sudo.
             # Try and move to a neutral location to prevent errors
             for cwd in [os.path.expandvars('$HOME'), tempfile.gettempdir()]:
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+                try:
+                    if os.access(cwd, os.F_OK|os.R_OK):
+                        os.chdir(cwd)
+                        return cwd
                 except:
-                    pass
-                except:
-                                (result, exc) = self.safe_eval(value, dict(), include_exceptions=True)
-                                if exc is not None:
-                                    self.fail_json(msg="unable to evaluate dictionary for %s" % k)
-                                self.params[k] = result
                     pass
         # we won't error here, as it may *not* be a problem,
         # and we don't want to break modules unnecessarily
@@ -969,32 +827,19 @@ try:
             self.fail_json(msg='Boolean %s not in either boolean list' % arg)
     def jsonify(self, data):
         for encoding in ("utf-8", "latin-1", "unicode_escape"):
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+            try:
+                return json.dumps(data, encoding=encoding)
             # Old systems using simplejson module does not support encoding keyword.
             except TypeError, e:
                 return json.dumps(data)
             except UnicodeDecodeError, e:
                 continue
         self.fail_json(msg='Invalid unicode encoding encountered')
-    def from_json(self, data):
-        return json.loads(data)
     def add_cleanup_file(self, path):
         if path not in self.cleanup_files:
             self.cleanup_files.append(path)
-            self.cleanup_files.append(path)
-        if path not in self.cleanup_files:
-            self.cleanup_files.append(path)
-            self.cleanup_files.append(path)
     def do_cleanup_files(self):
         for path in self.cleanup_files:
-            self.cleanup(path)
-            self.cleanup(path)
-        for path in self.cleanup_files:
-            self.cleanup(path)
             self.cleanup(path)
     def exit_json(self, **kwargs):
         ''' return from the module, without error '''
@@ -1045,21 +890,15 @@ try:
         # backups named basename-YYYY-MM-DD@HH:MM~
         ext = time.strftime("%Y-%m-%d@%H:%M~", time.localtime(time.time()))
         backupdest = '%s.%s' % (fn, ext)
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+        try:
+            shutil.copy2(fn, backupdest)
         except shutil.Error, e:
             self.fail_json(msg='Could not make backup of %s to %s: %s' % (fn, backupdest, e))
         return backupdest
     def cleanup(self, tmpfile):
         if os.path.exists(tmpfile):
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+            try:
+                os.unlink(tmpfile)
             except OSError, e:
                 sys.stderr.write("could not cleanup %s: %s" % (tmpfile, e))
     def atomic_move(self, src, dest):
@@ -1069,11 +908,10 @@ try:
         context = None
         dest_stat = None
         if os.path.exists(dest):
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+            try:
+                dest_stat = os.stat(dest)
+                os.chmod(src, dest_stat.st_mode & 07777)
+                os.chown(src, dest_stat.st_uid, dest_stat.st_gid)
             except OSError, e:
                 if e.errno != errno.EPERM:
                     raise
@@ -1083,15 +921,9 @@ try:
             if self.selinux_enabled():
                 context = self.selinux_default_context(dest)
         creating = not os.path.exists(dest)
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+        try:
+            login_name = os.getlogin()
         except OSError:
-            # not having a tty can cause the above to fail, so
-            # just get the LOGNAME environment variable instead
-            login_name = os.environ.get('LOGNAME', None)
             # not having a tty can cause the above to fail, so
             # just get the LOGNAME environment variable instead
             login_name = os.environ.get('LOGNAME', None)
@@ -1100,23 +932,8 @@ try:
         # is set, then this user has switched their credentials
         switched_user = login_name and login_name != pwd.getpwuid(os.getuid())[0] or os.environ.get('SUDO_USER')
         try:
-        if creating:
-            # make sure the file has the correct permissions
-            # based on the current value of umask
-            umask = os.umask(0)
-            os.umask(umask)
-            os.chmod(dest, 0666 ^ umask)
-            if switched_user:
-            os.chown(dest, os.getuid(), os.getgid())
-                os.chown(dest, os.getuid(), os.getgid())
-            # make sure the file has the correct permissions
-            # based on the current value of umask
-            umask = os.umask(0)
-            os.umask(umask)
-            os.chmod(dest, 0666 ^ umask)
-            if switched_user:
-            os.chown(dest, os.getuid(), os.getgid())
-                os.chown(dest, os.getuid(), os.getgid())
+            # Optimistically try a rename, solves some corner cases and can avoid useless work, throws exception if not atomic.
+            os.rename(src, dest)
         except (IOError,OSError), e:
             # only try workarounds for errno 18 (cross device), 1 (not permited) and 13 (permission denied)
             if e.errno != errno.EPERM and e.errno != errno.EXDEV and e.errno != errno.EACCES:
@@ -1130,9 +947,6 @@ try:
                     # cleanup will happen by 'rm' of tempdir
                     # copy2 will preserve some metadata
                     shutil.copy2(src, tmp_dest.name)
-                    # cleanup will happen by 'rm' of tempdir
-                    # copy2 will preserve some metadata
-                    shutil.copy2(src, tmp_dest.name)
                 else:
                     shutil.move(src, tmp_dest.name)
                 if self.selinux_enabled():
@@ -1141,16 +955,22 @@ try:
                 tmp_stat = os.stat(tmp_dest.name)
                 if dest_stat and (tmp_stat.st_uid != dest_stat.st_uid or tmp_stat.st_gid != dest_stat.st_gid):
                     os.chown(tmp_dest.name, dest_stat.st_uid, dest_stat.st_gid)
-                    os.chown(tmp_dest.name, dest_stat.st_uid, dest_stat.st_gid)
                 os.rename(tmp_dest.name, dest)
             except (shutil.Error, OSError, IOError), e:
                 self.cleanup(tmp_dest.name)
                 self.fail_json(msg='Could not replace file: %s to %s: %s' % (src, dest, e))
+        if creating:
+            # make sure the file has the correct permissions
+            # based on the current value of umask
+            umask = os.umask(0)
+            os.umask(umask)
+            os.chmod(dest, 0666 ^ umask)
+            if switched_user:
+                os.chown(dest, os.getuid(), os.getgid())
         if self.selinux_enabled():
             # rename might not preserve context
             self.set_context_if_different(dest, context, False)
     def run_command(self, args, check_rc=False, close_fds=False, executable=None, data=None, binary_data=False, path_prefix=None, cwd=None, use_unsafe_shell=False):
-        '''
         '''
         Execute a command, returns rc, stdout, and stderr.
         args is the command to run
@@ -1163,7 +983,6 @@ try:
         - close_fds (boolean) See documentation for subprocess.Popen().
                               Default is False.
         - executable (string) See documentation for subprocess.Popen().
-        '''
                               Default is None.
         '''
         shell = False
@@ -1200,15 +1019,10 @@ try:
         # is the password/key/phrase that will be hidden
         clean_re_strings = [
             # this removes things like --password, --pass, --pass-wd, etc.
-            # optionally followed by an '=' or a space. The password can
+            # optionally followed by an '=' or a space. The password can 
             # be quoted or not too, though it does not care about quotes
             # that are not balanced
             # source: http://blog.stevenlevithan.com/archives/match-quoted-string
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
             r'([-]{0,2}pass[-]?(?:word|wd)?[=\s]?)((?:["\'])?(?:[^\s])*(?:\1)?)',
             r'^(?P<before>.*:)(?P<password>.*)(?P<after>\@.*)$', 
             # TODO: add more regex checks here
@@ -1216,10 +1030,8 @@ try:
         for re_str in clean_re_strings:
             r = re.compile(re_str)
             clean_args = r.sub(r'\1********', clean_args)
-
         if data:
             st_in = subprocess.PIPE
-
         kwargs = dict(
             executable=executable,
             shell=shell,
@@ -1228,28 +1040,29 @@ try:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE 
         )
-
         if path_prefix:
             kwargs['env'] = env
         if cwd and os.path.isdir(cwd):
             kwargs['cwd'] = cwd
-
         # store the pwd
         prev_dir = os.getcwd()
-
         # make sure we're in the right working directory
-        except:
-            self.fail_json(rc=257, msg=traceback.format_exc(), cmd=clean_args)
         if cwd and os.path.isdir(cwd):
-<<<<<<< REMOTE
-try:
-=======
-try:
->>>>>>> LOCAL
+            try:
+                os.chdir(cwd)
             except (OSError, IOError), e:
                 self.fail_json(rc=e.errno, msg="Could not open %s , %s" % (cwd, str(e)))
+        try:
+            cmd = subprocess.Popen(args, **kwargs)
+            if data:
+                if not binary_data:
+                    data += '\n'
+            out, err = cmd.communicate(input=data)
+            rc = cmd.returncode
         except (OSError, IOError), e:
             self.fail_json(rc=e.errno, msg=str(e), cmd=clean_args)
+        except:
+            self.fail_json(rc=257, msg=traceback.format_exc(), cmd=clean_args)
         if rc != 0 and check_rc:
             msg = err.rstrip()
             self.fail_json(cmd=clean_args, rc=rc, stdout=out, stderr=err, msg=msg)
@@ -1348,6 +1161,11 @@ try:
 
 
                 
+
+
+
+
+
 
 
 

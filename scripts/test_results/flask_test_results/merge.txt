@@ -1,5 +1,0 @@
-Auto-merging tests/flask_tests.py
-Auto-merging flask.py
-CONFLICT (content): Merge conflict in flask.py
-Auto-merging docs/api.rst
-Automatic merge failed; fix conflicts and then commit the result.

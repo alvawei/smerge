@@ -19,14 +19,10 @@
 
 import re
 
-from ansible.module_utils.basic import json, AnsibleModule, get_exception
 from ansible.module_utils.basic import json, get_exception
 from ansible.module_utils.network import Command, ModuleStub, NetCli, NetworkError
-from ansible.module_utils.network import NetCli, NetworkError, NetworkModule, Command
 from ansible.module_utils.network import add_argument, get_module, register_transport, to_list
 from ansible.module_utils.netcfg import NetworkConfig
-# temporary fix until modules are update.  to be removed before 2.2 final
-from ansible.module_utils.network import get_module
 from ansible.module_utils.urls import fetch_url, url_argument_spec
 
 EAPI_FORMATS = ['json', 'text']
@@ -370,7 +366,6 @@ def prepare_config(commands):
     commands.insert(0, 'configure terminal')
     commands.append('end')
     return commands
-
 
 
 def prepare_commands(commands):

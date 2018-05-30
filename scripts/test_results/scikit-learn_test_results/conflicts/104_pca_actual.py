@@ -8,6 +8,7 @@
 import numpy as np
 from scipy import linalg
 
+from .base import BaseEstimator
 from .utils.extmath import fast_logdet
 from .utils.extmath import fast_svd
 from .utils.extmath import safe_sparse_dot
@@ -86,6 +87,147 @@ def _infer_dimension_(spectrum, n, p):
     ll = np.array(ll)
     return ll.argmax()
 
+class PCA(BaseEstimator):
+    """Principal component analysis (PCA)
+
+    Linear dimensionality reduction using Singular Value Decomposition of the
+    data and keeping only the most significant singular vectors to project the
+    data to a lower dimensional space.
+
+    This implementation uses the scipy.linalg implementation of the singular
+    value decomposition. It only works for dense arrays and is not scalable to
+    large dimensional data.
+
+    The time complexity of this implementation is O(n ** 3) assuming
+    n ~ n_samples ~ n_features.
+
+    Parameters
+    ----------
+    n_components: int, none or string
+        Number of components to keep.
+        if n_components is not set all components are kept:
+            n_components == min(n_samples, n_features)
+
+        if n_components == 'mle', Minka's MLE is used to guess the dimension
+
+        if 0 < n_components < 1, select the number of components such that
+                                 the explained variance ratio is greater
+                                 than n_components
+
+    copy: bool
+        If False, data passed to fit are overwritten
+
+    whiten: bool, optional
+        When True (False by default) the components_ vectors are divided
+        by n_samples times singular values to ensure uncorrelated outputs
+        with unit component-wise variances.
+
+        Whitening will remove some information from the transformed signal
+        (the relative variance scales of the components) but can sometime
+        improve the predictive accuracy of the downstream estimators by
+        making there data respect some hard-wired assumptions.
+
+    Attributes
+    ----------
+    components_: array, [n_features, n_components]
+        Components with maximum variance.
+
+    explained_variance_ratio_: array, [n_components]
+        Percentage of variance explained by each of the selected components.
+        k is not set then all components are stored and the sum of
+        explained variances is equal to 1.0
+
+    Notes
+    -----
+    For n_components='mle', this class uses the method of Thomas P. Minka:
+    Automatic Choice of Dimensionality for PCA. NIPS 2000: 598-604
+
+    Due to implementation subtleties of the Singular Value Decomposition (SVD),
+    which is used in this implementation, running fit twice on the same matrix
+    can lead to principal components with signs flipped (change in direction).
+    For this reason, it is important to always use the same estimator object to
+    transform data in a consistent fashion.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from scikits.learn.pca import PCA
+    >>> X = np.array([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
+    >>> pca = PCA(n_components=2)
+    >>> pca.fit(X)
+    PCA(copy=True, n_components=2, whiten=False)
+    >>> print pca.explained_variance_ratio_
+    [ 0.99244289  0.00755711]
+
+    See also
+    --------
+    ProbabilisticPCA
+    RandomizedPCA
+
+    """
+    def __init__(self, n_components=None, copy=True, whiten=False):
+        self.n_components = n_components
+        self.copy = copy
+        self.whiten = whiten
+    def fit(self, X, y=None, **params):
+        """Fit the model from data in X.
+
+        Parameters
+        ----------
+        X: array-like, shape (n_samples, n_features)
+            Training vector, where n_samples in the number of samples
+            and n_features is the number of features.
+
+        Returns
+        -------
+        self : object
+            Returns the instance itself.
+        """
+        self._set_params(**params)
+        X = np.atleast_2d(X)
+        n_samples, n_features = X.shape
+        if self.copy:
+            X = X.copy()
+        # Center data
+        self.mean_ = np.mean(X, axis=0)
+        X -= self.mean_
+        U, S, V = linalg.svd(X, full_matrices=False)
+        self.explained_variance_ = (S ** 2) / n_samples
+        self.explained_variance_ratio_ = self.explained_variance_ / \
+                                        self.explained_variance_.sum()
+        if self.whiten:
+            n = X.shape[0]
+            self.components_ = np.dot(V.T, np.diag(1.0 / S)) * np.sqrt(n)
+        else:
+            self.components_ = V.T
+        if self.n_components == 'mle':
+            self.n_components = _infer_dimension_(self.explained_variance_,
+                                            n_samples, X.shape[1])
+        elif 0 < self.n_components and self.n_components < 1.0:
+            # number of components for which the cumulated explained variance
+            # percentage is superior to the desired threshold
+            n_remove = np.sum(self.explained_variance_ratio_.cumsum() >=
+                              self.n_components) - 1
+            self.n_components = n_features - n_remove
+        if self.n_components is not None:
+            self.components_ = self.components_[:, :self.n_components]
+            self.explained_variance_ = \
+                    self.explained_variance_[:self.n_components]
+            self.explained_variance_ratio_ = \
+                    self.explained_variance_ratio_[:self.n_components]
+        return self
+    def transform(self, X):
+        """Apply the dimension reduction learned on the train data."""
+        X_transformed = X - self.mean_
+        X_transformed = np.dot(X_transformed, self.components_)
+        return X_transformed
+    def inverse_transform(self, X):
+        """Return an input X_original whose transform would be X
+
+        Note: if whitening is enabled, inverse_transform does not compute the
+        exact inverse operation as transform.
+        """
+        return np.dot(X, self.components_.T) + self.mean_
 
 
 
@@ -123,8 +265,6 @@ class ProbabilisticPCA(PCA):
                     / (n_samples * self.dim)
         else:
             delta = (Xr ** 2).mean(0) / (self.dim - self.n_components)
-            self.components_ = V.T
-        else:
         self.covariance_ = np.diag(delta)
         for k in range(self.n_components):
             add_cov = np.dot(
@@ -266,12 +406,8 @@ class RandomizedPCA(BaseEstimator):
         if self.whiten:
             n = X.shape[0]
             self.components_ = np.dot(V.T, np.diag(1.0 / S)) * np.sqrt(n)
-            n = X.shape[0]
-            self.components_ = np.dot(V.T, np.diag(1.0 / S)) * np.sqrt(n)
         else:
             self.components_ = V.T
-        if self.whiten:
-            self.components_ = V.T / S * np.sqrt(n_samples)
         return self
     def transform(self, X):
         """Apply the dimension reduction learned on the training data."""
@@ -279,7 +415,6 @@ class RandomizedPCA(BaseEstimator):
             X = X - self.mean_
         X = safe_sparse_dot(X, self.components_)
         return X
-        return U
     def inverse_transform(self, X):
         """Return an reconstructed input whose transform would be X"""
         X_original = safe_sparse_dot(X, self.components_.T)

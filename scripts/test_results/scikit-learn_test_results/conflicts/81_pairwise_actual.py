@@ -9,23 +9,30 @@ from scipy.sparse import csr_matrix, issparse
 from ..utils import safe_asanyarray, atleast2d_or_csr, deprecated
 from ..utils.extmath import safe_sparse_dot
 
+################################################################################
 # Distances
 
 def euclidean_distances(X, Y, Y_norm_squared=None, squared=False):
     """
     Considering the rows of X (and Y=X) as vectors, compute the
     distance matrix between each pair of vectors.
+
     Parameters
     ----------
     X: {array-like, sparse matrix}, shape = [n_samples_1, n_features]
+
     Y: {array-like, sparse matrix}, shape = [n_samples_2, n_features]
+
     Y_norm_squared: array-like, shape = [n_samples_2], optional
         Pre-computed (Y**2).sum(axis=1)
+
     squared: boolean, optional
         Return squared Euclidean distances.
+
     Returns
     -------
     distances: {array, sparse matrix}, shape = [n_samples_1, n_samples_2]
+
     Examples
     --------
     >>> from scikits.learn.metrics.pairwise import euclidean_distances
@@ -42,27 +49,18 @@ def euclidean_distances(X, Y, Y_norm_squared=None, squared=False):
     # should not need X_norm_squared because if you could precompute that as
     # well as Y, then you should just pre-compute the output and not even
     # call this function.
-    if X.shape[1] != Y.shape[1]:
-        raise ValueError("Incompatible dimension for X and Y matrices")
-        raise ValueError("Incompatible dimension for X and Y matrices")
     if X is Y:
         X = Y = safe_asanyarray(X)
     else:
         X = safe_asanyarray(X)
         Y = safe_asanyarray(Y)
-        if X.shape[0] != X.shape[1]:
-            raise ValueError("X is not square!")
+    if X.shape[1] != Y.shape[1]:
+        raise ValueError("Incompatible dimension for X and Y matrices")
     if issparse(X):
         XX = X.multiply(X).sum(axis=1)
     else:
         XX = np.sum(X * X, axis=1)[:, np.newaxis]
     if X is Y:  # shortcut in the common case euclidean_distances(X, X)
-    # TODO: a faster Cython implementation would do the clipping of negative
-    # values in a single pass over the output matrix.
-    distances = safe_sparse_dot(X, Y.T, dense_output=True)
-    distances *= -2
-    distances += XX
-    distances += YY
         YY = XX.T
     elif Y_norm_squared is None:
         if issparse(Y):
@@ -73,6 +71,12 @@ def euclidean_distances(X, Y, Y_norm_squared=None, squared=False):
             YY = np.asarray(YY.sum(axis=1)).T
         else:
             YY = np.sum(Y ** 2, axis=1)[np.newaxis, :]
+    # TODO: a faster Cython implementation would do the clipping of negative
+    # values in a single pass over the output matrix.
+    distances = safe_sparse_dot(X, Y.T, dense_output=True)
+    distances *= -2
+    distances += XX
+    distances += YY
     else:
         YY = atleast2d_or_csr(Y_norm_squared)
         if YY.shape != (1, Y.shape[0]):
@@ -85,27 +89,26 @@ def euclidean_distances(X, Y, Y_norm_squared=None, squared=False):
 
 
 
-
-
-
-
-
-
+euclidian_distances = euclidean_distances  # both spelling for backward compat
 
 def l1_distances(X, Y):
     """
     Computes the componentwise L1 pairwise-distances between the vectors
     in X and Y.
+
     Parameters
     ----------
     X: array_like
         An array with shape (n_samples_X, n_features)
+
     Y: array_like, optional
         An array with shape (n_samples_Y, n_features).
+
     Returns
     -------
     D: array with shape (n_samples_X * n_samples_Y, n_features)
         The array of componentwise L1 pairwise-distances.
+
     Examples
     --------
     >>> from scikits.learn.metrics.pairwise import l1_distances
@@ -132,24 +135,23 @@ def l1_distances(X, Y):
     D = np.abs(X[:, np.newaxis, :] - Y[np.newaxis, :, :])
     D = D.reshape((n_samples_X * n_samples_Y, n_features))
     return D
-        return X
 
 
 
 
-
-
-
-
+################################################################################
 # Kernels
 
 def linear_kernel(X, Y):
     """
     Compute the linear kernel between X and Y.
+
     Parameters
     ----------
     X: array of shape (n_samples_1, n_features)
+
     Y: array of shape (n_samples_2, n_features)
+
     Returns
     -------
     Gram matrix: array of shape (n_samples_1, n_samples_2)
@@ -157,18 +159,20 @@ def linear_kernel(X, Y):
     return safe_sparse_dot(X, Y.T, dense_output=True)
 
 
-
-
-
 def polynomial_kernel(X, Y, degree=3, gamma=0, coef0=1):
     """
     Compute the polynomial kernel between X and Y.
+
     K(X, Y) = (gamma <X, Y> + coef0)^degree
+
     Parameters
     ----------
     X: array of shape (n_samples_1, n_features)
+
     Y: array of shape (n_samples_2, n_features)
+
     degree: int
+
     Returns
     -------
     Gram matrix: array of shape (n_samples_1, n_samples_2)
@@ -183,20 +187,20 @@ def polynomial_kernel(X, Y, degree=3, gamma=0, coef0=1):
 
 
 
-
-
-
-
-
 def sigmoid_kernel(X, Y, gamma=0, coef0=1):
     """
     Compute the sigmoid kernel between X and Y.
+
     K(X, Y) = tanh(gamma <X, Y> + coef0)
+
     Parameters
     ----------
     X: array of shape (n_samples_1, n_features)
+
     Y: array of shape (n_samples_2, n_features)
+
     degree: int
+
     Returns
     -------
     Gram matrix: array of shape (n_samples_1, n_samples_2)
@@ -211,20 +215,20 @@ def sigmoid_kernel(X, Y, gamma=0, coef0=1):
 
 
 
-
-
-
-
-
 def rbf_kernel(X, Y, gamma=0):
     """
     Compute the rbf (gaussian) kernel between X and Y.
+
     K(X, Y) = exp(-gamma ||X-Y||^2)
+
     Parameters
     ----------
     X: array of shape (n_samples_1, n_features)
+
     Y: array of shape (n_samples_2, n_features)
+
     gamma: float
+
     Returns
     -------
     Gram matrix: array of shape (n_samples_1, n_samples_2)
@@ -235,10 +239,5 @@ def rbf_kernel(X, Y, gamma=0):
     K *= -gamma
     np.exp(K, K)    # exponentiate K in-place
     return K
-
-
-
-
-
 
 

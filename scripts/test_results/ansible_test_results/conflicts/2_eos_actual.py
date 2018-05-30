@@ -21,19 +21,20 @@ import re
 
 from ansible.module_utils.basic import json, AnsibleModule
 # We make NetworkModule available here for module code to use.  example:
-from ansible.module_utils.network import Command, NetCli, NetworkError, get_module
 #     from ansible.module_utils.eos import NetworkModule
+from ansible.module_utils.network import NetCli, NetworkError, NetworkModule, Command
 from ansible.module_utils.network import add_argument, register_transport, to_list
 from ansible.module_utils.netcfg import NetworkConfig
 from ansible.module_utils.urls import fetch_url, url_argument_spec
 
-NET_PASSWD_RE = re.compile(r"[\r\n]?password: $", re.I)
+    NET_PASSWD_RE = re.compile(r"[\r\n]?password: $", re.I)
 
 EAPI_FORMATS = ['json', 'text']
 
 add_argument('use_ssl', dict(default=True, type='bool'))
 add_argument('validate_certs', dict(default=True, type='bool'))
 
+ModuleStub = AnsibleModule
 
 def argument_spec():
     return dict(
@@ -342,6 +343,7 @@ class Cli(NetCli, EosConfigMixin):
         re.compile(r"'[^']' +returned error code: ?\d+"),
         re.compile(r"[^\r\n]\/bin\/(?:ba)?sh")
     ]
+    NET_PASSWD_RE = re.compile(r"[\r\n]?password: $", re.I)
     def connect(self, params, **kwargs):
         super(Cli, self).connect(params, kickstart=True, **kwargs)
         self.shell.send('terminal length 0')
@@ -366,11 +368,14 @@ class Cli(NetCli, EosConfigMixin):
 
 
 Cli = register_transport('cli', default=True)(Cli)
+
 def prepare_config(commands):
     commands = to_list(commands)
     commands.insert(0, 'configure terminal')
     commands.append('end')
     return commands
+
+
 def prepare_commands(commands):
     jsonify = lambda x: '%s | json' % x
     for cmd in to_list(commands):

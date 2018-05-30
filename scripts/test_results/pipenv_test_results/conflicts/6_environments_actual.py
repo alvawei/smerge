@@ -21,8 +21,6 @@ PIPENV_NOSPIN = bool(os.environ.get('PIPENV_NOSPIN'))
 # Specify a custom Pipfile location.
 PIPENV_PIPFILE = os.environ.get('PIPENV_PIPFILE')
 
-# Tells Pipenv which Python to default to, when none is provided.
-PIPENV_DEFAULT_PYTHON_VERSION = os.environ.get('PIPENV_DEFAULT_PYTHON_VERSION')
 # Tells Pipenv to not try to install -e dependencies to get their dependency information.
 PIPENV_DONT_EAT_EDITABLES = bool(os.environ.get('PIPENV_DONT_EAT_EDITABLES'))
 
@@ -34,6 +32,7 @@ PIPENV_YES = bool(os.environ.get('PIPENV_YES'))
 
 # User-configuraable max-depth for Pipfile searching.
 # Note: +1 because of a temporary bug in Pipenv.
+
 PIPENV_MAX_DEPTH = int(os.environ.get('PIPENV_MAX_DEPTH', '3')) + 1
 
 # Tells Pipenv to use the virtualenv-provided pip instead.
@@ -68,7 +67,6 @@ if os.name == 'nt':
 PIPENV_TIMEOUT = int(os.environ.get('PIPENV_TIMEOUT', 120))
 
 PIPENV_INSTALL_TIMEOUT = 60 * 15
-
 
 PYENV_INSTALLED = (bool(os.environ.get('PYENV_SHELL')) or bool(os.environ.get('PYENV_ROOT')))
 

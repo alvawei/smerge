@@ -135,10 +135,6 @@ class BaseLibSVM(BaseEstimator):
                     "Using it in the 'fit' method is deprecated.",
                     DeprecationWarning)
             self.class_weight = class_weight
-            warnings.warn("'class_weight' is now an initialization parameter."
-                    "Using it in the 'fit' method is deprecated.",
-                    DeprecationWarning)
-            self.class_weight = class_weight
         fit = self._sparse_fit if self._sparse else self._dense_fit
         fit(X, y, sample_weight)
         return self
@@ -188,26 +184,33 @@ class BaseLibSVM(BaseEstimator):
     def _sparse_fit(self, X, y, sample_weight=None):
         """
         Fit the SVM model according to the given training data and parameters.
+
         Parameters
         ----------
         X : sparse matrix, shape = [n_samples, n_features]
             Training vectors, where n_samples is the number of samples and
             n_features is the number of features.
+
         y : array-like, shape = [n_samples]
             Target values (integers in classification, real numbers in
             regression)
+
         class_weight : {dict, 'auto'}, optional
             Weights associated with classes in the form
             {class_label : weight}. If not given, all classes are
             supposed to have weight one.
+
             The 'auto' mode uses the values of y to automatically adjust
             weights inversely proportional to class frequencies.
+
         sample_weight : array-like, shape = [n_samples], optional
             Weights applied to individual samples (1. for unweighted).
+
         Returns
         -------
         self : object
             Returns an instance of self.
+
         Notes
         -----
         For maximum effiency, use a sparse matrix in csr format
@@ -307,7 +310,8 @@ class BaseLibSVM(BaseEstimator):
     def _sparse_predict(self, X):
         X = sp.csr_matrix(X, dtype=np.float64)
         kernel_type = self._sparse_kernels.index(self.kernel)
-        return libsvm_sparse.libsvm_sparse_predict(
+        <<<<<<< REMOTE
+return libsvm_sparse.libsvm_sparse_predict(
                       X.data, X.indices, X.indptr,
                       self.support_vectors_.data,
                       self.support_vectors_.indices,
@@ -315,10 +319,37 @@ class BaseLibSVM(BaseEstimator):
                       self.dual_coef_.data, self._intercept_,
                       LIBSVM_IMPL.index(self.impl), kernel_type,
                       self.degree, self.gamma, self.coef0, self.tol,
+                      self.C, self.class_weight_label, self.class_weight,
+                      self.nu, self.epsilon, self.shrinking,
+                      self.probability, self.n_support_, self.label_,
+                      self.probA_, self.probB_)
+=======
+return libsvm_sparse.libsvm_sparse_predict(
+                      X.data, X.indices, X.indptr,
+                      self.support_vectors_.data,
+                      self.support_vectors_.indices,
+                      self.support_vectors_.indptr,
+                      self.dual_coef_.data, self.intercept_,
+                      LIBSVM_IMPL.index(self.impl), kernel_type,
+                      self.degree, self.gamma, self.coef0, self.tol,
+                      self.C, self.class_weight_label, self.class_weight,
+                      self.nu, self.epsilon, self.shrinking,
+                      self.probability, self.n_support_, self.label_,
+                      self.probA_, self.probB_)
+=======
+return libsvm_sparse.libsvm_sparse_predict(
+                      X.data, X.indices, X.indptr,
+                      self.support_vectors_.data,
+                      self.support_vectors_.indices,
+                      self.support_vectors_.indptr,
+                      self.dual_coef_.data, self.intercept_,
+                      LIBSVM_IMPL.index(self.impl), kernel_type,
+                      self.degree, self.gamma, self.coef0, self.tol,
                       self.C, self.class_weight_label_, self.class_weight_,
                       self.nu, self.epsilon, self.shrinking,
                       self.probability, self.n_support_, self.label_,
                       self.probA_, self.probB_)
+>>>>>>> LOCAL
     def predict_proba(self, X):
         """Compute the likehoods each possible outcomes of samples in T.
 
@@ -379,7 +410,8 @@ class BaseLibSVM(BaseEstimator):
     def _sparse_predict_proba(self, X):
         X.data = np.asarray(X.data, dtype=np.float64, order='C')
         kernel_type = self._sparse_kernels.index(self.kernel)
-        return libsvm_sparse.libsvm_sparse_predict_proba(
+        <<<<<<< REMOTE
+return libsvm_sparse.libsvm_sparse_predict_proba(
             X.data, X.indices, X.indptr,
             self.support_vectors_.data,
             self.support_vectors_.indices,
@@ -387,10 +419,37 @@ class BaseLibSVM(BaseEstimator):
             self.dual_coef_.data, self._intercept_,
             LIBSVM_IMPL.index(self.impl), kernel_type,
             self.degree, self.gamma, self.coef0, self.tol,
+            self.C, self.class_weight_label, self.class_weight,
+            self.nu, self.epsilon, self.shrinking,
+            self.probability, self.n_support_, self.label_,
+            self.probA_, self.probB_)
+=======
+return libsvm_sparse.libsvm_sparse_predict_proba(
+            X.data, X.indices, X.indptr,
+            self.support_vectors_.data,
+            self.support_vectors_.indices,
+            self.support_vectors_.indptr,
+            self.dual_coef_.data, self.intercept_,
+            LIBSVM_IMPL.index(self.impl), kernel_type,
+            self.degree, self.gamma, self.coef0, self.tol,
+            self.C, self.class_weight_label, self.class_weight,
+            self.nu, self.epsilon, self.shrinking,
+            self.probability, self.n_support_, self.label_,
+            self.probA_, self.probB_)
+=======
+return libsvm_sparse.libsvm_sparse_predict_proba(
+            X.data, X.indices, X.indptr,
+            self.support_vectors_.data,
+            self.support_vectors_.indices,
+            self.support_vectors_.indptr,
+            self.dual_coef_.data, self.intercept_,
+            LIBSVM_IMPL.index(self.impl), kernel_type,
+            self.degree, self.gamma, self.coef0, self.tol,
             self.C, self.class_weight_label_, self.class_weight_,
             self.nu, self.epsilon, self.shrinking,
             self.probability, self.n_support_, self.label_,
             self.probA_, self.probB_)
+>>>>>>> LOCAL
     def predict_log_proba(self, X):
         """Compute the log likehoods each possible outcomes of samples in X.
 
@@ -448,7 +507,7 @@ class BaseLibSVM(BaseEstimator):
         # decision function.
         if len(self.label_) == 2 and self.impl != 'one_class':
             return -dec_func
-            return -dec_func
+        return dec_func
     def _validate_for_predict(self, X):
         X = atleast2d_or_csr(X, dtype=np.float64, order="C")
         if self._sparse and not sp.isspmatrix(X):
@@ -483,13 +542,6 @@ class BaseLibSVM(BaseEstimator):
             # regular dense array
             coef.flags.writeable = False
         return coef
-
-
-
-
-
-
-
 
 
 
@@ -623,17 +675,9 @@ class BaseLibLinear(BaseEstimator):
         self : object
             Returns self.
         """
-        if class_weight != None:
-            warnings.warn("'class_weight' is now an initialization parameter."
-                    "Using it in the 'fit' method is deprecated.",
-                    DeprecationWarning)
-            self.class_weight = class_weight
-            warnings.warn("'class_weight' is now an initialization parameter."
-                    "Using it in the 'fit' method is deprecated.",
-                    DeprecationWarning)
-            self.class_weight = class_weight
         X = atleast2d_or_csr(X, dtype=np.float64, order="C")
         y = np.asarray(y, dtype=np.int32).ravel()
+        self._sparse = sp.isspmatrix(X)
         self._sparse = sp.isspmatrix(X)
         self.class_weight_, self.class_weight_label_ = \
                      _get_class_weight(self.class_weight, y)
@@ -690,7 +734,6 @@ class BaseLibLinear(BaseEstimator):
         dec_func = dfunc_wrap(X, self.raw_coef_, self._get_solver_type(),
                 self.tol, self.C, self.class_weight_label_, self.class_weight_,
                 self.label_, self._get_bias())
-        return dec_func
         return dec_func
     def _check_n_features(self, X):
         n_features = self.raw_coef_.shape[1]

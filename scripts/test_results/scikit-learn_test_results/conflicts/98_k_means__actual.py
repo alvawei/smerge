@@ -12,6 +12,7 @@ import numpy as np
 
 from ..base import BaseEstimator
 from ..metrics.pairwise import euclidean_distances
+from ..utils import make_rng
 
 
 ###############################################################################
@@ -70,85 +71,29 @@ def k_init(X, k, n_local_trials=None, random_state=None, x_squared_norms=None):
         np.atleast_2d(centers[0]), X, Y_norm_squared=x_squared_norms,
         squared=True)
     current_pot = closest_dist_sq.sum()
-<<<<<<< REMOTE
-return centers
-=======
-return centers
->>>>>>> LOCAL
+    return centers
     # Pick the remaining k-1 points
     for c in xrange(1, k):
         # Choose center candidates by sampling with probability proportional
         # to the squared distance to the closest existing center
 <<<<<<< REMOTE
-rand_vals = rng.random_sample(n_local_trials) * current_pot
+rand_vals = random_state.random_sample(n_local_trials) * current_pot
 =======
 rand_vals = rng.random_sample(n_local_trials) * current_pot
 >>>>>>> LOCAL
-<<<<<<< REMOTE
-candidate_ids = np.searchsorted(closest_dist_sq.cumsum(), rand_vals)
-=======
-candidate_ids = np.searchsorted(closest_dist_sq.cumsum(), rand_vals)
->>>>>>> LOCAL
-<<<<<<< REMOTE
-# Compute distances to center candidates
-=======
-# Compute distances to center candidates
->>>>>>> LOCAL
-<<<<<<< REMOTE
-distance_to_candidates = euclidean_distances(
-=======
-distance_to_candidates = euclidean_distances(
->>>>>>> LOCAL
-<<<<<<< REMOTE
-X[candidate_ids], X, Y_norm_squared=x_squared_norms, squared=True)
-=======
-X[candidate_ids], X, Y_norm_squared=x_squared_norms, squared=True)
->>>>>>> LOCAL
-<<<<<<< REMOTE
-# Decide which candidate is the best
-=======
-# Decide which candidate is the best
->>>>>>> LOCAL
-<<<<<<< REMOTE
-best_candidate = None
-=======
-best_candidate = None
->>>>>>> LOCAL
-<<<<<<< REMOTE
-best_pot = None
-=======
-best_pot = None
->>>>>>> LOCAL
-<<<<<<< REMOTE
-best_dist_sq = None
-=======
-best_dist_sq = None
->>>>>>> LOCAL
-<<<<<<< REMOTE
-for trial in xrange(n_local_trials):
-=======
-for trial in xrange(n_local_trials):
->>>>>>> LOCAL
-<<<<<<< REMOTE
-# Permanently add best center candidate found in local tries
-=======
-# Permanently add best center candidate found in local tries
->>>>>>> LOCAL
-<<<<<<< REMOTE
-centers[c] = X[best_candidate]
-=======
-centers[c] = X[best_candidate]
->>>>>>> LOCAL
-<<<<<<< REMOTE
-current_pot = best_pot
-=======
-current_pot = best_pot
->>>>>>> LOCAL
-<<<<<<< REMOTE
-closest_dist_sq = best_dist_sq
-=======
-closest_dist_sq = best_dist_sq
->>>>>>> LOCAL
+        candidate_ids = np.searchsorted(closest_dist_sq.cumsum(), rand_vals)
+        # Compute distances to center candidates
+        distance_to_candidates = euclidean_distances(
+            X[candidate_ids], X, Y_norm_squared=x_squared_norms, squared=True)
+        # Decide which candidate is the best
+        best_candidate = None
+        best_pot = None
+        best_dist_sq = None
+        for trial in xrange(n_local_trials):
+        # Permanently add best center candidate found in local tries
+        centers[c] = X[best_candidate]
+        current_pot = best_pot
+        closest_dist_sq = best_dist_sq
 
 
 
@@ -572,49 +517,69 @@ class KMeans(BaseEstimator):
 class MiniBatchKMeans(KMeans):
     """
     Batch K-Means clustering
+
     Parameters
     ----------
+
     k : int or ndarray
         The number of clusters to form as well as the number of
         centroids to generate. If init initialization string is
         'matrix', or if a ndarray is given instead, it is
         interpreted as initial cluster to use instead.
+
     max_iter : int
         Maximum number of iterations of the k-means algorithm for a
         single run.
+
     n_init: int, optional, default: 10
         Number of time the k-means algorithm will be run with different
         centroid seeds. The final results will be the best output of
         n_init consecutive runs in terms of inertia.
+
     init : {'k-means++', 'random' or an ndarray}
         Method for initialization, defaults to 'random':
+
         'k-means++' : selects initial cluster centers for k-mean
         clustering in a smart way to speed up convergence. See section
         Notes in k_init for more details.
+
         'random': choose k observations (rows) at random from data for
         the initial centroids.
+
         if init is an 2d array, it is used as a seed for the centroids
+
     tol: float, optional default: 1e-4
         Relative tolerance w.r.t. inertia to declare convergence
+
     Methods
     -------
+
     fit(X):
         Compute K-Means clustering
+
     partial_fit(X):
         Compute a partial K-Means clustering
+
     Attributes
     ----------
+
     cluster_centers_: array, [n_clusters, n_features]
         Coordinates of cluster centers
+
     labels_:
         Labels of each point
+
     inertia_: float
         The value of the inertia criterion associated with the chosen
         partition.
+
     Notes
     ------
+
     The batch k-means problem is solved using the Lloyd algorithm.
+
     http://www.eecs.tufts.edu/~dsculley/papers/fastkmeans.pdf
+
     """
     def __init__(self, k=8, init='random', n_init=10,
                  verbose=0, random_state=None, copy_x=True):
@@ -648,26 +613,6 @@ class MiniBatchKMeans(KMeans):
         self.inertia_, self.labels_ = _calculate_labels_inertia(
             X, self.cluster_centers_)
         return self
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

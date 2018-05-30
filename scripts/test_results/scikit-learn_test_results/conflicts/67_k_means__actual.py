@@ -488,16 +488,8 @@ class KMeans(BaseEstimator):
             raise ValueError("n_samples=%d should be >= k=%d" % (
                 X.shape[0], self.k))
         return X
-        """Verify that the number of samples given is larger than k"""
-        if sp.issparse(X):
-            raise ValueError("K-Means does not support sparse input matrices.")
-        X = np.asanyarray(X)
-        if X.shape[0] < self.k:
-            raise ValueError("n_samples=%d should be >= k=%d" % (
-                X.shape[0], self.k))
-        return X
     def fit(self, X):
-        X = self._check_data(X)
+        """Compute k-means"""
         self.random_state = check_random_state(self.random_state)
         X = self._check_data(X)
         self.cluster_centers_, self.labels_, self.inertia_ = k_means(
@@ -525,43 +517,8 @@ class KMeans(BaseEstimator):
         if not hasattr(self, "cluster_centers_"):
             raise AttributeError("Model has not been trained. "
                                  "Train k-means before using transform.")
-            raise AttributeError("Model has not been trained. "
-                                 "Train k-means before using transform.")
         cluster_shape = self.cluster_centers_.shape[1]
         if not X.shape[1] == cluster_shape:
-            raise ValueError("Incorrect number of features for points. "
-                             "Got %d features, expected %d" % (X.shape[1],
-                                                               cluster_shape))
-            raise ValueError("Incorrect number of features for points. "
-                             "Got %d features, expected %d" % (X.shape[1],
-                                                               cluster_shape))
-        return euclidean_distances(X, self.cluster_centers_)
-        """ Transform the data to a cluster-distance space
-
-        In the new space, each dimension is the distance to the cluster centers.
-        Note that even if X is sparse, the array returned by `transform` will
-        typically be dense.
-
-        Parameters
-        ----------
-        X: {array-like, sparse matrix}, shape = [n_samples, n_features]
-            New data to transform.
-
-        Returns
-        -------
-        X_new : array, shape [n_samples, k]
-            X transformed in the new space.
-        """
-        if not hasattr(self, "cluster_centers_"):
-            raise AttributeError("Model has not been trained. "
-                                 "Train k-means before using transform.")
-            raise AttributeError("Model has not been trained. "
-                                 "Train k-means before using transform.")
-        cluster_shape = self.cluster_centers_.shape[1]
-        if not X.shape[1] == cluster_shape:
-            raise ValueError("Incorrect number of features for points. "
-                             "Got %d features, expected %d" % (X.shape[1],
-                                                               cluster_shape))
             raise ValueError("Incorrect number of features for points. "
                              "Got %d features, expected %d" % (X.shape[1],
                                                                cluster_shape))
@@ -586,43 +543,8 @@ class KMeans(BaseEstimator):
         if not hasattr(self, "cluster_centers_"):
             raise AttributeError("Model has not been trained yet. "
                                  "Fit k-means before using predict.")
-            raise AttributeError("Model has not been trained yet. "
-                                 "Fit k-means before using predict.")
         expected_n_features = self.cluster_centers_.shape[1]
         if not X.shape[1] == expected_n_features:
-            raise ValueError("Incorrect number of features. "
-                             "Got %d features, expected %d" % (
-                                 X.shape[1], expected_n_features))
-            raise ValueError("Incorrect number of features. "
-                             "Got %d features, expected %d" % (
-                                 X.shape[1], expected_n_features))
-        return _e_step(X, self.cluster_centers_)[0]
-        """Predict the closest cluster each sample in X belongs to.
-
-        In the vector quantization literature, `cluster_centers_` is called
-        the code book and each value returned by `predict` is the index of
-        the closest code in the code book.
-
-        Parameters
-        ----------
-        X: {array-like, sparse matrix}, shape = [n_samples, n_features]
-            New data to predict.
-
-        Returns
-        -------
-        Y : array, shape [n_samples,]
-            Index of the closest center each sample belongs to.
-        """
-        if not hasattr(self, "cluster_centers_"):
-            raise AttributeError("Model has not been trained yet. "
-                                 "Fit k-means before using predict.")
-            raise AttributeError("Model has not been trained yet. "
-                                 "Fit k-means before using predict.")
-        expected_n_features = self.cluster_centers_.shape[1]
-        if not X.shape[1] == expected_n_features:
-            raise ValueError("Incorrect number of features. "
-                             "Got %d features, expected %d" % (
-                                 X.shape[1], expected_n_features))
             raise ValueError("Incorrect number of features. "
                              "Got %d features, expected %d" % (
                                  X.shape[1], expected_n_features))
@@ -706,10 +628,7 @@ def _mini_batch_step_sparse(X, batch_slice, centers, counts, x_squared_norms):
 
 
 class MiniBatchKMeans(KMeans):
-<<<<<<< REMOTE
-"""
-=======
-"""Mini-Batch K-Means clustering
+    """Mini-Batch K-Means clustering
 
     Parameters
     ----------
@@ -766,10 +685,22 @@ class MiniBatchKMeans(KMeans):
     ----------
     http://www.eecs.tufts.edu/~dsculley/papers/fastkmeans.pdf
     """
->>>>>>> LOCAL
-    """
-        """
+    def __init__(self, k=8, init='random', max_iter=100,
+                 chunk_size=1000, tol=1e-4, verbose=0, random_state=None):
+        super(MiniBatchKMeans, self).__init__(k, init, 1,
+              max_iter, tol, verbose, random_state)
+        self.counts = None
+        self.cluster_centers_ = None
+        self.chunk_size = chunk_size
     def fit(self, X, y=None):
+        """
+        Calculates the centroids on a batch X
+
+        Parameters
+        ----------
+        X: array-like, shape = [n_samples, n_features]
+            Coordinates of the data points to cluster
+        """
         self.random_state = check_random_state(self.random_state)
         X = check_arrays(X, sparse_format="csr", copy=False)[0]
         n_samples, n_features = X.shape
@@ -813,6 +744,13 @@ class MiniBatchKMeans(KMeans):
             self.labels_[batch_slice] = batch_labels
         return self
     def partial_fit(self, X, y=None):
+        """Update k means estimate on a single mini-batch X.
+
+        Parameters
+        ----------
+        X: array-like, shape = [n_samples, n_features]
+            Coordinates of the data points to cluster.
+        """
         self.random_state = check_random_state(self.random_state)
         X = check_arrays(X, sparse_format="csr", copy=False)[0]
         n_samples, n_features = X.shape
@@ -841,15 +779,6 @@ class MiniBatchKMeans(KMeans):
         self.inertia_, self.labels_ = _calculate_labels_inertia(
             X, self.cluster_centers_, x_squared_norms)
         return self
-    """
-    def __init__(self, k=8, init='random', max_iter=100,
-                 chunk_size=1000, tol=1e-4, verbose=0, random_state=None):
-        super(MiniBatchKMeans, self).__init__(k, init, 1,
-              max_iter, tol, verbose, random_state)
-        self.counts = None
-        self.cluster_centers_ = None
-        self.chunk_size = chunk_size
-
 
 
 

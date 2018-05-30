@@ -10,11 +10,11 @@ a and b are considered "more similar" to objects a and c. Two objects exactly
 alike would have a distance of zero.
 One of the most popular examples is Euclidean distance.
 To be a 'true' metric, it must obey the following four conditions::
+
     1. d(a, b) >= 0, for all a and b
     2. d(a, b) == 0, if and only if a = b, positive definiteness
     3. d(a, b) == d(b, a), symmetry
     4. d(a, c) <= d(a, b) + d(b, c), the triangle inequality
-
 
 Kernels are measures of similarity, i.e. ``s(a, b) > s(a, c)``
 if objects ``a`` and ``b`` are considered "more similar" to objects
@@ -23,10 +23,10 @@ if objects ``a`` and ``b`` are considered "more similar" to objects
 There are a number of ways to convert between a distance metric and a
 similarity measure, such as a kernel. Let D be the distance, and S be the
 kernel::
+
     1. ``S = np.exp(-D * gamma)``, where one heuristic for choosing
        ``gamma`` is ``1 / num_features``
     2. ``S = 1. / (D / np.max(D))``
-
 """
 
 # Authors: Alexandre Gramfort <alexandre.gramfort@inria.fr>
@@ -41,6 +41,7 @@ from scipy.sparse import issparse
 
 from ..utils import safe_asarray
 from ..utils import atleast2d_or_csr
+from ..utils import deprecated
 from ..utils import gen_even_slices
 from ..utils.extmath import safe_sparse_dot
 from ..externals.joblib import Parallel
@@ -78,32 +79,11 @@ def check_pairwise_arrays(X, Y):
 
     """
     if Y is X or Y is None:
-<<<<<<< REMOTE
-X = safe_asarray(X)
-=======
-X = safe_asarray(X)
->>>>>>> LOCAL
-<<<<<<< REMOTE
-X = Y = atleast2d_or_csr(X, dtype=np.float)
-=======
-X = Y = atleast2d_or_csr(X, dtype=np.float)
->>>>>>> LOCAL
+        X = safe_asarray(X)
+        X = Y = atleast2d_or_csr(X, dtype=np.float)
     else:
-<<<<<<< REMOTE
-Y = safe_asarray(Y)
-=======
-Y = safe_asarray(Y)
->>>>>>> LOCAL
-<<<<<<< REMOTE
-X = atleast2d_or_csr(X, dtype=np.float)
-=======
-X = atleast2d_or_csr(X, dtype=np.float)
->>>>>>> LOCAL
-<<<<<<< REMOTE
-Y = atleast2d_or_csr(Y, dtype=np.float)
-=======
-Y = atleast2d_or_csr(Y, dtype=np.float)
->>>>>>> LOCAL
+        X = safe_asarray(X)
+        X = safe_asarray(X)
         X = safe_asarray(X)
     if len(X.shape) < 2:
         raise ValueError("X is required to be at least two dimensional.")
@@ -121,25 +101,34 @@ def euclidean_distances(X, Y=None, Y_norm_squared=None, squared=False):
     """
     Considering the rows of X (and Y=X) as vectors, compute the
     distance matrix between each pair of vectors.
+
     For efficiency reasons, the euclidean distance between a pair of row
     vector x and y is computed as::
+
         dist(x, y) = sqrt(dot(x, x) - 2 * dot(x, y) + dot(y, y))
+
     This formulation has two main advantages. First, it is computationally
     efficient when dealing with sparse data. Second, if x varies but y
     remains unchanged, then the right-most dot-product `dot(y, y)` can be
     pre-computed.
+
     Parameters
     ----------
     X : {array-like, sparse matrix}, shape = [n_samples_1, n_features]
+
     Y : {array-like, sparse matrix}, shape = [n_samples_2, n_features]
+
     Y_norm_squared : array-like, shape = [n_samples_2], optional
         Pre-computed dot-products of vectors in Y (e.g.,
         ``(Y**2).sum(axis=1)``)
+
     squared : boolean, optional
         Return squared Euclidean distances.
+
     Returns
     -------
     distances : {array, sparse matrix}, shape = [n_samples_1, n_samples_2]
+
     Examples
     --------
     >>> from sklearn.metrics.pairwise import euclidean_distances
@@ -195,15 +184,9 @@ def euclidean_distances(X, Y=None, Y_norm_squared=None, squared=False):
 
 
 
-
-
-
-
-
-
-
-
-
+@deprecated("to be deprecated in v0.11; use euclidean_distances instead")
+def euclidian_distances(*args, **kwargs):
+    return euclidean_distances(*args, **kwargs)
 
 
 def manhattan_distances(X, Y=None, sum_over_features=True):
@@ -270,10 +253,13 @@ def manhattan_distances(X, Y=None, sum_over_features=True):
 def linear_kernel(X, Y=None):
     """
     Compute the linear kernel between X and Y.
+
     Parameters
     ----------
     X : array of shape (n_samples_1, n_features)
+
     Y : array of shape (n_samples_2, n_features)
+
     Returns
     -------
     Gram matrix : array of shape (n_samples_1, n_samples_2)
@@ -282,18 +268,20 @@ def linear_kernel(X, Y=None):
     return safe_sparse_dot(X, Y.T, dense_output=True)
 
 
-
-
-
 def polynomial_kernel(X, Y=None, degree=3, gamma=0, coef0=1):
     """
     Compute the polynomial kernel between X and Y::
+
         K(X, Y) = (gamma <X, Y> + coef0)^degree
+
     Parameters
     ----------
     X : array of shape (n_samples_1, n_features)
+
     Y : array of shape (n_samples_2, n_features)
+
     degree : int
+
     Returns
     -------
     Gram matrix : array of shape (n_samples_1, n_samples_2)
@@ -309,20 +297,20 @@ def polynomial_kernel(X, Y=None, degree=3, gamma=0, coef0=1):
 
 
 
-
-
-
-
-
 def sigmoid_kernel(X, Y=None, gamma=0, coef0=1):
     """
     Compute the sigmoid kernel between X and Y::
+
         K(X, Y) = tanh(gamma <X, Y> + coef0)
+
     Parameters
     ----------
     X : array of shape (n_samples_1, n_features)
+
     Y : array of shape (n_samples_2, n_features)
+
     degree : int
+
     Returns
     -------
     Gram matrix: array of shape (n_samples_1, n_samples_2)
@@ -338,20 +326,20 @@ def sigmoid_kernel(X, Y=None, gamma=0, coef0=1):
 
 
 
-
-
-
-
-
 def rbf_kernel(X, Y=None, gamma=0):
     """
     Compute the rbf (gaussian) kernel between X and Y::
+
         K(X, Y) = exp(-gamma ||X-Y||^2)
+
     Parameters
     ----------
     X : array of shape (n_samples_1, n_features)
+
     Y : array of shape (n_samples_2, n_features)
+
     gamma : float
+
     Returns
     -------
     Gram matrix : array of shape (n_samples_1, n_samples_2)
@@ -363,11 +351,6 @@ def rbf_kernel(X, Y=None, gamma=0):
     K *= -gamma
     np.exp(K, K)    # exponentiate K in-place
     return K
-
-
-
-
-
 
 
 
@@ -417,6 +400,7 @@ def _parallel_pairwise(X, Y, func, n_jobs, **kwds):
             delayed(func)(X, Y[s], **kwds)
             for s in gen_even_slices(Y.shape[0], n_jobs))
     return np.hstack(ret)
+
 
 
 
@@ -580,6 +564,8 @@ kernel_params = {
     "poly": set(("gamma", "degree", "coef0")),
     "linear": ()
 }
+
+
 def pairwise_kernels(X, Y=None, metric="linear", filter_params=False,
                      n_jobs=1, **kwds):
     """ Compute the kernel between arrays X and optional array Y.

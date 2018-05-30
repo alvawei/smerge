@@ -14,9 +14,91 @@ variables needed for Boto have already been set:
 
 This script also assumes there is an ec2.ini file alongside it.  To specify a
 different path to ec2.ini, define the EC2_INI_PATH environment variable:
+
     export EC2_INI_PATH=/path/to/my_ec2.ini
 
+If you're using eucalyptus you need to set the above variables and
+you need to define:
 
+    export EC2_URL=http://hostname_of_your_cc:port/services/Eucalyptus
+
+If you're using boto profiles (requires boto>=2.24.0) you can choose a profile
+using the --boto-profile command line argument (e.g. ec2.py --boto-profile prod) or using
+the AWS_PROFILE variable:
+
+    AWS_PROFILE=prod ansible-playbook -i ec2.py myplaybook.yml
+
+For more details, see: http://docs.pythonboto.org/en/latest/boto_config_tut.html
+
+When run against a specific host, this script returns the following variables:
+ - ec2_ami_launch_index
+ - ec2_architecture
+ - ec2_association
+ - ec2_attachTime
+ - ec2_attachment
+ - ec2_attachmentId
+ - ec2_client_token
+ - ec2_deleteOnTermination
+ - ec2_description
+ - ec2_deviceIndex
+ - ec2_dns_name
+ - ec2_eventsSet
+ - ec2_group_name
+ - ec2_hypervisor
+ - ec2_id
+ - ec2_image_id
+ - ec2_instanceState
+ - ec2_instance_type
+ - ec2_ipOwnerId
+ - ec2_ip_address
+ - ec2_item
+ - ec2_kernel
+ - ec2_key_name
+ - ec2_launch_time
+ - ec2_monitored
+ - ec2_monitoring
+ - ec2_networkInterfaceId
+ - ec2_ownerId
+ - ec2_persistent
+ - ec2_placement
+ - ec2_platform
+ - ec2_previous_state
+ - ec2_private_dns_name
+ - ec2_private_ip_address
+ - ec2_publicIp
+ - ec2_public_dns_name
+ - ec2_ramdisk
+ - ec2_reason
+ - ec2_region
+ - ec2_requester_id
+ - ec2_root_device_name
+ - ec2_root_device_type
+ - ec2_security_group_ids
+ - ec2_security_group_names
+ - ec2_shutdown_state
+ - ec2_sourceDestCheck
+ - ec2_spot_instance_request_id
+ - ec2_state
+ - ec2_state_code
+ - ec2_state_reason
+ - ec2_status
+ - ec2_subnet_id
+ - ec2_tenancy
+ - ec2_virtualization_type
+ - ec2_vpc_id
+
+These variables are pulled out of a boto.ec2.instance object. There is a lack of
+consistency with variable spellings (camelCase and underscores) since this
+just loops through all variables the object exposes. It is preferred to use the
+ones with underscores when multiple exist.
+
+In addition, if an instance has AWS Tags associated with it, each tag is a new
+variable named:
+ - ec2_tag_[Key] = [Value]
+
+Security groups are comma-separated in 'ec2_security_group_ids' and
+'ec2_security_group_names'.
+'''
 
 # (c) 2012, Peter Sankauskas
 #
@@ -68,21 +150,11 @@ class Ec2Inventory(object):
         self.inventory = self._empty_inventory()
         # Index of hostname (address) to instance ID
         self.index = {}
-        # Boto profile to use (if any)
-        self.boto_profile = None
         # Read settings and parse CLI arguments
         self.read_settings()
         self.parse_cli_args()
-        # Make sure that profile_name is not passed at all if not set
-        # as pre 2.24 boto will fall over otherwise
-        if self.boto_profile:
-            if not hasattr(boto.ec2.EC2Connection, 'profile_name'):
-                self.fail_with_error("boto version must be >= 2.24 to use profile")
-                self.fail_with_error("boto version must be >= 2.24 to use profile")
-            if not hasattr(boto.ec2.EC2Connection, 'profile_name'):
-                self.fail_with_error("boto version must be >= 2.24 to use profile")
-                self.fail_with_error("boto version must be >= 2.24 to use profile")
         # Cache
+        self.read_settings()
         if self.args.refresh_cache:
             self.do_api_calls_update_cache()
         elif not self.is_cache_valid():
@@ -109,9 +181,9 @@ class Ec2Inventory(object):
     def read_settings(self):
         ''' Reads the settings from the ec2.ini file '''
         if six.PY3:
+            config = configparser.ConfigParser()
         else:
             config = configparser.SafeConfigParser()
-            config = configparser.ConfigParser()
         ec2_default_ini_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'ec2.ini')
         ec2_ini_path = os.path.expanduser(os.path.expandvars(os.environ.get('EC2_INI_PATH', ec2_default_ini_path)))
         config.read(ec2_ini_path)
@@ -138,20 +210,14 @@ class Ec2Inventory(object):
         # Destination addresses
         self.destination_variable = config.get('ec2', 'destination_variable')
         self.vpc_destination_variable = config.get('ec2', 'vpc_destination_variable')
-<<<<<<< REMOTE
-if config.has_option('ec2', 'destination_format') and \
-           config.has_option('ec2', 'destination_format_tags'):
-=======
-if config.has_option('ec2', 'hostname_variable'):
->>>>>>> LOCAL
         # Route53
         self.route53_enabled = config.getboolean('ec2', 'route53')
         self.route53_excluded_zones = []
+        # Include RDS instances?
+        self.rds_enabled = True
         if config.has_option('ec2', 'route53_excluded_zones'):
             self.route53_excluded_zones.extend(
                 config.get('ec2', 'route53_excluded_zones', '').split(','))
-        # Include RDS instances?
-        self.rds_enabled = True
         if config.has_option('ec2', 'rds'):
             self.rds_enabled = config.getboolean('ec2', 'rds')
         # Include ElastiCache instances?
@@ -169,33 +235,10 @@ self.hostname_variable = None
 >>>>>>> LOCAL
             self.destination_format_tags = None
         # Return all RDS instances? (if RDS is enabled)
-        # Instance states to be gathered in inventory. Default is 'running'.
-        # Setting 'all_instances' to 'yes' overrides this option.
-        ec2_valid_instance_states = [
-            'pending',
-            'running',
-            'shutting-down',
-            'terminated',
-            'stopping',
-            'stopped'
         if config.has_option('ec2', 'all_rds_instances') and self.rds_enabled:
             self.all_rds_instances = config.getboolean('ec2', 'all_rds_instances')
-        self.ec2_instance_states = []
-        if self.all_instances:
-            self.ec2_instance_states = ec2_valid_instance_states
-            self.ec2_instance_states = ec2_valid_instance_states
-        elif config.has_option('ec2', 'instance_states'):
-          for instance_state in config.get('ec2', 'instance_states').split(','):
-            instance_state = instance_state.strip()
-            if instance_state not in ec2_valid_instance_states:
-              continue
-            self.ec2_instance_states.append(instance_state)
         else:
-<<<<<<< REMOTE
-self.all_instances = False
-=======
-self.all_instances = False
->>>>>>> LOCAL
+            self.all_instances = False
         # Return all ElastiCache replication groups? (if ElastiCache is enabled)
         if config.has_option('ec2', 'all_elasticache_replication_groups') and self.elasticache_enabled:
             self.all_elasticache_replication_groups = config.getboolean('ec2', 'all_elasticache_replication_groups')
@@ -224,24 +267,12 @@ self.all_elasticache_clusters = False
 self.all_elasticache_replication_groups = False
 >>>>>>> LOCAL
         # Cache related
-        # boto configuration profile (prefer CLI argument)
-        self.boto_profile = self.args.boto_profile
-        if config.has_option('ec2', 'boto_profile') and not self.boto_profile:
-            self.boto_profile = config.get('ec2', 'boto_profile')
-            self.boto_profile = config.get('ec2', 'boto_profile')
         cache_dir = os.path.expanduser(config.get('ec2', 'cache_path'))
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
-        if self.boto_profile:
-            cache_dir = os.path.join(cache_dir, 'profile_' + self.boto_profile)
-            cache_dir = os.path.join(cache_dir, 'profile_' + self.boto_profile)
         self.cache_path_cache = cache_dir + "/ansible-ec2.cache"
-        self.cache_path_index = cache_dir + "/ansible-ec2.index"
         self.cache_max_age = config.getint('ec2', 'cache_max_age')
         # Configure nested groups instead of flat namespace.
-        if config.has_option('ec2', 'expand_csv_tags'):
-            self.expand_csv_tags = config.getboolean('ec2', 'expand_csv_tags')
-            self.expand_csv_tags = config.getboolean('ec2', 'expand_csv_tags')
         if config.has_option('ec2', 'nested_groups'):
             self.nested_groups = config.getboolean('ec2', 'nested_groups')
         else:
@@ -249,16 +280,6 @@ self.all_elasticache_replication_groups = False
 self.all_elasticache_nodes = False
 =======
 self.all_elasticache_clusters = False
->>>>>>> LOCAL
-        # Replace dash or not in group names
-        if config.has_option('ec2', 'replace_dash_in_groups'):
-            self.replace_dash_in_groups = config.getboolean('ec2', 'replace_dash_in_groups')
-            self.replace_dash_in_groups = config.getboolean('ec2', 'replace_dash_in_groups')
-        else:
-<<<<<<< REMOTE
-self.pattern_exclude = None
-=======
-self.replace_dash_in_groups = True
 >>>>>>> LOCAL
         # Configure which groups should be created.
         group_by_options = [
@@ -280,55 +301,25 @@ self.replace_dash_in_groups = True
             'group_by_elasticache_parameter_group',
             'group_by_elasticache_replication_group',
         ]
-        ]
         for option in group_by_options:
             if config.has_option('ec2', option):
                 setattr(self, option, config.getboolean('ec2', option))
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
             else:
-<<<<<<< REMOTE
-self.nested_groups = False
-=======
-self.all_elasticache_nodes = False
->>>>>>> LOCAL
         # Do we need to just include hosts that match a pattern?
         try:
             pattern_include = config.get('ec2', 'pattern_include')
             if pattern_include and len(pattern_include) > 0:
                 self.pattern_include = re.compile(pattern_include)
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
             else:
-<<<<<<< REMOTE
-setattr(self, option, True)
-=======
-self.expand_csv_tags = False
->>>>>>> LOCAL
         except configparser.NoOptionError:
             self.pattern_include = None
         # Do we need to exclude hosts that match a pattern?
+        self.cache_path_index = cache_dir + "/ansible-ec2.index"
         try:
             pattern_exclude = config.get('ec2', 'pattern_exclude');
             if pattern_exclude and len(pattern_exclude) > 0:
                 self.pattern_exclude = re.compile(pattern_exclude)
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
             else:
-<<<<<<< REMOTE
-self.pattern_include = None
-=======
-self.nested_groups = False
->>>>>>> LOCAL
         except configparser.NoOptionError:
             self.pattern_exclude = None
         # Instance filters (see boto and EC2 API docs). Ignore invalid filters.
@@ -343,18 +334,6 @@ self.nested_groups = False
                 if not filter_key:
                     continue
                 self.ec2_instance_filters[filter_key].append(filter_value)
-                instance_filter = instance_filter.strip()
-                if not instance_filter or '=' not in instance_filter:
-                    continue
-                filter_key, filter_value = [x.strip() for x in instance_filter.split('=', 1)]
-                if not filter_key:
-                    continue
-                self.ec2_instance_filters[filter_key].append(filter_value)
-          for instance_state in config.get('ec2', 'instance_states').split(','):
-            instance_state = instance_state.strip()
-            if instance_state not in ec2_valid_instance_states:
-              continue
-            self.ec2_instance_states.append(instance_state)
     def parse_cli_args(self):
         ''' Command line argument processing '''
         parser = argparse.ArgumentParser(description='Produce an Ansible Inventory file based on EC2')
@@ -385,14 +364,7 @@ self.nested_groups = False
         if self.eucalyptus:
             conn = boto.connect_euca(host=self.eucalyptus_host)
             conn.APIVersion = '2010-08-31'
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
-        # connect_to_region will fail "silently" by returning None if the region name is wrong or not supported
-        if conn is None:
-            self.fail_with_error("region name: %s likely not supported, or AWS is down.  connection to region failed." % region)
+        else:
         return conn
     def get_instances_by_region(self, region):
         ''' Makes an AWS EC2 API call to the list of instances in a particular
@@ -403,34 +375,36 @@ else:
             if self.ec2_instance_filters:
                 for filter_key, filter_values in self.ec2_instance_filters.items():
                     reservations.extend(conn.get_all_instances(filters = { filter_key : filter_values }))
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
+            else:
             for reservation in reservations:
                 for instance in reservation.instances:
                     self.add_instance(instance, region)
         except boto.exception.BotoServerError as e:
             if e.error_code == 'AuthFailure':
                 error = self.get_auth_error_message()
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
+            else:
             self.fail_with_error(error, 'getting EC2 instances')
     def get_rds_instances_by_region(self, region):
         ''' Makes an AWS API call to the list of RDS instances in a particular
         region '''
         try:
+            conn = self.connect_to_aws(rds, region)
             if conn:
+                marker = None
+                while True:
+                    instances = conn.get_all_dbinstances(marker=marker)
+                    marker = instances.marker
+                    for instance in instances:
+                        self.add_rds_instance(instance, region)
+                    if not marker:
+                        break
         except boto.exception.BotoServerError as e:
             error = e.reason
             if e.error_code == 'AuthFailure':
                 error = self.get_auth_error_message()
             if not e.reason == "Forbidden":
                 error = "Looks like AWS RDS is down:\n%s" % e.message
+            self.fail_with_error(error, 'getting RDS instances')
     def get_elasticache_clusters_by_region(self, region):
         ''' Makes an AWS API call to the list of ElastiCache clusters (with
         nodes' info) in a particular region.'''
@@ -438,6 +412,7 @@ else:
         # that's why we need to call describe directly (it would be called by
         # the shorthand method anyway...)
         try:
+            conn = self.connect_to_aws(elasticache, region)
             if conn:
                 # show_cache_node_info = True
                 # because we also want nodes' information
@@ -492,26 +467,44 @@ else:
         if None in [os.environ.get('AWS_ACCESS_KEY_ID'), os.environ.get('AWS_SECRET_ACCESS_KEY')]:
             errors.append(' - No AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY environment vars found')
         else:
-<<<<<<< REMOTE
-key = self.to_safe("tag_" + k)
-=======
-errors.append(' - AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment vars found but may not be correct')
->>>>>>> LOCAL
-            # Redis sigle node cluster
-            # Because all Redis clusters are single nodes, we'll merge the
-            # info from the cluster with info about the node
-            dest = cluster['CacheNodes'][0]['Endpoint']['Address']
-            is_redis = True
         boto_paths = ['/etc/boto.cfg', '~/.boto', '~/.aws/credentials']
         boto_config_found = list(p for p in boto_paths if os.path.isfile(os.path.expanduser(p)))
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
+        else:
+            errors.append(" - No Boto config found at any expected location '%s'" % ', '.join(boto_paths))
         if len(boto_config_found) > 0:
             errors.append(" - Boto configs found at '%s', but the credentials contained may not be correct" % ', '.join(boto_config_found))
         return '\n'.join(errors)
+    def get_elasticache_replication_groups_by_region(self, region):
+        ''' Makes an AWS API call to the list of ElastiCache replication groups
+        in a particular region.'''
+        # ElastiCache boto module doesn't provide a get_all_intances method,
+        # that's why we need to call describe directly (it would be called by
+        # the shorthand method anyway...)
+        try:
+            conn = self.connect_to_aws(elasticache, region)
+            if conn:
+                response = conn.describe_replication_groups()
+        except boto.exception.BotoServerError as e:
+            error = e.reason
+            if e.error_code == 'AuthFailure':
+                error = self.get_auth_error_message()
+            if not e.reason == "Forbidden":
+                error = "Looks like AWS ElastiCache [Replication Groups] is down:\n%s" % e.message
+            self.fail_with_error(error, 'getting ElastiCache clusters')
+        try:
+            # Boto also doesn't provide wrapper classes to ReplicationGroups
+            # Because of that wo can't make use of the get_list method in the
+            # AWSQueryConnection. Let's do the work manually
+            replication_groups = response['DescribeReplicationGroupsResponse']['DescribeReplicationGroupsResult']['ReplicationGroups']
+        except KeyError as e:
+            error = "ElastiCache [Replication Groups] query to AWS failed (unexpected format)."
+            self.fail_with_error(error, 'getting ElastiCache clusters')
+        for replication_group in replication_groups:
+            self.add_elasticache_replication_group(replication_group, region)
+    def fail_with_error(self, err_msg):
+        '''log an error to std err for ansible-playbook to consume and exit'''
+        sys.stderr.write(err_msg)
+        sys.exit(1)
     def get_instance(self, region, instance_id):
         conn = self.connect(region)
         reservations = conn.get_all_instances([instance_id])
@@ -521,32 +514,20 @@ else:
     def add_instance(self, instance, region):
         ''' Adds an instance to the inventory and index, as long as it is
         addressable '''
-        # Only return instances with desired instance states
-        if instance.state not in self.ec2_instance_states:
+        # Only want running instances unless all_instances is True
+        if not self.all_instances and instance.state != 'running':
             return
+        # Select the best destination address
         if self.destination_format and self.destination_format_tags:
             dest = self.destination_format.format(*[ getattr(instance, 'tags').get(tag, '') for tag in self.destination_format_tags ])
-            dest = self.destination_format.format(*[ getattr(instance, 'tags').get(tag, '') for tag in self.destination_format_tags ])
-<<<<<<< REMOTE
-elif instance.subnet_id:
-=======
-else:
->>>>>>> LOCAL
-        # Set the inventory name
-        hostname = None
-        if self.hostname_variable:
-            if self.hostname_variable.startswith('tag_'):
-                hostname = instance.tags.get(self.hostname_variable[4:], None)
-                hostname = instance.tags.get(self.hostname_variable[4:], None)
-            if self.hostname_variable.startswith('tag_'):
-                hostname = instance.tags.get(self.hostname_variable[4:], None)
-                hostname = instance.tags.get(self.hostname_variable[4:], None)
-        # If we can't get a nice hostname, use the destination address
-        if not hostname:
-            hostname = dest
-            hostname = dest
-        hostname = self.to_safe(hostname).lower()
-        # Select the best destination address
+        elif instance.subnet_id:
+            dest = getattr(instance, self.vpc_destination_variable, None)
+            if dest is None:
+                dest = getattr(instance, 'tags').get(self.vpc_destination_variable, None)
+        else:
+            dest = getattr(instance, self.destination_variable, None)
+            if dest is None:
+                dest = getattr(instance, 'tags').get(self.destination_variable, None)
         if not dest:
             # Skip instances we cannot address (e.g. private VPC subnet)
             return
@@ -615,33 +596,17 @@ else:
             for k, v in instance.tags.items():
                 if self.expand_csv_tags and v and ',' in v:
                     values = map(lambda x: x.strip(), v.split(','))
-                    values = map(lambda x: x.strip(), v.split(','))
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
-                for v in values:
-                        sg_ids.append(sg['SecurityGroupId'])
-                if v:
-                    key = self.to_safe("tag_" + k + "=" + v)
                 else:
-<<<<<<< REMOTE
-dest = getattr(instance, self.destination_variable, None)
-=======
-backend = 'Eucalyptus' if self.eucalyptus else 'AWS'
->>>>>>> LOCAL
-<<<<<<< REMOTE
-if dest is None:
-=======
-error = "Error connecting to %s backend.\n%s" % (backend, e.message)
->>>>>>> LOCAL
+                for v in values:
+                    if v:
+                        key = self.to_safe("tag_" + k + "=" + v)
+                    else:
+                        key = self.to_safe("tag_" + k)
                     self.push(self.inventory, key, hostname)
-                if self.nested_groups:
-                    self.push_group(self.inventory, 'tags', self.to_safe("tag_" + k))
+                    if self.nested_groups:
+                        self.push_group(self.inventory, 'tags', self.to_safe("tag_" + k))
                         if v:
                             self.push_group(self.inventory, self.to_safe("tag_" + k), key)
-                    self.push_group(self.inventory, self.to_safe("tag_" + k), key)
         # Inventory: Group by Route53 domain names if enabled
         if self.route53_enabled and self.group_by_route53_names:
             route53_names = self.get_instance_route53_names(instance)
@@ -649,15 +614,14 @@ error = "Error connecting to %s backend.\n%s" % (backend, e.message)
                 self.push(self.inventory, name, hostname)
                 if self.nested_groups:
                     self.push_group(self.inventory, 'route53', name)
-        self.inventory["_meta"]["hostvars"][hostname]['ansible_ssh_host'] = dest
         # Global Tag: instances without tags
         if self.group_by_tag_none and len(instance.tags) == 0:
             self.push(self.inventory, 'tag_none', hostname)
             if self.nested_groups:
                 self.push_group(self.inventory, 'tags', 'tag_none')
-        # Global Tag: tag all EC2 instances
         self.push(self.inventory, 'ec2', hostname)
         self.inventory["_meta"]["hostvars"][hostname] = self.get_host_info_dict_from_instance(instance)
+        # Global Tag: tag all EC2 instances
     def add_rds_instance(self, instance, region):
         ''' Adds an RDS instance to the inventory and index, as long as it is
         addressable '''
@@ -674,19 +638,10 @@ error = "Error connecting to %s backend.\n%s" % (backend, e.message)
         if self.hostname_variable:
             if self.hostname_variable.startswith('tag_'):
                 hostname = instance.tags.get(self.hostname_variable[4:], None)
-                hostname = instance.tags.get(self.hostname_variable[4:], None)
             else:
-                hostname = getattr(instance, self.hostname_variable)
-                hostname = getattr(instance, self.hostname_variable)
-            if self.hostname_variable.startswith('tag_'):
-                hostname = instance.tags.get(self.hostname_variable[4:], None)
-                hostname = instance.tags.get(self.hostname_variable[4:], None)
-            else:
-                hostname = getattr(instance, self.hostname_variable)
                 hostname = getattr(instance, self.hostname_variable)
         # If we can't get a nice hostname, use the destination address
         if not hostname:
-            hostname = dest
             hostname = dest
         hostname = self.to_safe(hostname).lower()
         # Add to index
@@ -756,11 +711,7 @@ error = "Error connecting to %s backend.\n%s" % (backend, e.message)
             # Memcached cluster
             dest = cluster['ConfigurationEndpoint']['Address']
             is_redis = False
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
+        else:
         if not dest:
             # Skip clusters we cannot address (e.g. private VPC subnet)
             return
@@ -889,11 +840,7 @@ else:
         host_info = self.get_host_info_dict_from_describe_dict(node)
         if dest in self.inventory["_meta"]["hostvars"]:
             self.inventory["_meta"]["hostvars"][dest].update(host_info)
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
+        else:
     def add_elasticache_replication_group(self, replication_group, region):
         ''' Adds an ElastiCache replication group to the inventory and index '''
         # Only want available clusters unless all_elasticache_replication_groups is True
@@ -960,7 +907,6 @@ else:
                 value = getattr(instance, attrib)
             except AttributeError:
                 continue
-                continue
             if value in self.route53_records:
                 name_list.update(self.route53_records[value])
         return list(name_list)
@@ -991,7 +937,6 @@ else:
                 for k, v in value.items():
                     if self.expand_csv_tags and ',' in v:
                         v = map(lambda x: x.strip(), v.split(','))
-                        v = map(lambda x: x.strip(), v.split(','))
                     key = self.to_safe('ec2_tag_' + k)
                     instance_vars[key] = v
             elif key == 'ec2_groups':
@@ -1002,11 +947,7 @@ else:
                     group_names.append(group.name)
                 instance_vars["ec2_security_group_ids"] = ','.join([str(i) for i in group_ids])
                 instance_vars["ec2_security_group_names"] = ','.join([str(i) for i in group_names])
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
+            else:
         return instance_vars
     def get_host_info_dict_from_describe_dict(self, describe_dict):
         ''' Parses the dictionary returned by the API call into a flat list
@@ -1073,23 +1014,7 @@ else:
             # Replace None by an empty string
             elif type(value) == type(None):
                 host_info[key] = ''
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
             else:
-<<<<<<< REMOTE
-pass
-=======
-hostname = getattr(instance, self.hostname_variable)
->>>>>>> LOCAL
-                # TODO Product codes if someone finds them useful
-                #print key
-                #print type(value)
-                #print value
-                # Remove non-processed complex types
-                pass
         return host_info
     def get_host_info(self):
         ''' Get variables about a specific host '''
@@ -1112,11 +1037,7 @@ hostname = getattr(instance, self.hostname_variable)
         if isinstance(group_info, dict):
             host_list = group_info.setdefault('hosts', [])
             host_list.append(element)
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
+        else:
     def push_group(self, my_dict, key, element):
         ''' Push a group as a child of another group. '''
         parent_group = my_dict.setdefault(key, {})
@@ -1150,25 +1071,32 @@ else:
         regex = "[^A-Za-z0-9\_"
         if not self.replace_dash_in_groups:
             regex += "\-"
-            regex += "\-"
         return re.sub(regex + "]", "_", word)
     def json_format_dict(self, data, pretty=False):
         ''' Converts a dict to a JSON object and dumps it as a formatted
         string '''
         if pretty:
             return json.dumps(data, sort_keys=True, indent=2)
-<<<<<<< REMOTE
-else:
-=======
-else:
->>>>>>> LOCAL
         else:
-<<<<<<< REMOTE
-group_info.append(element)
-=======
-key = self.to_safe("tag_" + k)
->>>>>>> LOCAL
-            return json.dumps(data)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1386,4 +1314,5 @@ key = self.to_safe("tag_" + k)
 
 # Run the script
 Ec2Inventory()
+
 

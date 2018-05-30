@@ -1,9 +1,12 @@
+from abc import ABCMeta, abstractmethod
 
 import numpy as np
 import scipy.sparse as sp
 
 from . import libsvm, liblinear
 from ..base import BaseEstimator
+from ..utils import array2d
+from ..utils import safe_asarray
 from ..utils.extmath import safe_sparse_dot
 import warnings
 
@@ -36,6 +39,7 @@ class BaseLibSVM(BaseEstimator):
 
     This implements support vector machine classification and regression.
     """
+    __metaclass__ = ABCMeta
     def __init__(self, impl, kernel, degree, gamma, coef0,
                  tol, C, nu, epsilon, shrinking, probability, cache_size,
                  scale_C, sparse):
@@ -63,15 +67,134 @@ class BaseLibSVM(BaseEstimator):
         self.probability = probability
         self.cache_size = cache_size
         self.scale_C = scale_C
+        self.sparse = sparse
+    @abstractmethod
     def fit(self, X, y, class_weight=None, sample_weight=None):
+        """Fit the SVM model according to the given training data.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix}, shape = [n_samples, n_features]
+            Training vectors, where n_samples is the number of samples
+            and n_features is the number of features.
+
+        y : array-like, shape = [n_samples]
+            Target values (integers in classification, real numbers in
+            regression)
+
+        class_weight : {dict, 'auto'}, optional
+            Set the parameter C of class i to class_weight[i]*C for
+            SVC. If not given, all classes are supposed to have
+            weight one. The 'auto' mode uses the values of y to
+            automatically adjust weights inversely proportional to
+            class frequencies.
+
+        sample_weight : array-like, shape = [n_samples], optional
+            Weights applied to individual samples (1. for unweighted).
+
+        Returns
+        -------
+        self : object
+            Returns self.
+
+        Notes
+        ------
+        If X and y are not C-ordered and contiguous arrays of np.float64 and
+        X is not a scipy.sparse.csr_matrix, X and/or y may be copied.
+
+        If X is a dense array, then the other methods will not support sparse
+        matrices as input.
+        """
         self._sparse = sp.isspmatrix(X) if self.sparse == "auto" else self.sparse
         fit = self._sparse_fit if self._sparse else self._dense_fit
         fit(X, y, class_weight, sample_weight)
+        return self
+    @abstractmethod
     def predict(self, X):
+        """Perform classification or regression samples in X.
+
+        For a classification model, the predicted class for each
+        sample in X is returned.  For a regression model, the function
+        value of X calculated is returned.
+
+        For an one-class model, +1 or -1 is returned.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix}, shape = [n_samples, n_features]
+
+        Returns
+        -------
+        C : array, shape = [n_samples]
+        """
         X = self._validate_for_predict(X)
         predict = self._sparse_predict if self._sparse else self._dense_predict
         return predict(X)
+    @abstractmethod
     def predict_proba(self, X):
+        """Compute the likehoods each possible outcomes of samples in T.
+
+        The model need to have probability information computed at training
+        time: fit with attribute `probability` set to True.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_samples, n_features]
+
+        Returns
+        -------
+        X : array-like, shape = [n_samples, n_classes]
+            Returns the probability of the sample for each class in
+            the model, where classes are ordered by arithmetical
+            order.
+
+        Notes
+        -----
+        The probability model is created using cross validation, so
+        the results can be slightly different than those obtained by
+        predict. Also, it will meaningless results on very small
+        datasets.
+        """
+        if not self.probability:
+            raise ValueError(
+                    "probability estimates must be enabled to use this method")
+        if self.impl not in ('c_svc', 'nu_svc'):
+            raise NotImplementedError("predict_proba only implemented for SVC "
+                                      "and NuSVC")
+        X = self._validate_for_predict(X)
+        pred_proba = self._sparse_predict_proba if self._sparse \
+                                                else self._dense_predict_proba
+        return pred_proba(X)
+    def predict_proba(self, X):
+        """Compute the likehoods each possible outcomes of samples in T.
+
+        The model need to have probability information computed at training
+        time: fit with attribute `probability` set to True.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_samples, n_features]
+
+        Returns
+        -------
+        X : array-like, shape = [n_samples, n_classes]
+            Returns the probability of the sample for each class in
+            the model, where classes are ordered by arithmetical
+            order.
+
+        Notes
+        -----
+        The probability model is created using cross validation, so
+        the results can be slightly different than those obtained by
+        predict. Also, it will meaningless results on very small
+        datasets.
+        """
+        if not self.probability:
+            raise ValueError(
+                    "probability estimates must be enabled to use this method")
+        if self.impl not in ('c_svc', 'nu_svc'):
+            raise NotImplementedError("predict_proba only implemented for SVC "
+                                      "and NuSVC")
         X = self._validate_for_predict(X)
         pred_proba = self._sparse_predict_proba if self._sparse \
                                                 else self._dense_predict_proba
@@ -106,22 +229,16 @@ class BaseLibSVM(BaseEstimator):
         if self.kernel != 'linear':
             raise ValueError('coef_ is only available when using a '
                              'linear kernel')
-        if self.dual_coef_.shape[0] == 1:
-            # binary classifier
-            # binary classifier
             coef = safe_sparse_dot(self.dual_coef_, self.support_vectors_)
-        coef = safe_sparse_dot(self.dual_coef_, self.support_vectors_)
         # coef_ being a read-only property it's better to mark the value as
         # immutable to avoid hiding potential bugs for the unsuspecting user
-<<<<<<< REMOTE
-else:
-=======
-if sp.issparse(coef):
->>>>>>> LOCAL
         else:
+            # regular dense array
             coef.flags.writeable = False
-        return coef
-        return coef
+            if sp.issparse(coef[0]):
+            # sparse matrix do not have global flags
+            coef.data.flags.writeable = False
+    return coef
 
 
 
@@ -141,6 +258,199 @@ if sp.issparse(coef):
 
 
 
+class DenseBaseLibSVM(BaseLibSVM):
+    def _compute_kernel(self, X):
+        """Return the data transformed by a callable kernel"""
+        if hasattr(self, 'kernel_function'):
+            # in the case of precomputed kernel given as a function, we
+            # have to compute explicitly the kernel matrix
+            X = np.asarray(self.kernel_function(X, self.__Xfit),
+                           dtype=np.float64, order='C')
+        return X
+    def fit(self, X, y, class_weight=None, sample_weight=None):
+        """Fit the SVM model according to the given training data.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_samples, n_features]
+            Training vectors, where n_samples is the number of samples
+            and n_features is the number of features.
+
+        y : array-like, shape = [n_samples]
+            Target values (integers in classification, real numbers in
+            regression)
+
+        class_weight : {dict, 'auto'}, optional
+            Set the parameter C of class i to class_weight[i]*C for
+            SVC. If not given, all classes are supposed to have
+            weight one. The 'auto' mode uses the values of y to
+            automatically adjust weights inversely proportional to
+            class frequencies.
+
+        sample_weight : array-like, shape = [n_samples], optional
+            Weights applied to individual samples (1. for unweighted).
+
+        Returns
+        -------
+        self : object
+            Returns self.
+
+        Notes
+        ------
+        If X and y are not C-ordered and contiguous arrays, they are
+        copied.
+
+        """
+        X = np.asarray(X, dtype=np.float64, order='C')
+        y = np.asarray(y, dtype=np.float64, order='C')
+        sample_weight = np.asarray([] if sample_weight is None
+                                      else sample_weight, dtype=np.float64)
+        if hasattr(self, 'kernel_function'):
+            # you must store a reference to X to compute the kernel in predict
+            # TODO: add keyword copy to copy on demand
+            self.__Xfit = X
+            X = self._compute_kernel(X)
+        class_weight, class_weight_label = \
+                     _get_class_weight(class_weight, y)
+        # check dimensions
+        solver_type = LIBSVM_IMPL.index(self.impl)
+        if solver_type != 2 and X.shape[0] != y.shape[0]:
+            raise ValueError("X and y have incompatible shapes.\n" +
+                             "X has %s samples, but y has %s." %
+                             (X.shape[0], y.shape[0]))
+        if self.kernel == "precomputed" and X.shape[0] != X.shape[1]:
+            raise ValueError("X.shape[0] should be equal to X.shape[1]")
+        if (self.kernel in ['poly', 'rbf']) and (self.gamma == 0):
+            # if custom gamma is not provided ...
+            self.gamma = 1.0 / X.shape[1]
+        self.shape_fit_ = X.shape
+        params = self._get_params()
+        if 'scale_C' in params:
+            if params['scale_C']:
+                params['C'] = params['C'] / float(X.shape[0])
+            del params['scale_C']
+        self.support_, self.support_vectors_, self.n_support_, \
+        self.dual_coef_, self.intercept_, self.label_, self.probA_, \
+        self.probB_ = libsvm.fit(X, y,
+            svm_type=solver_type, sample_weight=sample_weight,
+            class_weight=class_weight,
+            class_weight_label=class_weight_label,
+            **params)
+        return self
+    def predict(self, X):
+        """Perform classification or regression samples in X.
+
+        For a classification model, the predicted class for each
+        sample in X is returned.  For a regression model, the function
+        value of X calculated is returned.
+
+        For an one-class model, +1 or -1 is returned.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_samples, n_features]
+
+        Returns
+        -------
+        C : array, shape = [n_samples]
+        """
+        X = np.asarray(X, dtype=np.float64, order='C')
+        if X.ndim == 1:
+            # don't use np.atleast_2d, it doesn't guarantee C-contiguity
+            X = np.reshape(X, (1, -1), order='C')
+        n_samples, n_features = X.shape
+        X = self._compute_kernel(X)
+        if self.kernel == "precomputed":
+            if X.shape[1] != self.shape_fit_[0]:
+                raise ValueError("X.shape[1] = %d should be equal to %d, "
+                                 "the number of samples at training time" %
+                                 (X.shape[1], self.shape_fit_[0]))
+        elif n_features != self.shape_fit_[1]:
+            raise ValueError("X.shape[1] = %d should be equal to %d, "
+                             "the number of features at training time" %
+                             (n_features, self.shape_fit_[1]))
+        params = self._get_params()
+        if 'scale_C' in params:
+            del params['scale_C']
+        svm_type = LIBSVM_IMPL.index(self.impl)
+        return libsvm.predict(
+            X, self.support_, self.support_vectors_, self.n_support_,
+            self.dual_coef_, self.intercept_,
+            self.label_, self.probA_, self.probB_,
+            svm_type=svm_type, **params)
+    def predict_proba(self, X):
+        """Compute the likehoods each possible outcomes of samples in T.
+
+        The model need to have probability information computed at training
+        time: fit with attribute `probability` set to True.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_samples, n_features]
+
+        Returns
+        -------
+        X : array-like, shape = [n_samples, n_classes]
+            Returns the probability of the sample for each class in
+            the model, where classes are ordered by arithmetical
+            order.
+
+        Notes
+        -----
+        The probability model is created using cross validation, so
+        the results can be slightly different than those obtained by
+        predict. Also, it will meaningless results on very small
+        datasets.
+        """
+        if not self.probability:
+            raise ValueError(
+                    "probability estimates must be enabled to use this method")
+        X = np.asarray(X, dtype=np.float64, order='C')
+        if X.ndim == 1:
+            # don't use np.atleast_2d, it doesn't guarantee C-contiguity
+            X = np.reshape(X, (1, -1), order='C')
+        X = self._compute_kernel(X)
+        if self.impl not in ('c_svc', 'nu_svc'):
+            raise NotImplementedError("predict_proba only implemented for SVC "
+                                      "and NuSVC")
+        params = self._get_params()
+        if 'scale_C' in params:
+            del params['scale_C']
+        svm_type = LIBSVM_IMPL.index(self.impl)
+        pprob = libsvm.predict_proba(
+            X, self.support_, self.support_vectors_, self.n_support_,
+            self.dual_coef_, self.intercept_, self.label_,
+            self.probA_, self.probB_,
+            svm_type=svm_type, **params)
+        return pprob
+    def decision_function(self, X):
+        """Distance of the samples T to the separating hyperplane.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_samples, n_features]
+
+        Returns
+        -------
+        X : array-like, shape = [n_samples, n_class * (n_class-1) / 2]
+            Returns the decision function of the sample for each class
+            in the model.
+        """
+        X = np.asarray(X, dtype=np.float64, order='C')
+        if X.ndim == 1:
+            # don't use np.atleast_2d, it doesn't guarantee C-contiguity
+            X = np.reshape(X, (1, -1), order='C')
+        X = self._compute_kernel(X)
+        params = self._get_params()
+        if 'scale_C' in params:
+            del params['scale_C']
+        dec_func = libsvm.decision_function(
+            X, self.support_, self.support_vectors_, self.n_support_,
+            self.dual_coef_, self.intercept_, self.label_,
+            self.probA_, self.probB_,
+            svm_type=LIBSVM_IMPL.index(self.impl),
+            **params)
+        return dec_func
 
 
 
@@ -194,6 +504,9 @@ class BaseLibLinear(BaseEstimator):
         """
         if self.multi_class:
             solver_type = 'MC_SVC'
+        else:
+            solver_type = "P%s_L%s_D%d" % (
+                self.penalty.upper(), self.loss.upper(), int(self.dual))
         if not solver_type in self._solver_type_dict:
             if self.penalty.upper() == 'L1' and self.loss.upper() == 'L1':
                 error_string = ("The combination of penalty='l1' "
@@ -203,8 +516,9 @@ class BaseLibLinear(BaseEstimator):
                 error_string = ("loss='l2' and penalty='l1' is "
                     "only supported when dual='true'.")
             else:
-            solver_type = "P%s_L%s_D%d" % (
-                self.penalty.upper(), self.loss.upper(), int(self.dual))
+                # only PL1 in dual remains
+                error_string = ("penalty='l1' is only supported "
+                    "when dual='false'.")
             raise ValueError('Not supported set of arguments: '
                              + error_string)
         return self._solver_type_dict[solver_type]
@@ -238,12 +552,8 @@ class BaseLibLinear(BaseEstimator):
             raise ValueError("X and y have incompatible shapes.\n" +
                              "X has %s samples, but y has %s." % \
                              (X.shape[0], y.shape[0]))
-            raise ValueError("X and y have incompatible shapes.\n" +
-                             "X has %s samples, but y has %s." % \
-                             (X.shape[0], y.shape[0]))
         C = self.C
         if self.scale_C:
-            C = C / float(X.shape[0])
             C = C / float(X.shape[0])
         train = liblinear.csr_train_wrap if self._sparse \
                                          else liblinear.train_wrap
@@ -251,31 +561,9 @@ class BaseLibLinear(BaseEstimator):
                                             self.tol, self._get_bias(), C,
                                             self.class_weight_label,
                                             self.class_weight)
-        self.class_weight, self.class_weight_label = \
-                     _get_class_weight(class_weight, y)
-        if X.shape[0] != y.shape[0]:
-            raise ValueError("X and y have incompatible shapes: %r vs %r\n"
-                             "Note: Sparse matrices cannot be indexed w/"
-                             "boolean masks (use `indices=True` in CV)."
-                             % (X.shape, y.shape))
-        C = self.C
-        if self.scale_C:
-            C /= float(X.shape[0])
         return self
     def predict(self, X):
-        X = self._validate_for_predict(X)
-        predict = liblinear.csr_predict_wrap if self._sparse \
-                                             else liblinear.predict_wrap
-        return predict(X, self.raw_coef_, self._get_solver_type(), self.tol,
-                       self.C, self.class_weight_label, self.class_weight,
-                       self.label_, self._get_bias())
-        """Perform classification or regression samples in X.
-
-        For a classification model, the predicted class for each
-        sample in X is returned.  For a regression model, the function
-        value of X calculated is returned.
-
-        For an one-class model, +1 or -1 is returned.
+        """Predict target values of X according to the fitted model.
 
         Parameters
         ----------
@@ -285,8 +573,13 @@ class BaseLibLinear(BaseEstimator):
         -------
         C : array, shape = [n_samples]
         """
-        X.data = np.asarray(X.data, dtype=np.float64, order='C')
-        solver_type = LIBSVM_IMPL.index(self.impl)
+        X = self._validate_for_predict(X)
+        self._check_n_features(X)
+        predict = liblinear.csr_predict_wrap if self._sparse \
+                                             else liblinear.predict_wrap
+        return predict(X, self.raw_coef_, self._get_solver_type(), self.tol,
+                       self.C, self.class_weight_label, self.class_weight,
+                       self.label_, self._get_bias())
     def decision_function(self, X):
         """Decision function value for X according to the trained model.
 
@@ -300,21 +593,16 @@ class BaseLibLinear(BaseEstimator):
             Returns the decision function of the sample for each class
             in the model.
         """
-        X = self._validate_for_predict(X)
         X.data = np.asarray(X.data, dtype=np.float64, order='C')
-        dfunc_wrap = liblinear.csr_decision_function_wrap \
-                       if self._sparse \
-                       else liblinear.decision_function_wrap
-        dec_func = dfunc_wrap(X, self.raw_coef_, self._get_solver_type(),
-                              self.tol, self.C, self.class_weight_label,
-                              self.class_weight, self.label_, self._get_bias())
+        if X.ndim == 1:
+            # don't use np.atleast_2d, it doesn't guarantee C-contiguity
+            X = np.reshape(X, (1, -1), order='C')
         self._check_n_features(X)
-            return dec_func
-                 C, self.class_weight_label, self.class_weight,
-        else:
-                # only PL1 in dual remains
-                error_string = ("penalty='l1' is only supported "
-                    "when dual='false'.")
+        return dec_func
+        dec_func = liblinear.decision_function_wrap(
+            X, self.raw_coef_, self._get_solver_type(), self.tol,
+            self.C, self.class_weight_label, self.class_weight,
+            self.label_, self._get_bias())
     def _check_n_features(self, X):
         n_features = self.raw_coef_.shape[1]
         if self.fit_intercept:
@@ -326,23 +614,7 @@ class BaseLibLinear(BaseEstimator):
         X = atleast2d_or_csr(X, dtype=np.float64, order="C")
         if self._sparse and not sp.isspmatrix(X):
             X = sp.csr_matrix(X)
-            X = sp.csr_matrix(X)
         elif sp.isspmatrix(X) and not self._sparse:
-            raise ValueError(
-                "cannot use sparse input in %r trained on dense data"
-                % type(self).__name__)
-            raise ValueError(
-                "cannot use sparse input in %r trained on dense data"
-                % type(self).__name__)
-        return X
-        X = atleast2d_or_csr(X, dtype=np.float64, order="C")
-        if self._sparse and not sp.isspmatrix(X):
-            X = sp.csr_matrix(X)
-            X = sp.csr_matrix(X)
-        elif sp.isspmatrix(X) and not self._sparse:
-            raise ValueError(
-                "cannot use sparse input in %r trained on dense data"
-                % type(self).__name__)
             raise ValueError(
                 "cannot use sparse input in %r trained on dense data"
                 % type(self).__name__)
@@ -365,6 +637,8 @@ class BaseLibLinear(BaseEstimator):
             ret = self.raw_coef_.copy()
         # mark the returned value as immutable
         # to avoid silencing potential bugs
+        ret.flags.writeable = False
+        return ret
     def _set_coef_(self, coef):
         raw_intercept = self.raw_coef_[:, -1].reshape(-1, 1)
         self.raw_coef_ = coef
@@ -375,6 +649,7 @@ class BaseLibLinear(BaseEstimator):
         if self.fit_intercept:
             return self.intercept_scaling
         else:
+            return -1.0
 
 
 

@@ -30,6 +30,8 @@ from .base import BaseEnsemble
 from ..base import BaseEstimator
 from ..base import ClassifierMixin
 from ..base import RegressorMixin
+from ..utils import check_random_state, array2d
+from ..utils.extmath import logsumexp
 
 from ..tree._tree import Tree
 from ..tree._tree import _random_sample_mask
@@ -56,22 +58,23 @@ class QuantileEstimator(BaseEstimator):
 
 
 
+class MedianEstimator(BaseEstimator):
+    """An estimator predicting the median of the training targets."""
+    def fit(self, X, y):
+        self.median = np.median(y)
+    def predict(self, X):
+        y = np.empty((X.shape[0], 1), dtype=np.float64)
+        y.fill(self.median)
+        return y
 
 
 
 class MeanEstimator(BaseEstimator):
     """An estimator predicting the mean of the training targets."""
     def fit(self, X, y):
-    def predict(self, X):
-        y = np.empty((X.shape[0], 1), dtype=np.float64)
-        return y
-    def fit(self, X, y):
-        n_pos = np.sum(y)
-        self.prior = np.log(n_pos / (y.shape[0] - n_pos))
         self.mean = np.mean(y)
     def predict(self, X):
         y = np.empty((X.shape[0], 1), dtype=np.float64)
-        y.fill(self.prior)
         y.fill(self.mean)
         return y
 
@@ -79,6 +82,13 @@ class MeanEstimator(BaseEstimator):
 
 class LogOddsEstimator(BaseEstimator):
     """An estimator predicting the log odds ratio."""
+    def fit(self, X, y):
+        n_pos = np.sum(y)
+        self.prior = np.log(n_pos / (y.shape[0] - n_pos))
+    def predict(self, X):
+        y = np.empty((X.shape[0], 1), dtype=np.float64)
+        y.fill(self.prior)
+        return y
 
 
 
@@ -87,7 +97,11 @@ class PriorProbabilityEstimator(BaseEstimator):
     class in the training data.
     """
     def fit(self, X, y):
+        class_counts = np.bincount(y)
+        self.priors = class_counts / float(y.shape[0])
     def predict(self, X):
+        y = np.empty((X.shape[0], self.priors.shape[0]), dtype=np.float64)
+        y[:] = self.priors
         return y
 
 
@@ -449,7 +463,6 @@ class BaseGradientBoosting(BaseEnsemble):
         self.random_state = check_random_state(random_state)
         if not (0.0 < alpha < 1.0):
             raise ValueError("alpha must be in (0.0, 1.0)")
-            raise ValueError("alpha must be in (0.0, 1.0)")
         self.alpha = alpha
         self.estimators_ = None
     def fit_stage(self, i, X, X_argsorted, y, y_pred, sample_mask):
@@ -494,10 +507,12 @@ class BaseGradientBoosting(BaseEnsemble):
         self : object
             Returns self.
         """
-        X, y = check_arrays(X, y, sparse_format='dense')
         X = np.asfortranarray(X, dtype=DTYPE)
         y = np.ravel(y, order='C')
         n_samples, n_features = X.shape
+        if y.shape[0] != n_samples:
+            raise ValueError("Number of labels does not match " \
+                             "number of samples.")
         self.n_features = n_features
         if self.max_features is None:
             self.max_features = n_features
@@ -544,103 +559,12 @@ class BaseGradientBoosting(BaseEnsemble):
                 # no need to fancy index w/ no subsampling
                 self.train_score_[i] = loss(y, y_pred)
         return self
-        class_counts = np.bincount(y)
-        self.priors = class_counts / float(y.shape[0])
     def _make_estimator(self, append=True):
         # we don't need _make_estimator
         raise NotImplementedError()
     @property
-    def decision_function(self, X):
-        """Compute the decision function of ``X``.
-
-        Parameters
-        ----------
-        X : array-like of shape = [n_samples, n_features]
-            The input samples.
-
-        Returns
-        -------
-        score : array, shape = [n_samples, k]
-            The decision function of the input samples. Classes are
-            ordered by arithmetical order. Regression and binary
-            classification are special cases with ``k == 1``,
-            otherwise ``k==n_classes``.
-        """
-        X = array2d(X, dtype=DTYPE, order='C')
-        score = self._init_decision_function(X)
-        predict_stages(self.estimators_, X, self.learn_rate, score)
-        return score
-        """Compute the decision function of ``X``.
-
-        Parameters
-        ----------
-        X : array-like of shape = [n_samples, n_features]
-            The input samples.
-
-        Returns
-        -------
-        score : array, shape = [n_samples, k]
-            The decision function of the input samples. Classes are
-            ordered by arithmetical order. Regression and binary
-            classification are special cases with ``k == 1``,
-            otherwise ``k==n_classes``.
-        """
-        X = array2d(X, dtype=DTYPE, order='C')
-        score = self._init_decision_function(X)
-        predict_stages(self.estimators_, X, self.learn_rate, score)
-        return score
-    def staged_decision_function(self, X):
-        """Compute decision function of ``X`` for each iteration.
-
-        This method allows monitoring (i.e. determine error on testing set)
-        after each stage.
-
-        Parameters
-        ----------
-        X : array-like of shape = [n_samples, n_features]
-            The input samples.
-
-        Returns
-        -------
-        score : generator of array, shape = [n_samples, k]
-            The decision function of the input samples. Classes are
-            ordered by arithmetical order. Regression and binary
-            classification are special cases with ``k == 1``,
-            otherwise ``k==n_classes``.
-        """
-        X = array2d(X, dtype=DTYPE, order='C')
-        score = self._init_decision_function(X)
-        for i in range(self.n_estimators):
-            predict_stage(self.estimators_, i, X, self.learn_rate, score)
-            yield score
-        """Compute decision function of ``X`` for each iteration.
-
-        This method allows monitoring (i.e. determine error on testing set)
-        after each stage.
-
-        Parameters
-        ----------
-        X : array-like of shape = [n_samples, n_features]
-            The input samples.
-
-        Returns
-        -------
-        score : generator of array, shape = [n_samples, k]
-            The decision function of the input samples. Classes are
-            ordered by arithmetical order. Regression and binary
-            classification are special cases with ``k == 1``,
-            otherwise ``k==n_classes``.
-        """
-        X = array2d(X, dtype=DTYPE, order='C')
-        score = self._init_decision_function(X)
-        for i in range(self.n_estimators):
-            predict_stage(self.estimators_, i, X, self.learn_rate, score)
-            yield score
     def feature_importances_(self):
         if self.estimators_ is None or len(self.estimators_) == 0:
-        if self.estimators_ is None or len(self.estimators_) == 0:
-            raise ValueError("Estimator not fitted, call `fit` " \
-                             "before making predictions`.")
             raise ValueError("Estimator not fitted, " \
                              "call `fit` before `feature_importances_`.")
         total_sum = np.zeros((self.n_features, ), dtype=np.float64)
@@ -652,11 +576,15 @@ class BaseGradientBoosting(BaseEnsemble):
         return importances
     def _init_decision_function(self, X):
         """Check input and compute prediction of ``init``. """
+        if self.estimators_ is None or len(self.estimators_) == 0:
+            raise ValueError("Estimator not fitted, call `fit` " \
+                             "before making predictions`.")
         if X.shape[1] != self.n_features:
             raise ValueError("X.shape[1] should be %d, not %d." %
                              (self.n_features, X.shape[1]))
         score = self.init.predict(X).astype(np.float64)
         return score
+    @property
 
 
 
@@ -803,30 +731,6 @@ class GradientBoostingClassifier(BaseGradientBoosting, ClassifierMixin):
             min_samples_leaf, max_depth, init, subsample, max_features,
             random_state)
     def fit(self, X, y):
-    def _score_to_proba(self, score):
-        """Compute class probability estimates from decision scores. """
-        proba = np.ones((score.shape[0], self.n_classes_), dtype=np.float64)
-        if not self.loss_.is_multi_class:
-            proba[:, 1] = 1.0 / (1.0 + np.exp(-score.ravel()))
-            proba[:, 0] -= proba[:, 1]
-        else:
-<<<<<<< REMOTE
-proba = (np.exp(score)
-=======
-proba = np.nan_to_num(np.exp(score - (logsumexp(score, axis=1)[:, np.newaxis])))
->>>>>>> LOCAL
-                     / np.sum(np.exp(score), axis=1)[:, np.newaxis])
-        return proba
-        """Compute class probability estimates from decision scores. """
-        proba = np.ones((score.shape[0], self.n_classes_), dtype=np.float64)
-        if not self.loss_.is_multi_class:
-            proba[:, 1] = 1.0 / (1.0 + np.exp(-score.ravel()))
-            proba[:, 0] -= proba[:, 1]
-        else:
-            proba = (np.exp(score)
-                     / np.sum(np.exp(score), axis=1)[:, np.newaxis])
-        return proba
-    def fit(self, X, y):
         """Fit the gradient boosting model.
 
         Parameters
@@ -853,6 +757,32 @@ proba = np.nan_to_num(np.exp(score - (logsumexp(score, axis=1)[:, np.newaxis])))
         if self.loss == 'deviance':
             self.loss = 'mdeviance' if len(self.classes_) > 2 else 'bdeviance'
         return super(GradientBoostingClassifier, self).fit(X, y)
+    def _score_to_proba(self, score):
+        """Compute class probability estimates from decision scores. """
+        proba = np.ones((score.shape[0], self.n_classes_), dtype=np.float64)
+        if not self.loss_.is_multi_class:
+            proba[:, 1] = 1.0 / (1.0 + np.exp(-score.ravel()))
+            proba[:, 0] -= proba[:, 1]
+        else:
+            proba = (np.exp(score)
+                     / np.sum(np.exp(score), axis=1)[:, np.newaxis])
+        return proba
+    def predict_proba(self, X):
+        """Predict class probabilities for X.
+
+        Parameters
+        ----------
+        X : array-like of shape = [n_samples, n_features]
+            The input samples.
+
+        Returns
+        -------
+        p : array of shape = [n_samples]
+            The class probabilities of the input samples. Classes are
+            ordered by arithmetical order.
+        """
+        score = self.decision_function(X)
+        return self._score_to_proba(score)
     def staged_predict_proba(self, X):
         """Predict class probabilities at each stage for X.
 
@@ -886,8 +816,6 @@ proba = np.nan_to_num(np.exp(score - (logsumexp(score, axis=1)[:, np.newaxis])))
         """
         proba = self.predict_proba(X)
         return self.classes_.take(np.argmax(proba, axis=1), axis=0)
-        y = np.empty((X.shape[0], self.priors.shape[0]), dtype=np.float64)
-        y[:] = self.priors
     def staged_predict(self, X):
         """Predict class probabilities at each stage for X.
 
@@ -906,43 +834,6 @@ proba = np.nan_to_num(np.exp(score - (logsumexp(score, axis=1)[:, np.newaxis])))
         """
         for proba in self.staged_predict_proba(X):
             yield self.classes_.take(np.argmax(proba, axis=1), axis=0)
-            yield self.classes_.take(np.argmax(proba, axis=1), axis=0)
-        """Predict class probabilities at each stage for X.
-
-        This method allows monitoring (i.e. determine error on testing set)
-        after each stage.
-
-        Parameters
-        ----------
-        X : array-like of shape = [n_samples, n_features]
-            The input samples.
-
-        Returns
-        -------
-        y : array of shape = [n_samples]
-            The predicted value of the input samples.
-        """
-        for proba in self.staged_predict_proba(X):
-            yield self.classes_.take(np.argmax(proba, axis=1), axis=0)
-            yield self.classes_.take(np.argmax(proba, axis=1), axis=0)
-    def predict(self, X):
-        return self.decision_function(X).ravel()
-    def predict_proba(self, X):
-        """Predict class probabilities for X.
-
-        Parameters
-        ----------
-        X : array-like of shape = [n_samples, n_features]
-            The input samples.
-
-        Returns
-        -------
-        p : array of shape = [n_samples]
-            The class probabilities of the input samples. Classes are
-            ordered by arithmetical order.
-        """
-        score = self.decision_function(X)
-        return self._score_to_proba(score)
 
 
 
@@ -1057,6 +948,43 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
             loss, learn_rate, n_estimators, min_samples_split,
             min_samples_leaf, max_depth, init, subsample, max_features,
             random_state, alpha)
+    def fit(self, X, y):
+        """Fit the gradient boosting model.
+
+        Parameters
+        ----------
+        X : array-like, shape = [n_samples, n_features]
+            Training vectors, where n_samples is the number of samples
+            and n_features is the number of features. Use fortran-style
+            to avoid memory copies.
+
+        y : array-like, shape = [n_samples]
+            Target values (integers in classification, real numbers in
+            regression)
+            For classification, labels must correspond to classes
+            ``0, 1, ..., n_classes_-1``
+
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
+        self.n_classes_ = 1
+        return super(GradientBoostingRegressor, self).fit(X, y)
+    def predict(self, X):
+        """Predict regression target for X.
+
+        Parameters
+        ----------
+        X : array-like of shape = [n_samples, n_features]
+            The input samples.
+
+        Returns
+        -------
+        y: array of shape = [n_samples]
+            The predicted values.
+        """
+        return self.decision_function(X).ravel()
     def staged_predict(self, X):
         """Predict regression target at each stage for X.
 
@@ -1075,23 +1003,11 @@ class GradientBoostingRegressor(BaseGradientBoosting, RegressorMixin):
         """
         for y in self.staged_decision_function(X):
             yield y.ravel()
-            yield y.ravel()
-        """Predict regression target at each stage for X.
 
-        This method allows monitoring (i.e. determine error on testing set)
-        after each stage.
 
-        Parameters
-        ----------
-        X : array-like of shape = [n_samples, n_features]
-            The input samples.
 
-        Returns
-        -------
-        y : array of shape = [n_samples]
-            The predicted value of the input samples.
-        """
-        for y in self.staged_decision_function(X):
-            yield y.ravel()
-            yield y.ravel()
+
+
+
+
 

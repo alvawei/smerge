@@ -6,6 +6,7 @@ Tune the parameters of an estimator by cross-validation.
 #         Gael Varoquaux    <gael.varoquaux@normalesup.org>
 # License: BSD Style.
 
+import numpy as np
 import copy
 
 from .externals.joblib import Parallel, delayed
@@ -73,30 +74,28 @@ def fit_grid_point(X, y, base_clf, clf_params, cv, loss_func, score_func, iid,
     score = 0.
     n_test_samples = 0.
     for train, test in cv:
-        if isinstance(X, list) or isinstance(X, tuple):
-            X_train = [X[i] for i, cond in enumerate(train) if cond]
-            X_test = [X[i] for i, cond in enumerate(test) if cond]
-            X_train = [X[i] for i, cond in enumerate(train) if cond]
-            X_test = [X[i] for i, cond in enumerate(test) if cond]
-        if sp.issparse(X):
-                # slicing only works with indices, no masked array with sparse
-                # matrices
+            if sp.issparse(X):
+            # slicing only works with indices in sparse matrices
             ind = np.arange(X.shape[0])
             train = ind[train]
             test = ind[test]
         clf.fit(X_train, y[train], **fit_params)
             X_test = X[test]
-<<<<<<< REMOTE
-elif score_func is not None:
-=======
-else:
->>>>>>> LOCAL
+        elif score_func is not None:
+            y_pred = clf.predict(X[test])
+            this_score = score_func(y_test, y_pred)
         if loss_func is not None:
             y_pred = clf.predict(X_test)
             this_score = -loss_func(y[test], y_pred)
         else:
+            if sp.issparse(X):
+                # slicing only works with indices, no masked array with sparse
+                # matrices
+                ind = np.arange(X.shape[0])
+                train = ind[train]
+                test = ind[test]
             X_train = X[train]
-            this_score = clf.score(X_test, y[test])
+            X_test = X[test]
         if iid:
             this_n_test_samples = y.shape[0]
             this_score *= this_n_test_samples
@@ -183,11 +182,6 @@ class GridSearchCV(BaseEstimator):
                     "should have a 'score' method. The estimator %s "
                     "does not." % estimator
                     )
-            assert hasattr(estimator, 'score'), ValueError(
-                    "If no loss_func is specified, the estimator passed "
-                    "should have a 'score' method. The estimator %s "
-                    "does not." % estimator
-                    )
         self.estimator = estimator
         self.param_grid = param_grid
         self.loss_func = loss_func
@@ -219,12 +213,8 @@ class GridSearchCV(BaseEstimator):
         estimator = self.estimator
         if cv is None:
             if hasattr(X, 'shape'):
-            n_samples = X.shape[0]
                 n_samples = X.shape[0]
             else:
-                # support list of unstructured objects on which feature
-                # extraction will be applied later in the tranformer chain
-                n_samples = len(X)
                 # support list of unstructured objects on which feature
                 # extraction will be applied later in the tranformer chain
                 n_samples = len(X)
@@ -232,13 +222,14 @@ class GridSearchCV(BaseEstimator):
                 cv = StratifiedKFold(y, k=3)
             else:
                 cv = KFold(n_samples, k=3)
-                cv = KFold(n_samples, k=3)
         grid = iter_grid(self.param_grid)
         base_clf = clone(self.estimator)
         out = Parallel(n_jobs=self.n_jobs)(
             delayed(fit_grid_point)(
                 X, y, base_clf, clf_params, cv, self.loss_func,
                 self.score_func, self.iid, **self.fit_params)
+                    for clf_params in grid)
+        # Out is a list of pairs: score, estimator
         # Note: we do not use max(out) to make ties deterministic even if
         # comparison on estimator instances is not deterministic
         best_score = None
@@ -246,38 +237,11 @@ class GridSearchCV(BaseEstimator):
             if best_score is None:
                 best_score = score
                 best_estimator = estimator
-                best_score = score
-                best_estimator = estimator
             else:
                 if score >= best_score:
-                    best_score = score
-                    best_estimator = estimator
-                    best_score = score
-                    best_estimator = estimator
-                if score >= best_score:
-                    best_score = score
-                    best_estimator = estimator
-                    best_score = score
-                    best_estimator = estimator
-            if best_score is None:
-                best_score = score
-                best_estimator = estimator
-                best_score = score
-                best_estimator = estimator
-            else:
-                if score >= best_score:
-                    best_score = score
-                    best_estimator = estimator
-                    best_score = score
-                    best_estimator = estimator
-                if score >= best_score:
-                    best_score = score
-                    best_estimator = estimator
                     best_score = score
                     best_estimator = estimator
         self.best_score = best_score
-                    for clf_params in grid)
-        # Out is a list of pairs: score, estimator
         if refit:
             # fit the best estimator using the entire dataset
             best_estimator.fit(X, y)

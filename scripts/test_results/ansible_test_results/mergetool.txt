@@ -10,3 +10,5 @@ Merging changes...
 Writing result to lib/ansible/runner.py
 
 Merge conflicts resolved: 0/1
+lib/ansible/runner.py seems unchanged.
+Was the merge successful [y/n]? 

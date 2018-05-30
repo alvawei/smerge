@@ -45,6 +45,26 @@ def _compute_gradient_3d(edges, img):
                                 (edges[1] % (n_y * n_z)) % n_z])
     return gradient
 
+def _make_edges_3d(n_x, n_y, n_z=1):
+    """Returns a list of edges for a 3D image.
+
+    Parameters
+    ===========
+    n_x: integer
+        The size of the grid in the x direction.
+    n_y: integer
+        The size of the grid in the y direction.
+    n_z: integer, optional
+        The size of the grid in the z direction, defaults to 1
+    """
+    vertices = np.arange(n_x * n_y * n_z).reshape((n_x, n_y, n_z))
+    edges_deep = np.vstack((vertices[:, :, :-1].ravel(),
+                            vertices[:, :, 1:].ravel()))
+    edges_right = np.vstack((vertices[:, :-1].ravel(),
+                             vertices[:, 1:].ravel()))
+    edges_down = np.vstack((vertices[:-1].ravel(), vertices[1:].ravel()))
+    edges = np.hstack((edges_deep, edges_right, edges_down))
+    return edges
 
 # XXX: Why mask the image after computing the weights?
 
@@ -57,11 +77,11 @@ def _mask_edges_weights(mask, edges, weights=None):
     edges = edges[:, ind_mask]
     if weights is not None:
         weights = weights[ind_mask]
-    if len(edges.ravel()):
-    maxval = edges.max()
         maxval = edges.max()
     order = np.searchsorted(np.unique(edges.ravel()), np.arange(maxval + 1))
     edges = order[edges]
+    if weights is None:
+        return edges
     if weights is None:
         return edges
     else:
@@ -77,27 +97,30 @@ def _to_graph(n_x, n_y, n_z, mask=None, img=None,
         if img is None:
             dtype = np.int
         else:
-        return edges, weights
             dtype = img.dtype
-    if dtype == np.bool:
-        dtype = np.int
-        dtype = np.int
     if img is not None:
         img = np.atleast_3d(img)
         weights = _compute_gradient_3d(edges, img)
         if mask is not None:
             edges, weights = _mask_edges_weights(mask, edges, weights)
             diag = img.squeeze()[mask]
-    else:
-            diag = img.ravel()
         else:
+            diag = img.ravel()
+        n_voxels = diag.size
+    if img is not None:
+        img = np.atleast_3d(img)
+        weights = _compute_gradient_3d(edges, img)
+        if mask is not None:
+            edges, weights = _mask_edges_weights(mask, edges, weights)
+            diag = img.squeeze()[mask]
+        else:
+            diag = img.ravel()
         n_voxels = diag.size
         else:
         if mask is not None:
             edges = _mask_edges_weights(mask, edges)
             n_voxels = np.sum(mask)
-        else:
-            n_voxels = n_x * n_y * n_z
+    else:
             n_voxels = n_x * n_y * n_z
         weights = np.ones(edges.shape[1], dtype=dtype)
         diag = np.ones(n_voxels, dtype=dtype)
