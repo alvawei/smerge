@@ -101,7 +101,6 @@ public class ActionMerger {
 			for (Insert insert : remoteInserts.values()) {
 				int position = insert.getPosition();
 				if (inserts.containsKey(position)) {
-					totalConflicts++;
 					inserts.put(position, mergeInserts(inserts.get(position), insert));
 				} else {
 					inserts.put(insert.getPosition(), insert);
@@ -127,11 +126,13 @@ public class ActionMerger {
 		ASTNode mergedNode;
 		if (type == Type.IMPORT) {
 			mergedNode = mergeImports(null, local, remote);
+			totalConflicts++;
 		} else if (local.getContent().equals(remote.getContent())) {
 			mergedNode = new ASTNode(type, local.getContent(), local.getIndentation());
 			mergedNode.setID(local.getID());
 		} else {
 			mergedNode = wrapConflict(null, local, remote);
+			totalConflicts++;
 		}
 		return new Insert(localInsert.getParent(), mergedNode, localInsert.getPosition());
 	}
@@ -222,6 +223,7 @@ public class ActionMerger {
 		} else {
 			base.setContent(conflict);
 		}
+		System.out.println("@@@@@" + base.getID());
 		return base;
 	}
 	
