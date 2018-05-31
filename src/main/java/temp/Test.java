@@ -9,17 +9,13 @@ import smerge.ast.AST;
 import smerge.diff.Differ;
 import smerge.parsers.Parser;
 
+// this is a class used for testing -- a small scale test, only tests one
+// file at a time for conflicts
+
 public class Test {
 	
-	// this is a temporary class for testing
-
 	public static void main(String[] args) throws IOException {
-		/*
-		String base = "conflicts/test/test_base.py"; // args[0];
-        String local = "conflicts/test/test_local.py"; // args[1];
-        String remote = "conflicts/test/test_remote.py"; // args[2];
-        String merged = "conflicts/test/test_merged.py"; // args[3];
-        */
+
 		String init = "scripts/test_results/pipenv_test_results/files/8_utils";
 		String base = init + "_base.py";
 		String local = init + "_local.py";
@@ -28,7 +24,6 @@ public class Test {
         
         // get the correct parser (pass in filename for file extension/type?)
         Parser parser = Parser.getInstance(merged);
-        
         
         // PARSING
         System.out.println("Parsing base file...");

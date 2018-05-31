@@ -11,8 +11,6 @@ import java.util.HashSet;
 
 import smerge.ast.ASTNode;
 
-// TODO: deletes don't have to be sorted, just use Map<Integer, Set<Delete>>???
-
 /**
  * An ActionSet represents a diff between two ASTs by storing sets of different Actions.
  * Actions are detected and added to an ActionSet in Differ. Once all actions are detected,
@@ -116,8 +114,10 @@ public class ActionSet {
 		minimizeDeletes();
 	}
 	
-	// minimizes inserts by removing all but the root of a subtree -- avoids
-	// adding an entire subtree to the insertSets
+	/**
+	 * Minimizes Insert actions by removing (unnecessary) Insert actions that are present
+	 * because their parent was also deleted.
+	 */
 	private void minimizeInserts() {
 		for (int id : insertedIDs) {
 			if (insertSets.containsKey(id))
@@ -125,8 +125,10 @@ public class ActionSet {
 		}
 	}
 	
-	// minimizes deletes by removing all but the root of a subtree -- avoids
-	// adding an entire subtree to the deleteSets
+	/**
+	 * Minimizes Delete actions by removing (unnecessary) Delete actions that are present
+	 * because their parent was also deleted.
+	 */
 	private void minimizeDeletes() {
 		for (int id : deletedIDs) {
 			if (deleteSets.containsKey(id))
@@ -134,8 +136,9 @@ public class ActionSet {
 		}
 	}
 	
-	// removes shift actions caused by Insert/Delete actions
-	// TODO: Convert remaining shifts to insert/delete actions
+	/**
+	 * Removes shifts caused by Insert/Delete actions
+	 */
 	private void minimizeShifts() {
 		// remove implicit shifts
 		for (int parentID : shiftSets.keySet()) {
@@ -174,56 +177,53 @@ public class ActionSet {
 		}
 	}
 	
-	// transforms all shifts to a pair of inserts and deletes
-//	public void transformShifts() {
-//		// iterate over the parent ID's, get the sets of shifts
-//		Set<Shift> unecessaryShifts = new HashSet<>();
-//		for (int parentID : shiftSets.keySet()) {
-//			Set<Shift> shiftSet = shiftSets.get(parentID);
-//			// for each shift object, create an insert object and map it to the position
-//			// of the insert, then put the insert into insertSets
-//			for (Shift shift : shiftSet) {
-//				Insert insert = new Insert(shift.getParent(), shift.getChild(), shift.newPosition);
-//				Map<Integer, Insert> positionToInsert = new HashMap<Integer, Insert>();
-//				positionToInsert.put(shift.newPosition, insert);
-//				insertSets.put(shift.getParent().getID(), positionToInsert);
-//				
-//				// do the same for deletes
-//				Delete delete = new Delete(shift.getChild());
-//				Map<Integer, Delete> positionToDelete = new HashMap<Integer, Delete>();
-//				positionToDelete.put(shift.oldPosition, delete);
-//				deleteSets.put(shift.getParent().getID(), positionToDelete);
-//			}
-//			shiftSet.removeAll(unecessaryShifts);
-//		}
-//	}
-	
 	// Getter methods
 	
+	/**
+	 * @return
+	 */
 	public Set<Integer> parents() {
 		return parents;
 	}
 	
+	/**
+	 * @param parentID
+	 * @return
+	 */
 	public Collection<Delete> getDeletes(int parentID) {
 		Map<Integer, Delete> map = deleteSets.get(parentID);
 		return map != null ? map.values() : new TreeSet<>();
 	}
 	
+	/**
+	 * @param parentID
+	 * @return
+	 */
 	public Map<Integer, Insert> getInsertMap(int parentID) {
 		Map<Integer, Insert> map = insertSets.get(parentID);
 		return map != null ? map : new TreeMap<>();
 	}
 	
+	/**
+	 * @param parentID
+	 * @return
+	 */
 	public Collection<Insert> getInserts(int parentID) {
 		Map<Integer, Insert> map = insertSets.get(parentID);
 		return map != null ? map.values() : new TreeSet<>();
 	}
 	
+	/**
+	 * @return
+	 */
 	public Map<Integer, Update> getUpdateMap() {
 		return updates;
 	}
 	
-	// debugging method
+	
+	/*
+	 * Strictly for debugging
+	 */
 	public String toString() {
 		String result = "";
 		for (Map<Integer, Insert> insertSet : insertSets.values()) {

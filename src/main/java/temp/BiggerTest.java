@@ -7,11 +7,10 @@ import java.util.Set;
 
 import smerge.Merger;
 
+// this is a class used for testing -- a large scale test, tests all
+// files from each repository
 
 public class BiggerTest {
-	
-
-	// this is a temporary class for testing
 	
 	public static void main(String[] args) throws IOException {
 		Set<String> filenames = new HashSet<>();

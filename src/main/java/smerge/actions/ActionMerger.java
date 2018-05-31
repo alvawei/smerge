@@ -10,15 +10,12 @@ import smerge.ast.ASTNode;
 import smerge.ast.ASTNode.Type;
 import smerge.parsers.Parser;
 
-// this class merges two action sets and applys the merged actions onto the base tree
-// also counts conflicts
-
 /**
  * This class is responsible for applying the two ActionSets (base->local and base->remote)
  * back onto the base AST. This class also counts merge conflicts and how many of them are 
  * solvable for evaluation purposes.
  * 
- * @author Jediah Conachan
+ * @author Jediah Conachan, Steven Miller (documentation)
  */
 public class ActionMerger {
 	
@@ -49,7 +46,9 @@ public class ActionMerger {
 		mergeUpdateActions();
 	}
 	
-	// merge all inserts and deletes onto the base tree
+	/**
+	 * merge all inserts and deletes onto the base tree
+	 */
 	private void mergeInsertAndDeleteActions() {
 		// separate parents into three sets that don't share any common parent IDs
 		Set<Integer> parentsIntersection = new HashSet<>();
@@ -117,7 +116,12 @@ public class ActionMerger {
 				
 	}
 	
-	// similar to mergeUpdates()
+	/**
+	 * merge all inserts into the base tree
+	 * @param localInsert Insert action of the local tree
+	 * @param remoteInsert Insert action of the remote tree
+	 * @return a single Insert object
+	 */
 	private Insert mergeInserts(Insert localInsert, Insert remoteInsert) {
 		ASTNode local = localInsert.getChild();
 		ASTNode remote = remoteInsert.getChild();
@@ -137,7 +141,9 @@ public class ActionMerger {
 		return new Insert(localInsert.getParent(), mergedNode, localInsert.getPosition());
 	}
 	
-	// merge all updates onto the base tree
+	/**
+	 * merge all updates onto the base tree
+	 */
 	private void mergeUpdateActions() {
 		Map<Integer, Update> localUpdates = localActions.getUpdateMap();
 		Map<Integer, Update> remoteUpdates = remoteActions.getUpdateMap();
@@ -157,7 +163,11 @@ public class ActionMerger {
 		}
 	}
 	
-	// merges two conflicting updates if possible
+	/**
+	 * merges two conflicting updates if possible
+	 * @param localUpdate the local Update action
+	 * @param remoteUpdate the remote Update action
+	 */
 	private void mergeUpdate(Update localUpdate, Update remoteUpdate) {
 		ASTNode base = localUpdate.getBase();
 		ASTNode local = localUpdate.getEdit();
@@ -184,8 +194,12 @@ public class ActionMerger {
 			}
 		}
 	}
-	
-	// applies non-conflicting updates 
+	 
+	/**
+	 * applies non-conflicting updates
+	 * @param updates
+	 * @param intersection
+	 */
 	private void applyUpdates(Map<Integer, Update> updates, Set<Integer> intersection) {
 		for (int id : updates.keySet()) {
 			if (!intersection.contains(id)) {
@@ -194,7 +208,10 @@ public class ActionMerger {
 		}
 	}
 	
-	// applys actions from one action set that doesn't interfere with the other action set
+	/**
+	 * applies actions from one action set that doesn't interfere with the other action set
+	 * @param actions
+	 */
 	private void applyDeletesAndInserts(ActionSet actions) {
 		for (int parentID : actions.parents()) {
 			// apply deletes then inserts
@@ -205,8 +222,14 @@ public class ActionMerger {
 		}
 	}
 	
-	// wraps an unsolvable conflict with conflict identifiable text
-	// returns a new base node if the given base node is null
+	/**
+	 * wraps an unsolvable conflict with conflict identifiable text
+	 * returns a new base node if the given base node is null
+	 * @param base
+	 * @param local
+	 * @param remote
+	 * @return
+	 */
 	private ASTNode wrapConflict(ASTNode base, ASTNode local, ASTNode remote) {
 		unsolvedConflicts++;
 		String baseContent = base == null ? "" : base.subtreeContent(p) + "\n=======\n";	
@@ -227,8 +250,14 @@ public class ActionMerger {
 		return base;
 	}
 	
-	// merges all imports into a base node (returns a new base node if its a two-insert conflict)
-	// this method may be simplified if we choose not to include the base import
+	/**
+	 * merges all imports into a base node (returns a new base node if its a two-insert conflict)
+	 * this method may be simplified if we choose not to include the base import
+	 * @param base base node
+	 * @param local local node
+	 * @param remote remote node
+	 * @return the base node
+	 */
 	private ASTNode mergeImports(ASTNode base, ASTNode local, ASTNode remote) {
 		if (base != null) {
 			String[] imports = {base.getContent(), local.getContent(), remote.getContent()};

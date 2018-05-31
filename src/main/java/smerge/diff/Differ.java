@@ -6,7 +6,6 @@ import smerge.actions.ActionSet;
 import smerge.ast.AST;
 import smerge.ast.ASTNode;
 
-// produces an ActionSet given 3 trees
 /**
  * A Differ object generates two different tree diffs (ActionSets), one from the base tree
  * to the local tree, one from the base tree to the remote tree.
@@ -20,22 +19,29 @@ public class Differ {
 	
 	/**
 	 * 
-	 * @param base
-	 * @param local
-	 * @param remote
+	 * @param base base tree
+	 * @param local local tree
+	 * @param remote remote tree
 	 */
 	public Differ(AST base, AST local, AST remote)  {
 		this.matcher = new Matcher(base, local, remote);
 		this.matchList = matcher.matches();
 	}
 	
+	
+	/**
+	 * @return the list of matches
+	 */
 	public List<Match> getMatches() {
 		return matchList;
 	}
 	
-	// match the nodes between the three trees
-	// note the matcher constructor indirectly calls detectActions()
-	// we could combine this class with the Matcher class easily if we wanted	
+	/**
+	 * When called (from Merger.java), takes in two ActionSet objects and adds all
+	 * of the actions by calling detectActions
+	 * @param localActions actions applied to local tree
+	 * @param remoteActions actions applied to remote tree
+	 */
 	public void diff(ActionSet localActions, ActionSet remoteActions) {
 		// for each match in matches, all detect actions on base/local, base/remote
 		for (Match m : matchList) {
@@ -46,8 +52,16 @@ public class Differ {
 		remoteActions.minimize();
 	}
 	
-	// edit node is either local or remote node
-	// this is called from Matcher while matching
+	/**
+	 * This method does most of the work. It takes in two nodes,the base node and
+	 * the edit node (either local or remote), and then determines whether that node
+	 * was inserted, deleted, or updated, and adds the action to the ActionSet if one
+	 * of those is true.
+	 * @param id id of the match
+	 * @param base base node of the match
+	 * @param edit edit node of the match (either local or remote)
+	 * @param actions the ActionSet we're storing all of the actions in
+	 */
 	public void detectActions(int id, ASTNode base, ASTNode edit, ActionSet actions) {
 		if (id == 0) return; // don't do it with root
 		if (base == null){
