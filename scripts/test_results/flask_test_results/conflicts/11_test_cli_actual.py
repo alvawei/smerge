@@ -20,14 +20,20 @@ import pytest
 from click.testing import CliRunner
 from flask import Flask, current_app
 
-from flask.cli import cli, AppGroup, FlaskGroup, NoAppException, ScriptInfo, \
+from flask.cli import AppGroup, FlaskGroup, NoAppException, ScriptInfo, \
+    find_best_app, locate_app, with_appcontext, prepare_exec_for_file, \
+    find_default_import_path
+from flask.cli import AppGroup, FlaskGroup, NoAppException, ScriptInfo, \
     find_best_app, locate_app, with_appcontext, prepare_exec_for_file, \
     find_default_import_path, get_version
+from flask.cli import cli, AppGroup, FlaskGroup, NoAppException, ScriptInfo, \
+    find_best_app, locate_app, with_appcontext, prepare_exec_for_file, \
+    find_default_import_path
+
 
 @pytest.fixture
 def runner():
     return CliRunner()
-
 
 
 def test_cli_name(test_apps):
@@ -63,21 +69,6 @@ def test_find_best_app(test_apps):
 
     pytest.raises(NoAppException, find_best_app, Module)
 
-def test_get_version(test_apps, capsys):
-    """Test of get_version."""
-    from flask import __version__ as flask_ver
-    from sys import version as py_ver
-    class MockCtx(object):
-        resilient_parsing = False
-        color = None
-        def exit(self): return
-    ctx = MockCtx()
-    get_version(ctx, None, "test")
-    out, err = capsys.readouterr()
-    assert flask_ver in out
-    assert py_ver in out
-
-
 def test_prepare_exec_for_file(test_apps):
     """Expect the correct path to be set and the correct module name to be returned.
 
@@ -98,28 +89,35 @@ def test_prepare_exec_for_file(test_apps):
         prepare_exec_for_file('/tmp/share/test.txt')
 
 
+def test_get_version(test_apps, capsys):
+    """Test of get_version."""
+    from flask import __version__ as flask_ver
+    from sys import version as py_ver
+    class MockCtx(object):
+        resilient_parsing = False
+        color = None
+        def exit(self): return
+    ctx = MockCtx()
+    get_version(ctx, None, "test")
+    out, err = capsys.readouterr()
+    assert flask_ver in out
+    assert py_ver in out
+
+
+def test_locate_app(test_apps):
+    """Test of locate_app."""
+    assert locate_app("cliapp.app").name == "testapp"
+    assert locate_app("cliapp.app:testapp").name == "testapp"
+    assert locate_app("cliapp.multiapp:app1").name == "app1"
+    pytest.raises(NoAppException, locate_app, "notanpp.py")
 <<<<<<< REMOTE
-def test_flaskgroup():
-    """Test FlaskGroup."""
-    def create_app(info):
-        return Flask("flaskgroup")
-
-    @click.group(cls=FlaskGroup, create_app=create_app)
-    def cli(**params):
-        pass
-
-    @cli.command()
-    def test():
-        click.echo(current_app.name)
-
-    runner = CliRunner()
-    result = runner.invoke(cli, ['test'])
-    assert result.exit_code == 0
-    assert result.output == 'flaskgroup\n'
-
-
-
+pytest.raises(NoAppException, locate_app, "cliapp/app")
 =======
+
+>>>>>>> LOCAL
+
+    pytest.raises(NoAppException, locate_app, "cliapp.importerrorapp")
+    pytest.raises(RuntimeError, locate_app, "cliapp.app:notanapp")
 def test_appgroup(runner):
     """Test of with_appcontext."""
     @click.group(cls=AppGroup)
@@ -149,8 +147,6 @@ def test_appgroup(runner):
     assert result.output == 'testappgroup\n'
 
 
-
->>>>>>> LOCAL
 <<<<<<< REMOTE
 def test_print_exceptions():
     """Print the stacktrace if the CLI."""
@@ -221,20 +217,6 @@ Route                    Endpoint   Methods
 /only-post               only_post  POST, OPTIONS     
 /static/<path:filename>  static     HEAD, OPTIONS, GET
 """
-def test_locate_app(test_apps):
-    """Test of locate_app."""
-    assert locate_app("cliapp.app").name == "testapp"
-    assert locate_app("cliapp.app:testapp").name == "testapp"
-    assert locate_app("cliapp.multiapp:app1").name == "app1"
-    pytest.raises(NoAppException, locate_app, "notanpp.py")
-<<<<<<< REMOTE
-pytest.raises(NoAppException, locate_app, "cliapp/app")
-=======
-
->>>>>>> LOCAL
-
-    pytest.raises(NoAppException, locate_app, "cliapp.importerrorapp")
-    pytest.raises(RuntimeError, locate_app, "cliapp.app:notanapp")
 def test_find_default_import_path(test_apps, monkeypatch, tmpdir):
     """Test of find_default_import_path."""
     monkeypatch.delitem(os.environ, 'FLASK_APP', raising=False)

@@ -78,13 +78,18 @@ class SparseBaseLibSVM(BaseLibSVM):
 
         solver_type = LIBSVM_IMPL.index(self.impl)
         kernel_type = self._kernel_types.index(self.kernel)
-
         C = self.C
+<<<<<<< REMOTE
+
+=======
         if self.scale_C:
             C = C / float(X.shape[0])
 
-        self.class_weight, self.class_weight_label = \
 
+>>>>>>> LOCAL
+
+
+        self.class_weight, self.class_weight_label = \
                      _get_class_weight(class_weight, y)
         if (kernel_type in [1, 2]) and (self.gamma == 0):
             # if custom gamma is not provided ...
@@ -220,12 +225,17 @@ class SparseBaseLibLinear(BaseLibLinear):
 
         X.data = np.asarray(X.data, dtype=np.float64, order='C')
         C = self.C
+<<<<<<< REMOTE
+
+=======
         if self.scale_C:
             C = C / float(X.shape[0])
 
 
-        self.class_weight, self.class_weight_label = \
+>>>>>>> LOCAL
 
+
+        self.class_weight, self.class_weight_label = \
                      _get_class_weight(class_weight, y)
         self.raw_coef_, self.label_ = \
                        liblinear.csr_train_wrap(X.shape[1], X.data, X.indices,

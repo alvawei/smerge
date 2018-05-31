@@ -17,62 +17,60 @@ from itertools import cycle
 import numpy as np
 import pylab as pl
 
-<<<<<<< REMOTE
 from scikits.learn.glm.coordinate_descent import Lasso, ElasticNet, lasso_path, \
-=======
-enet_path, \
->>>>>>> LOCAL
+                                    enet_path, \
+                                    lasso_objective, enet_objective
+from scikits.learn.glm.coordinate_descent import Lasso, ElasticNet, lasso_path, \
                                     enet_path
 n_samples, n_features = 100, 500
 
 
 np.random.seed(0)
+y = np.random.randn(n_samples)
+X = np.random.randn(n_samples, n_features)
 <<<<<<< REMOTE
-################################################################################
+# Demo path functions
 =======
 # lasso_objective_callback = IterationCallbackFunc(lasso_objective)
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-
+################################################################################
 =======
 # lasso = Lasso(alpha=alpha, callbacks=[lasso_objective_callback])
 >>>>>>> LOCAL
-eps = 1e-2 # the smaller it is the longer is the path
-<<<<<<< REMOTE
 
+<<<<<<< REMOTE
+eps = 1e-2 # the smaller it is the longer is the path
 =======
 # print "Fitting lasso model to random data..."
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-print "Computing regularization path using the lasso..."
+
 =======
 # lasso.fit(X, y, maxit=maxit)
 >>>>>>> LOCAL
-start = datetime.now()
 <<<<<<< REMOTE
-alphas_lasso, weights_lasso = lasso_path(X, y, eps=eps)
+start = datetime.now()
 =======
 # print "Duality gap Lasso (should be small): %f" % \
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-print "This took ", datetime.now() - start
+alphas_lasso, weights_lasso = lasso_path(X, y, eps=eps)
 =======
 #         lasso_dual_gap(X, y, lasso.coef_, alpha)[0]
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-
+print "This took ", datetime.now() - start
 =======
 # lasso_objective = lasso_objective_callback.values
 >>>>>>> LOCAL
-start = datetime.now()
-alphas_enet, weights_enet = enet_path(X, y, rho=0.6, eps=eps)
 <<<<<<< REMOTE
-print "This took ", datetime.now() - start
+alphas_enet, weights_enet = enet_path(X, y, rho=0.6, eps=eps)
 =======
 # alpha, beta = 1, 1
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-
+print "This took ", datetime.now() - start
 =======
 # enet_objective_callback = IterationCallbackFunc(enet_objective)
 >>>>>>> LOCAL
@@ -82,41 +80,36 @@ print "This took ", datetime.now() - start
 # enet = ElasticNet(alpha=alpha, beta=beta, callbacks=[enet_objective_callback])
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-color_iter = cycle(['b', 'g', 'r', 'c', 'm', 'y', 'k'])
+# Display results
 =======
 # print "Fitting elastic net model to random data..."
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-for color, weight_lasso, weight_enet in zip(color_iter,
-                            weights_lasso.T, weights_enet.T):
-    pl.plot(-np.log10(alphas_lasso), weight_lasso, color)
-    pl.plot(-np.log10(alphas_enet), weight_enet, color+'x')
-
-
+color_iter = cycle(['b', 'g', 'r', 'c', 'm', 'y', 'k'])
 =======
 # enet.fit(X, y, maxit=maxit)
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-pl.ylabel('weights')
+pl.xlabel('-Log(lambda)')
 =======
 # print "Duality gap (should be small): %f" % \
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-pl.title('Lasso and Elastic-Net Paths')
+pl.ylabel('weights')
 =======
 #         enet_dual_gap(X, y, enet.coef_, alpha, beta)[0]
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-pl.legend(['Lasso','Elastic-Net'])
+pl.title('Lasso and Elastic-Net Paths')
 =======
 # enet_objective = enet_objective_callback.values
 >>>>>>> LOCAL
+# pl.figure(-1, figsize=(8, 4))
 <<<<<<< REMOTE
 
 =======
-# pl.figure(-1, figsize=(8, 4))
->>>>>>> LOCAL
 # # pl.clf()
+>>>>>>> LOCAL
 # # pl.subplots_adjust(wspace=.4, right=.95)
 # # pl.subplot(1, 2, 1)
 # pl.plot(lasso_objective, label='Lasso')
@@ -143,15 +136,13 @@ for color, weight_lasso in zip(color_iter,
 
 pl.axis('tight')
 # pl.legend(['Lasso','Elastic-Net'])
-y = np.random.randn(n_samples)
-
-X = np.random.randn(n_samples, n_features)
-
 ################################################################################
+
 # Fit models
 ################################################################################
 
+
 ################################################################################
-# Demo path functions
+print "Computing regularization path using the lasso..."
 pl.show()
 

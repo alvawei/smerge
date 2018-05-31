@@ -9,14 +9,42 @@ from scipy import ndimage
 from nose.tools import assert_equal
 from scikits.learn.feature_extraction import img_to_graph, grid_to_graph
 from ..image import extract_patches_2d, reconstruct_from_patches_2d, \
-from scikits.learn.utils._csgraph import cs_graph_components
                     PatchExtractor
+from scikits.learn.utils._csgraph import cs_graph_components
 
 
 
+def test_img_to_graph():
+    x, y = np.mgrid[:4, :4] - 10
+    grad_x = img_to_graph(x)
+    grad_y = img_to_graph(y)
+    assert_equal(grad_x.nnz, grad_y.nnz)
+    # Negative elements are the diagonal: the elements of the original
+    # image. Positive elements are the values of the gradient, they
+    # should all be equal on grad_x and grad_y
+    np.testing.assert_array_equal(grad_x.data[grad_x.data > 0],
+                                  grad_y.data[grad_y.data > 0])
+
+
+<<<<<<< REMOTE
+def test_connect_regions_with_grid():
+    lena = sp.lena()
+    mask = lena > 50
+    graph = grid_to_graph(*lena.shape, **{'mask': mask})
+    assert_equal(ndimage.label(mask)[1], cs_graph_components(graph)[0])
+
+    mask = lena > 150
+    graph = grid_to_graph(*lena.shape, **{'mask': mask, 'dtype': None})
+    assert_equal(ndimage.label(mask)[1], cs_graph_components(graph)[0])
+
+
+
+=======
 if __name__ == '__main__':
     import nose
     nose.runmodule()
+
+>>>>>>> LOCAL
 def _downsampled_lena():
     lena = sp.lena()
     lena = lena[::2, ::2] + lena[1::2, ::2] + lena[::2, 1::2] + \
@@ -131,18 +159,6 @@ def test_patch_extractor_color():
     extr = PatchExtractor(patch_size=(p_h, p_w), random_state=0)
     patches = extr.transform(lenas)
     assert patches.shape == (expected_n_patches, p_h, p_w, 3)
-def test_img_to_graph():
-    x, y = np.mgrid[:4, :4] - 10
-    grad_x = img_to_graph(x)
-    grad_y = img_to_graph(y)
-    assert_equal(grad_x.nnz, grad_y.nnz)
-    # Negative elements are the diagonal: the elements of the original
-    # image. Positive elements are the values of the gradient, they
-    # should all be equal on grad_x and grad_y
-    np.testing.assert_array_equal(grad_x.data[grad_x.data > 0],
-                                  grad_y.data[grad_y.data > 0])
-
-
 def test_grid_to_graph():
     #Checking that the function works with graphs containing no edges
     size = 2
@@ -168,17 +184,5 @@ def test_connect_regions():
         graph = img_to_graph(lena, mask)
         assert_equal(ndimage.label(mask)[1], cs_graph_components(graph)[0])
 
-
-def test_connect_regions_with_grid():
-    lena = sp.lena()
-    mask = lena > 50
-    graph = grid_to_graph(*lena.shape, **{'mask': mask})
-    nose.tools.assert_equal(ndimage.label(mask)[1],
-                            cs_graph_components(graph)[0])
-
-    mask = lena > 150
-    graph = grid_to_graph(*lena.shape, **{'mask': mask, 'dtype': None})
-    nose.tools.assert_equal(ndimage.label(mask)[1],
-                            cs_graph_components(graph)[0])
 
 

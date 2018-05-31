@@ -235,28 +235,32 @@ class Ec2Inventory(object):
         # Destination addresses
         self.destination_variable = config.get('ec2', 'destination_variable')
 <<<<<<< REMOTE
-if config.has_option('ec2', 'destination_format') and \
+        if config.has_option('ec2', 'destination_format') and \
+           config.has_option('ec2', 'destination_format_tags'):
+            self.destination_format = config.get('ec2', 'destination_format')
+            self.destination_format_tags = config.get('ec2', 'destination_format_tags').split(',')
+
 =======
         if config.has_option('ec2', 'hostname_variable'):
             self.hostname_variable = config.get('ec2', 'hostname_variable')
 
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-        else:
-            self.all_instances = False
-
-
+# Return all RDS instances? (if RDS is enabled)
 =======
 # Instance states to be gathered in inventory. Default is 'running'.
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-# Return all RDS instances? (if RDS is enabled)
+        if config.has_option('ec2', 'all_rds_instances') and self.rds_enabled:
+            self.all_rds_instances = config.getboolean('ec2', 'all_rds_instances')
+
 =======
 # Setting 'all_instances' to 'yes' overrides this option.
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-        if config.has_option('ec2', 'all_rds_instances') and self.rds_enabled:
-            self.all_rds_instances = config.getboolean('ec2', 'all_rds_instances')
+        else:
+            self.all_rds_instances = False
+
 
 =======
 ec2_valid_instance_states = [
@@ -269,23 +273,23 @@ ec2_valid_instance_states = [
         ]
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-        else:
-            self.all_rds_instances = False
-
-
+# Return all ElastiCache replication groups? (if ElastiCache is enabled)
 =======
 self.ec2_instance_states = []
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-# Return all ElastiCache replication groups? (if ElastiCache is enabled)
+        if config.has_option('ec2', 'all_elasticache_replication_groups') and self.elasticache_enabled:
+            self.all_elasticache_replication_groups = config.getboolean('ec2', 'all_elasticache_replication_groups')
+
 =======
         if self.all_instances:
             self.ec2_instance_states = ec2_valid_instance_states
 
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-        if config.has_option('ec2', 'all_elasticache_replication_groups') and self.elasticache_enabled:
-            self.all_elasticache_replication_groups = config.getboolean('ec2', 'all_elasticache_replication_groups')
+        else:
+            self.all_elasticache_replication_groups = False
+
 
 =======
         elif config.has_option('ec2', 'instance_states'):
@@ -297,7 +301,7 @@ self.ec2_instance_states = []
 
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-self.cache_max_age = config.getint('ec2', 'cache_max_age')
+
 =======
         else:
             self.all_elasticache_nodes = False
@@ -305,18 +309,21 @@ self.cache_max_age = config.getint('ec2', 'cache_max_age')
 
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-
+# Configure nested groups instead of flat namespace.
 =======
 # boto configuration profile (prefer CLI argument)
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-# Configure nested groups instead of flat namespace.
+        if config.has_option('ec2', 'nested_groups'):
+            self.nested_groups = config.getboolean('ec2', 'nested_groups')
+
 =======
 self.boto_profile = self.args.boto_profile
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-        if config.has_option('ec2', 'nested_groups'):
-            self.nested_groups = config.getboolean('ec2', 'nested_groups')
+        else:
+            self.nested_groups = False
+
 
 =======
         if config.has_option('ec2', 'boto_profile') and not self.boto_profile:

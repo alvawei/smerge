@@ -7,8 +7,10 @@ Normal merge conflict for 'scikits/learn/glm/coordinate_descent.py':
 Parsing merge conflict files...
 Generating AST diffs...
 Merging changes...
+@@@@@13
+@@@@@158
+@@@@@198
+@@@@@201
 Writing result to scikits/learn/glm/coordinate_descent.py
 
-Merge conflicts resolved: 45/54
-scikits/learn/glm/coordinate_descent.py seems unchanged.
-Was the merge successful [y/n]? 
+Merge conflicts resolved: 45/49

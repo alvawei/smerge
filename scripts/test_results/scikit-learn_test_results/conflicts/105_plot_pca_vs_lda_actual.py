@@ -32,13 +32,13 @@ lda = LDA(n_components=2)
 X_r2 = lda.fit(X, y).transform(X)
 print 'explained variance ratio (first two components):', \
     pca.explained_variance_ratio_
-
 pl.subplot(2, 1, 1)
 pl.subplot(2, 1, 2)
 for c, i, target_name in zip("rgb", [0, 1, 2], target_names):
    pl.scatter(X_r2[y==i,0], X_r2[y==i,1], c=c, label=target_name)
 pl.legend()
 pl.title('LDA of IRIS dataset')
+
 
 
 # Percentage of variance explained for each components

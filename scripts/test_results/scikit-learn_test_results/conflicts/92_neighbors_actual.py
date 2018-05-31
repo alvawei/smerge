@@ -132,7 +132,7 @@ class NeighborsClassifier(BaseEstimator, ClassifierMixin):
             self._fit_X = X.tocsr()
         elif self.algorithm == 'ball_tree' or \
            (self.algorithm == 'auto' and X.shape[1] < 20):
-            self.ball_tree = BallTree(X, self.leaf_size)
+            self.ball_tree = BallTree(X, self.window_size)
         else:
             self.ball_tree = None
             self._fit_X = X

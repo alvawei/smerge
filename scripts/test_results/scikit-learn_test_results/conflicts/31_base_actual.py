@@ -693,13 +693,17 @@ self.class_weight = class_weight
             self.class_weight = class_weight
 
         X = atleast2d_or_csr(X, dtype=np.float64, order="C")
-        self.class_weight_, self.class_weight_label_ = \
+<<<<<<< REMOTE
+
+=======
+self.class_weight_, self.class_weight_label_ = \
+                     _get_class_weight(self.class_weight, y)
+>>>>>>> LOCAL
 
         y = np.asarray(y, dtype=np.int32).ravel()
         self._sparse = sp.isspmatrix(X)
 
 
-                     _get_class_weight(self.class_weight, y)
         if X.shape[0] != y.shape[0]:
             raise ValueError("X and y have incompatible shapes.\n" +
                              "X has %s samples, but y has %s." % \
@@ -750,13 +754,13 @@ self.class_weight = class_weight
         """
         X = self._validate_for_predict(X)
         self._check_n_features(X)
-        dfunc_wrap = liblinear.csr_decision_function_wrap \
-                       if self._sparse \
         dec_func = dfunc_wrap(X, self.raw_coef_, self._get_solver_type(),
                 self.tol, self.C, self.class_weight_label_, self.class_weight_,
                 self.label_, self._get_bias())
         return dec_func
 
+        dfunc_wrap = liblinear.csr_decision_function_wrap \
+                       if self._sparse \
                        else liblinear.decision_function_wrap
     def _check_n_features(self, X):
         n_features = self.raw_coef_.shape[1]

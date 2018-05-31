@@ -7,8 +7,10 @@ Normal merge conflict for 'lib/ansible/runner.py':
 Parsing merge conflict files...
 Generating AST diffs...
 Merging changes...
+@@@@@766
+@@@@@71
 Writing result to lib/ansible/runner.py
 
-Merge conflicts resolved: 60/97
+Merge conflicts resolved: 60/62
 lib/ansible/runner.py seems unchanged.
 Was the merge successful [y/n]? 

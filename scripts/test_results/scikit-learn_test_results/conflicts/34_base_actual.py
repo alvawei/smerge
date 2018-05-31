@@ -560,12 +560,12 @@ class BaseLibLinear(BaseEstimator):
         """
 
         X = atleast2d_or_csr(X, dtype=np.float64, order="C")
-        y = np.asarray(y, dtype=np.int32).ravel()
 <<<<<<< REMOTE
-self._sparse = sp.isspmatrix(X)
+y = np.asarray(y, dtype=np.int32).ravel()
 =======
 
 >>>>>>> LOCAL
+        self._sparse = sp.isspmatrix(X)
 
         self.class_weight, self.class_weight_label = \
                      _get_class_weight(class_weight, y)
@@ -586,15 +586,10 @@ self._sparse = sp.isspmatrix(X)
 
         train = liblinear.csr_train_wrap if self._sparse \
                                          else liblinear.train_wrap
-<<<<<<< REMOTE
-self.raw_coef_, self.label_ = train(X, y, self._get_solver_type(),
+        self.raw_coef_, self.label_ = train(X, y, self._get_solver_type(),
                                             self.tol, self._get_bias(), C,
                                             self.class_weight_label,
                                             self.class_weight)
-=======
-
->>>>>>> LOCAL
-
 
 
         return self
@@ -638,12 +633,16 @@ self.raw_coef_, self.label_ = train(X, y, self._get_solver_type(),
 
 <<<<<<< REMOTE
 dfunc_wrap = liblinear.csr_decision_function_wrap \
+                       if self._sparse \
+                       else liblinear.decision_function_wrap
 =======
 
 >>>>>>> LOCAL
-                       if self._sparse \
+
 <<<<<<< REMOTE
-else liblinear.decision_function_wrap
+dec_func = dfunc_wrap(X, self.raw_coef_, self._get_solver_type(),
+                              self.tol, self.C, self.class_weight_label,
+                              self.class_weight, self.label_, self._get_bias())
 =======
 
 >>>>>>> LOCAL
@@ -651,13 +650,6 @@ else liblinear.decision_function_wrap
 
 =======
 return dec_func
->>>>>>> LOCAL
-<<<<<<< REMOTE
-dec_func = dfunc_wrap(X, self.raw_coef_, self._get_solver_type(),
-                              self.tol, self.C, self.class_weight_label,
-                              self.class_weight, self.label_, self._get_bias())
-=======
-
 >>>>>>> LOCAL
 
         self._check_n_features(X)

@@ -82,56 +82,173 @@ print ""
 print "Training a linear SVM (hinge loss and L2 regularizer) using SGD:"
 =======
 print "Training a linear SVM (hinge loss and L2 regularizer) using SGD.\n"\
+      "SGD(n_iter=50, alpha=0.00001, fit_intercept=True)"
 >>>>>>> LOCAL
 <<<<<<< REMOTE
 
 =======
-"SGD(n_iter=50, alpha=0.00001, fit_intercept=True)"
->>>>>>> LOCAL
-<<<<<<< REMOTE
-clf = SGD(n_iter=50, alpha=0.00001, fit_intercept=True)
-=======
 t0 = time()
 >>>>>>> LOCAL
+clf = SGD(n_iter=50, alpha=0.00001, fit_intercept=True)
 <<<<<<< REMOTE
 print clf
 =======
-clf = SGD(n_iter=50, alpha=0.00001, fit_intercept=True)
+#clf = LinearSVC(**parameters)
 >>>>>>> LOCAL
 <<<<<<< REMOTE
 
 =======
-#clf = LinearSVC(**parameters)
->>>>>>> LOCAL
 clf.fit(data, target)
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+clf.fit(data, target)
+=======
 print "done in %fs" % (time() - t0)
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+print "done in %fs" % (time() - t0)
+=======
 print "Percentage of non zeros coef: %f" % (np.mean(clf.coef_ != 0) * 100)
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+print "Percentage of non zeros coef: %f" % (np.mean(clf.coef_ != 0) * 100)
+=======
 
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+
+=======
 print "Loading 20 newsgroups test set... "
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+print "Loading 20 newsgroups test set... "
+=======
 t0 = time()
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+t0 = time()
+=======
 news_test = load_mlcomp('20news-18828', 'test', sparse=True)
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+news_test = load_mlcomp('20news-18828', 'test', sparse=True)
+=======
 print "done in %fs" % (time() - t0)
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+print "done in %fs" % (time() - t0)
+=======
 
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+
+=======
 target = news_test.target
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+target = news_test.target
+=======
 pos_idx = np.where(target == pos)[0]
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+pos_idx = np.where(target == pos)[0]
+=======
 neg_idx = np.where(target == neg)[0]
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+neg_idx = np.where(target == neg)[0]
+=======
 idx = np.concatenate((pos_idx, neg_idx))
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+idx = np.concatenate((pos_idx, neg_idx))
+=======
 data = news_test.data[idx]
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+data = news_test.data[idx]
+=======
 target = news_test.target[idx]
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+target = news_test.target[idx]
+=======
 
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+
+=======
 print "Predicting the labels of the test set..."
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+print "Predicting the labels of the test set..."
+=======
 t0 = time()
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+t0 = time()
+=======
 pred = clf.predict(data)
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+pred = clf.predict(data)
+=======
 print "done in %fs" % (time() - t0)
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+print "done in %fs" % (time() - t0)
+=======
 print "Classification accuracy: %f" % (np.mean(pred == target) * 100)
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+print "Classification accuracy: %f" % (np.mean(pred == target) * 100)
+=======
 
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+
+=======
 cm = confusion_matrix(target, pred)
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+cm = confusion_matrix(target, pred)
+=======
 print "Confusion matrix:"
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+print "Confusion matrix:"
+=======
 print cm
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+print cm
+=======
 
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+
+=======
 ## # Show confusion matrix
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+## # Show confusion matrix
+=======
 ## pl.matshow(cm)
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+## pl.matshow(cm)
+=======
 ## pl.title('Confusion matrix')
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+## pl.title('Confusion matrix')
+=======
 ## pl.colorbar()
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+## pl.colorbar()
+=======
+## pl.show()
+>>>>>>> LOCAL
 ## pl.show()
 

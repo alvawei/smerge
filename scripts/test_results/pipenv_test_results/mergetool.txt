@@ -7,6 +7,13 @@ Normal merge conflict for 'pipenv/cli.py':
 Parsing merge conflict files...
 Generating AST diffs...
 Merging changes...
+@@@@@430
+@@@@@568
+@@@@@569
+@@@@@576
+@@@@@449
+@@@@@517
+@@@@@521
 Writing result to pipenv/cli.py
 
-Merge conflicts resolved: 45/81
+Merge conflicts resolved: 45/52

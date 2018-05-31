@@ -27,30 +27,27 @@ y = digits.target
 
 ################################################################################
 # Create the RFE object and compute a cross-validated score, compared to an
+# unvariate feature selection
 svc = SVC(kernel="linear", C=1)
 anova_filter = UnivariateFilter(SelectKBest(k=10), f_classif)
-<<<<<<< REMOTE
-image_support_ = rfe.support_.reshape(digits.images[0].shape)
-=======
 clf = SVC(kernel="linear",C=1)
->>>>>>> LOCAL
 <<<<<<< REMOTE
-import pylab as pl
+
 =======
 y_pred_rfe = []
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-pl.matshow(image_support_)
+import pylab as pl
 =======
 y_pred_univ = []
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-pl.colorbar()
+pl.matshow(image_support_)
 =======
 y_true = []
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-pl.title('Voxels selected with RFE')
+pl.colorbar()
 =======
 for train, test in StratifiedKFold(y, 2):
     Xtrain, ytrain, Xtest, ytest = X[train], y[train], X[test], y[test]
@@ -69,32 +66,35 @@ for train, test in StratifiedKFold(y, 2):
 
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-
+pl.title('Voxels selected with RFE')
 =======
 y_pred_univ = np.concatenate(y_pred_univ)
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-#anova_filter = UnivariateFilter(SelectKBest(k=5), f_regression)
+
 =======
 y_true = np.concatenate(y_true)
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-
+#anova_filter = UnivariateFilter(SelectKBest(k=5), f_regression)
 =======
 classif_rate_univ = np.mean(y_pred_univ == y_true) * 100
 >>>>>>> LOCAL
 <<<<<<< REMOTE
-#y_pred_rfe = []
+
 =======
 print "Classification rate univariate: %f" % classif_rate_univ
+>>>>>>> LOCAL
+<<<<<<< REMOTE
+#classif_rate = np.mean(y_pred == y_true) * 100
+=======
+
 >>>>>>> LOCAL
 <<<<<<< REMOTE
 #print "Classification rate : %f" % classif_rate
 =======
 
 >>>>>>> LOCAL
-
-# unvariate feature selection
 
 
 

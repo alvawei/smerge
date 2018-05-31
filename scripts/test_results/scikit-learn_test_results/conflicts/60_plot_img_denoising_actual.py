@@ -40,16 +40,16 @@ from sklearn.feature_extraction.image import extract_patches_2d
 from sklearn.feature_extraction.image import reconstruct_from_patches_2d
 
 ###############################################################################
-print 'done in %.2fs.' % (time() - t0)
-t0 = time()
-
-
-
-t0 = time()
 # Load Lena image and extract patches
 print 'done in %.2fs.' % (time() - t0)
+t0 = time()
 
+
+
+t0 = time()
 lena = sp.lena() / 256.0
+print 'done in %.2fs.' % (time() - t0)
+
 
 
 # downsample for higher speed

@@ -73,11 +73,11 @@ np.random.shuffle(idx)
 data = news_train.data[idx]
 target = news_train.target[idx]
 
+print "Training a linear SVM (hinge loss and L2 regularizer) using SGD:"
 print "num train docs: ", data.shape[0]
-print ""
 print clf
 
-print "Training a linear SVM (hinge loss and L2 regularizer) using SGD:"
+print ""
 
 t0 = time()
 clf = SGD(n_iter=50, alpha=0.00001, fit_intercept=True)

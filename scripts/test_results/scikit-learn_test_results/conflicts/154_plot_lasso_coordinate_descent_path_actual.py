@@ -18,12 +18,9 @@ import numpy as np
 import pylab as pl
 
 from scikits.learn.glm import lasso_path, enet_path
+from scikits.learn.glm.coordinate_descent import lasso_path, enet_path
 n_samples, n_features = 100, 10
-<<<<<<< REMOTE
-
-=======
 models = lasso_path(X, y, eps=eps)
->>>>>>> LOCAL
 <<<<<<< REMOTE
 print "Computing regularization path using the lasso..."
 =======
@@ -50,16 +47,11 @@ alphas_enet = np.array([model.alpha for model in models])
 coefs_enet = np.array([model.coef_ for model in models])
 >>>>>>> LOCAL
 models = enet_path(X, y, eps=eps, intercept=False, rho=0.6)
-<<<<<<< REMOTE
-print "This took ", datetime.now() - start
-=======
 for color, coef_lasso, coef_enet in zip(color_iter,
                             coefs_lasso.T, coefs_enet.T):
     pl.plot(-np.log10(alphas_lasso), coef_lasso, color)
     pl.plot(-np.log10(alphas_enet), coef_enet, color + 'x')
 
-
->>>>>>> LOCAL
 alphas_enet = np.array([model.alpha for model in models])
 coefs_enet = np.array([model.coef_ for model in models])
 for color, coef_lasso, coef_enet in zip(color_iter,
@@ -68,6 +60,9 @@ for color, coef_lasso, coef_enet in zip(color_iter,
     pl.plot(-np.log10(alphas_enet), coef_enet, color + 'x')
 
 
+
+
+print "Computing regularization path using the elastic net..."
 # Display results
 color_iter = cycle(['b', 'g', 'r', 'c', 'm', 'y', 'k'])
 pl.xlabel('-Log(lambda)')

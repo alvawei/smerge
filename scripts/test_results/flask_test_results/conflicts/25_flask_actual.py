@@ -19,9 +19,15 @@ from itertools import chain
 from jinja2 import Environment, PackageLoader, FileSystemLoader
 from werkzeug import Request as RequestBase, Response as ResponseBase, \
      LocalStack, LocalProxy, create_environ, SharedDataMiddleware, \
+     ImmutableDict, cached_property, wrap_file, Headers
+from werkzeug import Request as RequestBase, Response as ResponseBase, \
+     LocalStack, LocalProxy, create_environ, SharedDataMiddleware, \
      ImmutableDict, cached_property, wrap_file, Headers, \
-import_string
-import_string
+     import_string
+from werkzeug import Request as RequestBase, Response as ResponseBase, \
+     LocalStack, LocalProxy, create_environ, SharedDataMiddleware, \
+     ImmutableDict, cached_property, wrap_file, Headers, \
+     import_string
 from werkzeug.routing import Map, Rule
 from werkzeug.exceptions import HTTPException, InternalServerError
 from werkzeug.contrib.securecookie import SecureCookie
@@ -430,18 +436,15 @@ def _get_package_path(name):
 
 # figure out if simplejson escapes slashes.  This behaviour was changed
 # from one version to another without reason.
-
-
-
-class ConfigAttribute(object):
-class Config(dict):
 if not json_available or '\\/' not in json.dumps('/'):
     def _tojson_filter(*args, **kwargs):
         if __debug__:
             _assert_have_json()
         return json.dumps(*args, **kwargs).replace('/', '\\/')
+
 else:
     _tojson_filter = json.dumps
+
 
 
 class _PackageBoundObject(object):
@@ -481,10 +484,8 @@ class _PackageBoundObject(object):
 
 
 
-
-# script interface to run a development server
-if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+class ConfigAttribute(object):
+class Config(dict):
 class _ModuleSetupState(object):
     def __init__(self, app, url_prefix=None):
         self.app = app
@@ -1268,6 +1269,11 @@ default_config = ImmutableDict({
         return self.wsgi_app(environ, start_response)
 
 
+
+
+# script interface to run a development server
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
 # context locals
 _request_ctx_stack = LocalStack()
 current_app = LocalProxy(lambda: _request_ctx_stack.top.app)

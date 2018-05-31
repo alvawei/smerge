@@ -165,33 +165,30 @@ class BayesianRidge(LinearModel):
 n_samples, n_features = X.shape
 >>>>>>> LOCAL
         ### "Dummy" initialization of the values of the parameters
-        self.alpha_ = 1./np.var(Y)
 <<<<<<< REMOTE
 
 =======
-self.lambda_ = 1.0
+self.alpha_ = 1./np.var(Y)
 >>>>>>> LOCAL
-        self.log_likelihood_ = []
+        self.lambda_ = 1.0
 <<<<<<< REMOTE
 
 =======
-U, S, V = linalg.svd(X, full_matrices=False)
+self.log_likelihood_ = []
 >>>>>>> LOCAL
+        U, S, V = linalg.svd(X, full_matrices=False)
         self.eigen_vals_ = S**2
-        self.X_XT = np.dot(X,X.T)
 <<<<<<< REMOTE
 
 =======
-self.XT_Y = np.dot(X.T,Y)
+self.X_XT = np.dot(X,X.T)
 >>>>>>> LOCAL
+        self.XT_Y = np.dot(X.T,Y)
 <<<<<<< REMOTE
 
 =======
 ### Convergence loop of the bayesian ridge regression
 >>>>>>> LOCAL
-<<<<<<< REMOTE
-
-=======
         for iter_ in range(self.n_iter):
             ### Compute mu and sigma (using Woodbury matrix identity)
             self.sigma_ =  np.dot(linalg.pinv(np.eye(n_samples)/self.alpha_ +
@@ -216,8 +213,6 @@ self.XT_Y = np.dot(X.T,Y)
                     break
             self.coef_old_ = np.copy(self.coef_)
 
-
->>>>>>> LOCAL
 
 
 
@@ -245,28 +240,23 @@ class ARDRegression(LinearModel):
         Y = np.asanyarray(Y, dtype=np.float)
         n_samples, n_features = X.shape
 
-<<<<<<< REMOTE
-
-=======
         if self.fit_intercept:
             self._xmean = X.mean(axis=0)
             self._ymean = Y.mean(axis=0)
             X = X - self._xmean
             Y = Y - self._ymean
-
->>>>>>> LOCAL
         else:
             self._xmean = 0.
             self._ymean = 0.
 
 
         ### "Dummy" initialization of the values of the parameters
-        self.alpha_ = 1./np.var(Y)
 <<<<<<< REMOTE
 
 =======
-self.lambda_ = np.ones(n_features)
+self.alpha_ = 1./np.var(Y)
 >>>>>>> LOCAL
+        self.lambda_ = np.ones(n_features)
         self.log_likelihood_ = []
         self.X_XT = np.dot(X,X.T)
         self.XT_Y = np.dot(X.T,Y)

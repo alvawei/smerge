@@ -1141,8 +1141,8 @@ class MultinomialHMM(_BaseHMM):
         self._log_emissionprob = np.log(emissionprob)
         underflow_idx = np.isnan(self._log_emissionprob)
         self._log_emissionprob[underflow_idx] = NEGINF
-
         self.n_symbols = self._log_emissionprob.shape[1]
+
 
     def _compute_log_likelihood(self, obs):
         return self._log_emissionprob[:, obs].T

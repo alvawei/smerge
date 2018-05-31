@@ -8,11 +8,14 @@ import sys
 import traceback
 import numpy as np
 from scipy import sparse
+from numpy.testing import assert_array_equal, \
         assert_array_almost_equal
 import sklearn
+from sklearn.base import clone, ClassifierMixin, RegressorMixin, \
         TransformerMixin, ClusterMixin
 from sklearn.metrics import zero_one_score, adjusted_rand_score
 from sklearn.pls import _PLS, PLSCanonical, PLSRegression, CCA
+from sklearn.svm.base import BaseLibSVM
 from sklearn.feature_selection import RFE, RFECV, SelectKBest
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
@@ -269,17 +272,14 @@ def test_configure():
     finally:
         sys.argv = old_argv
         os.chdir(cwd)
-from numpy.testing import assert_array_equal, \
 
 from sklearn.utils.testing import all_estimators
 from sklearn.utils.testing import assert_greater
-from sklearn.base import clone, ClassifierMixin, RegressorMixin, \
 from sklearn.utils import shuffle
 from sklearn.preprocessing import Scaler
 #from sklearn.cross_validation import train_test_split
 from sklearn.datasets import load_iris, load_boston
 from sklearn.lda import LDA
-from sklearn.svm.base import BaseLibSVM
 
 # import "special" estimators
 from sklearn.grid_search import GridSearchCV

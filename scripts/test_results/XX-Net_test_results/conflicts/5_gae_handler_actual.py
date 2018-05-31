@@ -202,8 +202,7 @@ def request_gae_server(headers, body, url):
     server_type = response.headers.get("server", "")
     content_type = response.headers.get("content-type", "")
     if ("gws" not in server_type and "Google Frontend" not in server_type and "GFE" not in server_type) or \
-        response.status == 403 or response.status == 405:
-
+            response.status == 403 or response.status == 405:
         # some ip can connect, and server type can be gws
         # but can't use as GAE server
         # so we need remove it immediately
@@ -213,6 +212,7 @@ def request_gae_server(headers, body, url):
         google_ip.recheck_ip(response.ssl_sock.ip)
         response.worker.close("ip not support GAE")
         raise GAE_Exception(602, "ip not support GAE")
+
 
     if response.status == 404:
         # xlog.warning('APPID %r not exists, remove it.', response.ssl_sock.appid)

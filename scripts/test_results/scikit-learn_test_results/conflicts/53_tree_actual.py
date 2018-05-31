@@ -269,8 +269,6 @@ class BaseDecisionTree(BaseEstimator):
         if self.max_depth is not None and self.max_depth <= 0:
         if self.max_features >= 0 and \
                not (0 < self.max_features <= self.n_features):
-            raise ValueError("max_features must be in (0, n_features]")
-
         # Build tree
 
 

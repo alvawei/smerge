@@ -169,9 +169,9 @@ X = np.dot(((np.sqrt((n_samples * self.priors_)*fac)) *
         self.coef_ = np.dot(self.means_ - self.xbar_, self.scaling)
         self.intercept_ = -0.5 * np.sum(self.coef_ ** 2, axis=1) + \
                            np.log(self.priors_)
-        return self
-        self.classes = classes
 
+        self.classes = classes
+        return self
 
     def decision_function(self, X):
         """
