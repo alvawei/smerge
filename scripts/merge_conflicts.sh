@@ -51,6 +51,11 @@ else
 			    SUCCESS=${BASH_REMATCH[1]}
 			    TOTAL=${BASH_REMATCH[2]}
 
+			    if [ $TOTAL -eq 0 ]; then
+			        TOTAL=$(grep '<<< HEAD' $RESULTS_DIR/conflicts/${NUM}_${FILENAME%.py}_conflict.py | wc -l)
+				SUCCESS=$TOTAL
+			    fi
+
 			    echo "$NUM $SUCCESS/$TOTAL" >> $RESULTS_DIR/result.txt
 			fi
 		    done <<< $(grep resolved $RESULTS_DIR/mergetool.txt)

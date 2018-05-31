@@ -12,5 +12,3 @@ Merging changes...
 Writing result to autoencoder/VariationalAutoencoderRunner.py
 
 Merge conflicts resolved: 0/2
-autoencoder/VariationalAutoencoderRunner.py seems unchanged.
-Was the merge successful [y/n]? 

@@ -14,3 +14,5 @@ Merging changes...
 Writing result to scikits/learn/glm/coordinate_descent.py
 
 Merge conflicts resolved: 45/49
+scikits/learn/glm/coordinate_descent.py seems unchanged.
+Was the merge successful [y/n]? 

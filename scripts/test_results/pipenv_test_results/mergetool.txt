@@ -17,3 +17,5 @@ Merging changes...
 Writing result to pipenv/cli.py
 
 Merge conflicts resolved: 45/52
+pipenv/cli.py seems unchanged.
+Was the merge successful [y/n]? 
