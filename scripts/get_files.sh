@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This script generates base, local, remote files for each merge conflicts found in the given repository
+# to be used for testing by the implementation team
+# It is not used in the actual evaluation process
+
 REPO_DIR=$1
 RESULTS_DIR=$2
 NUM=0

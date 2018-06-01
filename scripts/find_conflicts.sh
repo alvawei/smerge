@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This script goes through the commit history of the given repository, and
+# Records the SHA of a merge commit and its two parents commits into merge_conflicts.txt 
+# in the format of <parent commit 1> <parent commit 2> <merge commit>
+
 if [ $# -ne 2 ]; then
     echo "Usage: ./find_conflicts.sh <Repository directory> <Results directory>"
 else

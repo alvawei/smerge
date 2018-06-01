@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#./run_diff.sh $2/conflicts
+# This script generates a csv file that shows smerge result on the given repository
 
 # The tested repository
 REPO=$1
