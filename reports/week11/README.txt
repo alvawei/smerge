@@ -1,0 +1,1 @@
+We spent an additional 12 hours on this assignment.
